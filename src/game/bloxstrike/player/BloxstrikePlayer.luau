@@ -78,6 +78,7 @@ return LPH_JIT_MAX(function()
 
 		self._reloadActiveCount = 0
 		self._blindActiveCount = 0
+		self._rawAlive = false
 
 		self._lastCurrentEquippedRaw = nil
 		self._lastSlot5Raw = nil
@@ -96,7 +97,9 @@ return LPH_JIT_MAX(function()
 		end))
 
 		self._janitor:Add(player:GetAttributeChangedSignal("Team"):Connect(function(): ()
-			self.team(player:GetAttribute("Team"))
+			local team = player:GetAttribute("Team")
+			self.team(team)
+			self.alive(self._rawAlive and team ~= nil)
 		end))
 
 		self._janitor:Add(player:GetAttributeChangedSignal("CurrentEquipped"):Connect(LPH_NO_VIRTUALIZE(function(): ()
@@ -257,11 +260,13 @@ return LPH_JIT_MAX(function()
 		if humanoid then
 			self.health(humanoid.Health)
 			self.maxHealth(humanoid.MaxHealth)
-			self.alive(humanoid.Health > 0)
+			self._rawAlive = humanoid.Health > 0
+			self.alive(self._rawAlive and self._player:GetAttribute("Team") ~= nil)
 
 			self._characterJanitor:Add(humanoid.HealthChanged:Connect(function(health: number): ()
 				self.health(health)
-				self.alive(health > 0)
+				self._rawAlive = health > 0
+				self.alive(self._rawAlive and self._player:GetAttribute("Team") ~= nil)
 			end))
 
 			self._characterJanitor:Add(humanoid:GetPropertyChangedSignal("MaxHealth"):Connect(function(): ()
@@ -269,6 +274,7 @@ return LPH_JIT_MAX(function()
 			end))
 
 			self._characterJanitor:Add(humanoid.Died:Connect(function(): ()
+				self._rawAlive = false
 				self.alive(false)
 			end))
 		else
@@ -284,7 +290,8 @@ return LPH_JIT_MAX(function()
 				local dead = character:GetAttribute("Dead") == true or self._player:GetAttribute("Dead") == true
 				self.maxHealth(maxHp)
 				self.health(hp :: number)
-				self.alive(not dead and (hp :: number) > 0)
+				self._rawAlive = not dead and (hp :: number) > 0
+				self.alive(self._rawAlive and self._player:GetAttribute("Team") ~= nil)
 			end
 
 			syncAttributes()
@@ -393,11 +400,13 @@ return LPH_JIT_MAX(function()
 		self.character(nil)
 		self.hrp(nil)
 		self.humanoid(nil)
+		self._rawAlive = false
 		self.alive(false)
 		self.parts({})
 		self.isPlanting(false)
 		self._reloadActiveCount = 0
 		self._blindActiveCount = 0
+		self._rawAlive = false
 		self.isReloading(false)
 		self.isBlind(false)
 		self.culled(false)

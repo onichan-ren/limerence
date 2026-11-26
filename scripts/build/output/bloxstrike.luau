@@ -46434,6 +46434,7 @@ do
                     ap.culled = ag(false)
                     ap._reloadActiveCount = 0
                     ap._blindActiveCount = 0
+                    ap._rawAlive = false
                     ap._lastCurrentEquippedRaw = nil
                     ap._lastSlot5Raw = nil
                     ap._lastArmorRaw = nil
@@ -46449,7 +46450,10 @@ do
                     end))
                     ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'Team'):Connect(function(
                     )
-                        ap.team(ao.GetAttribute(ao, 'Team'))
+                        local aq = ao.GetAttribute(ao, 'Team')
+
+                        ap.team(aq)
+                        ap.alive(ap._rawAlive and aq ~= nil)
                     end))
                     ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'CurrentEquipped'):Connect(LPH_NO_VIRTUALIZE(function(
                     )
@@ -46642,18 +46646,26 @@ do
                     if ar then
                         ao.health(ar.Health)
                         ao.maxHealth(ar.MaxHealth)
-                        ao.alive(ar.Health > 0)
+
+                        ao._rawAlive = ar.Health > 0
+
+                        ao.alive(ao._rawAlive and ao._player:GetAttribute'Team' ~= nil)
                         ao._characterJanitor:Add(ar.HealthChanged:Connect(function(
                             at
                         )
                             ao.health(at)
-                            ao.alive(at > 0)
+
+                            ao._rawAlive = at > 0
+
+                            ao.alive(ao._rawAlive and ao._player:GetAttribute'Team' ~= nil)
                         end))
                         ao._characterJanitor:Add(ar.GetPropertyChangedSignal(ar, 'MaxHealth'):Connect(function(
                         )
                             ao.maxHealth(ar.MaxHealth)
                         end))
                         ao._characterJanitor:Add(ar.Died:Connect(function()
+                            ao._rawAlive = false
+
                             ao.alive(false)
                         end))
                     else
@@ -46671,7 +46683,10 @@ do
 
                             ao.maxHealth(at)
                             ao.health(au)
-                            ao.alive(not av and (au) > 0)
+
+                            ao._rawAlive = not av and (au) > 0
+
+                            ao.alive(ao._rawAlive and ao._player:GetAttribute'Team' ~= nil)
                         end
 
                         syncAttributes()
@@ -46791,12 +46806,16 @@ do
                     ao.character(nil)
                     ao.hrp(nil)
                     ao.humanoid(nil)
+
+                    ao._rawAlive = false
+
                     ao.alive(false)
                     ao.parts{}
                     ao.isPlanting(false)
 
                     ao._reloadActiveCount = 0
                     ao._blindActiveCount = 0
+                    ao._rawAlive = false
 
                     ao.isReloading(false)
                     ao.isBlind(false)
