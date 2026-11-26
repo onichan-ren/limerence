@@ -128,6 +128,9 @@ function FileController.new(): FileController
 end
 
 function FileController.Load(filePath: string, fileData: any?): boolean
+	if not fileData and not isfile(filePath) then
+		return false
+	end
 	local fileType, loadedData = fileLoader.load(fileData or readfile(filePath), filePath)
 	if not loadedData then
 		logger:log(`no data found for file {filePath}`)

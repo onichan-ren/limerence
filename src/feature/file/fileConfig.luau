@@ -75,7 +75,6 @@ local fileConfig = {
 					["screen_overlay.png"] = "images/screen_overlay.png",
 					["glow_arrow.png"] = "images/glow_arrow.png",
 					["globe.png"] = "images/globe.png",
-					["light.png"] = "images/light.png",
 					["x.png"] = "images/x.png",
 					["undo.png"] = "images/undo.png",
 					["logov2.png"] = "images/logo.png",

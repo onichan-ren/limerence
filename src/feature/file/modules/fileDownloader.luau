@@ -7,8 +7,8 @@ function fileDownloader.download(url: string, path: string): any?
 		return true
 	end
 
-	local data = game:HttpGet(url)
-	if not data or #data == 0 then
+	local ok, data = pcall(game.HttpGet, game, url)
+	if not ok or type(data) ~= "string" or #data == 0 or data == "404: Not Found" then
 		logger:error(`failed to download file from {url}`)
 		return nil
 	end

@@ -3294,17 +3294,17 @@ do
                     return true
                 end
 
-                local f = game.HttpGet(game, d)
+                local f, g = pcall(game.HttpGet, game, d)
 
-                if not f or #f == 0 then
+                if not f or type(g) ~= 'string' or #g == 0 or g == '404: Not Found' then
                     b.error(b, string.format('failed to download file from %s', tostring(d)))
 
                     return nil
                 end
 
-                writefile(e, f)
+                writefile(e, g)
 
-                return f
+                return g
             end
 
             return c
@@ -3807,7 +3807,6 @@ do
                                 ['screen_overlay.png'] = 'images/screen_overlay.png',
                                 ['glow_arrow.png'] = 'images/glow_arrow.png',
                                 ['globe.png'] = 'images/globe.png',
-                                ['light.png'] = 'images/light.png',
                                 ['x.png'] = 'images/x.png',
                                 ['undo.png'] = 'images/undo.png',
                                 ['logov2.png'] = 'images/logo.png',
@@ -3987,6 +3986,10 @@ do
                 return n
             end
             function n.Load(r, s)
+                if not s and not isfile(r) then
+                    return false
+                end
+
                 local t, u = d.load(s or readfile(r), r)
 
                 if not u then
@@ -94130,12 +94133,10 @@ local au = 'if game.GameId ~= ' .. at .. ' then\r\n\treturn\r\nend\r\n'
 
 if LPH_OBFUSCATED then
     au ..= string.format("lp_key='%s';", tostring(lp_key))
-    au ..= 
+end
+
+au ..= 
 "loadstring(game:HttpGet(\"https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/overkill.luau\"))()"
-end
-if not LPH_OBFUSCATED then
-    au ..= 'loadfile("overkill.luau")()'
-end
 
 clear_teleport_queue()
 queue_on_teleport(au)

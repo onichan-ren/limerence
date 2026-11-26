@@ -82,10 +82,7 @@ end
 ]]
 if LPH_OBFUSCATED then
 	appendedCode ..= `lp_key='{lp_key}';`
-	appendedCode ..= `loadstring(game:HttpGet("https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/overkill.luau"))()`
 end
-if not LPH_OBFUSCATED then
-	appendedCode ..= `loadfile("overkill.luau")()`
-end
+appendedCode ..= `loadstring(game:HttpGet("https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/overkill.luau"))()`
 clear_teleport_queue()
 queue_on_teleport(appendedCode)
