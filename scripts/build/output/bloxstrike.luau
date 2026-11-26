@@ -3975,6 +3975,7 @@ do
             local h, i = e.peek, {
                 _janitor = nil,
                 _players = (e.atom{}),
+                _byProxy = {},
                 _class = nil,
                 playerAdded = (g.new()),
                 playerRemoving = (g.new()),
@@ -4010,6 +4011,13 @@ do
                 if h(i._players)[j] then
                     return
                 end
+                if type(k.GetPlayer) == 'function' then
+                    local l = k.GetPlayer(k)
+
+                    if l ~= nil then
+                        i._byProxy[l] = k
+                    end
+                end
 
                 i._players(f.Dictionary.set(h(i._players), j, k))
                 i.playerAdded:Fire(k)
@@ -4020,6 +4028,13 @@ do
 
                 if not l then
                     return
+                end
+                if type(l.GetPlayer) == 'function' then
+                    local m = l.GetPlayer(l)
+
+                    if m ~= nil then
+                        i._byProxy[m] = nil
+                    end
                 end
 
                 i._players(f.Dictionary.removeKey(k, j))
@@ -4051,13 +4066,14 @@ do
                 return h(i._players)
             end
             function i.Get(j)
-                return h(i._players)[j]
+                return h(i._players)[j] or i._byProxy[j]
             end
             function i.Destroy()
                 for j, k in next, h(i._players)do
                     k.Destroy(k)
                 end
 
+                table.clear(i._byProxy)
                 i._players{}
 
                 local j = i._janitor
@@ -40524,8 +40540,12 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al = a.d(), a.e(), a.H(), a.F(), a.l(), a.I(), a.cA(), a.c(), a.i(), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'RunService'))), a.t()
-            local am, an, ao, ap, aq, ar = ai.peek, {
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = a.d(), a.e(), a.H(), a.F(), a.l(), a.I(), a.cA(), a.c(), a.i(), (cloneref(game.GetService(game, 'Players')))
+
+            cloneref(game.GetService(game, 'RunService'))
+
+            local al, am = a.t(), ai.peek
+            local an, ao, ap, aq = {
                 hitPlayer = (al.new()),
                 killedPlayer = (al.new()),
                 bulletCreated = (al.new()),
@@ -40544,146 +40564,157 @@ do
                 _killFeedUnsub = nil,
             }, aj.LocalPlayer, 0.25, (setmetatable({}, {
                 __mode = 'k',
-            })), 0
+            }))
+
+            local function resolveVictimFromModel(ar)
+                if not ar or ar.ClassName ~= 'Model' then
+                    return nil, nil
+                end
+
+                local as = aj.GetPlayerFromCharacter(aj, ar)
+
+                if as then
+                    return as, ac.Get(as)
+                end
+
+                local at = ac.Get(ar)
+
+                if at then
+                    return at.GetPlayer(at), at
+                end
+
+                return nil, nil
+            end
 
             an.new = LPH_JIT_MAX(function()
-                local as = ab.GetModule'WeaponClass'
-                local at = rawget(as, 'shoot')
+                local ar = ab.GetModule'WeaponClass'
+                local as = rawget(ar, 'shoot')
 
-                if not at or type(at) ~= 'function' then
+                if not as or type(as) ~= 'function' then
                     error'failed to find shoot function'
                 end
 
-                an._shoot = at
+                an._shoot = as
 
-                ag.bind(at)
+                ag.bind(as)
 
-                an._frameConn = ak.PreRender:Connect(LPH_NO_VIRTUALIZE(function()
-                    ar += 1
-                end))
+                local at
 
-                local au
+                for au, av in next, debug.getupvalues(as)do
+                    if type(av) == 'function' then
+                        local aw = debug.getinfo(av)
 
-                for av, aw in next, debug.getupvalues(at)do
-                    if type(aw) == 'function' then
-                        local ax = debug.getinfo(aw)
-
-                        if ax and ax.name == 'CreateImpact' then
-                            au = aw
+                        if aw and aw.name == 'CreateImpact' then
+                            at = av
 
                             break
                         end
                     end
                 end
 
-                if not au then
-                    au = debug.getupvalue(at, 22)
+                if not at then
+                    at = debug.getupvalue(as, 22)
                 end
-                if not au or type(au) ~= 'function' then
+                if not at or type(at) ~= 'function' then
                     error'failed to find impact function'
                 end
 
-                local av
+                local au
 
-                av = ah.add(au, LPH_NO_VIRTUALIZE(function(...)
-                    local aw = (select(7, ...))
+                au = ah.add(at, LPH_NO_VIRTUALIZE(function(...)
+                    local av = (select(7, ...))
 
-                    if not aw and not an._suppressImpacts then
+                    if not av and not an._suppressImpacts then
                         setthreadidentity(2)
 
-                        return av(...)
+                        return au(...)
                     end
 
-                    local ax, ay = {...}, select('#', ...)
+                    local aw, ax = {...}, select('#', ...)
 
-                    if aw then
-                        local az = ax[1]
+                    if av then
+                        local ay = aw[1]
 
-                        if not az then
-                            return av(...)
+                        if not ay then
+                            return au(...)
                         end
 
-                        for aA, aB in next, an._impactCallbacks do
-                            local aC = aB(az)
+                        for az, aA in next, an._impactCallbacks do
+                            local aB = aA(ay)
 
-                            if aC ~= az then
-                                ax[1] = aC
-                                az = aC
+                            if aB ~= ay then
+                                aw[1] = aB
+                                ay = aB
 
                                 break
                             end
                         end
 
-                        local aA = az.Parent
+                        local az = ay.Parent
+                        local aA, aB = resolveVictimFromModel(az)
 
-                        if aA and aA.ClassName == 'Model' then
-                            local aB = aj.GetPlayerFromCharacter(aj, aA)
+                        if aA and aB and (aB.GetTeam(aB) ~= ad.GetTeam() or af.isDeathmatch()) then
+                            local aC = os.clock()
 
-                            if aB then
-                                local aC = ac.Get(aB)
+                            if aC - (aq[ay] or 0) > 0.05 then
+                                aq[ay] = aC
 
-                                if aC and (aC.GetTeam(aC) ~= ad.GetTeam() or af.isDeathmatch()) then
-                                    if aq[az] ~= ar then
-                                        aq[az] = ar
-
-                                        setthreadidentity(8)
-                                        an.hitPlayer:Fire(aB, az)
-                                    end
-                                end
+                                setthreadidentity(8)
+                                an.hitPlayer:Fire(aA, ay)
                             end
                         end
                     end
                     if an._suppressImpacts then
-                        ax[11] = true
-                        ay = math.max(ay, 11)
+                        aw[11] = true
+                        ax = math.max(ax, 11)
                     end
 
                     setthreadidentity(2)
 
-                    return av(table.unpack(ax, 1, ay))
+                    return au(table.unpack(aw, 1, ax))
                 end))
-                an._impactFn = au
+                an._impactFn = at
 
                 aa.HookPacket('Inventory', 'ShootWeapon', LPH_NO_VIRTUALIZE(function(
-                    aw
+                    av
                 )
-                    local ax = rawget(aw, 'Bullets')
+                    local aw = rawget(av, 'Bullets')
 
-                    if ax then
+                    if aw then
                         setthreadidentity(8)
 
                         if next(an._shootTransforms) then
-                            for ay, az in next, an._shootTransforms do
-                                az(aw)
+                            for ax, ay in next, an._shootTransforms do
+                                ay(av)
                             end
 
-                            ax = rawget(aw, 'Bullets') or ax
+                            aw = rawget(av, 'Bullets') or aw
                         end
 
-                        for ay, az in next, ax do
-                            an.bulletCreated:Fire(az)
+                        for ax, ay in next, aw do
+                            an.bulletCreated:Fire(ay)
                         end
 
                         if next(an._impactCallbacks) then
-                            for ay, az in next, ax do
-                                local aA = az.Hits
+                            for ax, ay in next, aw do
+                                local az = ay.Hits
 
-                                if not aA then
+                                if not az then
                                     continue
                                 end
 
-                                for aB, aC in next, aA do
-                                    local aD = aC.Instance
+                                for aA, aB in next, az do
+                                    local aC = aB.Instance
 
-                                    if not aD or not aD.IsA(aD, 'BasePart') then
+                                    if not aC or not aC.IsA(aC, 'BasePart') then
                                         continue
                                     end
 
-                                    for aE, aF in next, an._impactCallbacks do
-                                        local aG = aF(aD)
+                                    for aD, aE in next, an._impactCallbacks do
+                                        local aF = aE(aC)
 
-                                        if aG ~= aD then
-                                            aC.Instance = aG
+                                        if aF ~= aC then
+                                            aB.Instance = aF
 
                                             break
                                         end
@@ -40692,75 +40723,112 @@ do
                             end
                         end
 
-                        local ay
+                        local ax
 
-                        for az, aA in next, ax do
-                            local aB = aA.Hits
+                        for ay, az in next, aw do
+                            local aA = az.Hits
 
-                            if not aB then
+                            if not aA then
                                 continue
                             end
 
-                            for aC, aD in next, aB do
-                                local aE = aD.Instance
+                            for aB, aC in next, aA do
+                                local aD = aC.Instance
 
-                                if not aE or not aE.IsA(aE, 'BasePart') then
+                                if not aD or not aD.IsA(aD, 'BasePart') then
                                     continue
                                 end
 
-                                local aF = aE.Parent
+                                local aE = aD.Parent
 
-                                if not aF or aF.ClassName ~= 'Model' then
+                                if not aE or aE.ClassName ~= 'Model' then
                                     continue
                                 end
 
-                                local aG = aj.GetPlayerFromCharacter(aj, aF)
+                                local aF = aj.GetPlayerFromCharacter(aj, aE)
 
-                                if not aG then
+                                if not aF then
                                     continue
                                 end
 
-                                local aH = ac.Get(aG)
+                                local aG = ac.Get(aF)
 
-                                if aH and (aH.GetTeam(aH) ~= ad.GetTeam() or af.isDeathmatch()) then
-                                    ay = aG
+                                if aG and (aG.GetTeam(aG) ~= ad.GetTeam() or af.isDeathmatch()) then
+                                    ax = aF
 
                                     break
                                 end
                             end
 
-                            if ay then
+                            if ax then
                                 break
                             end
                         end
 
-                        local az = an._ragebotShotTarget
+                        local ay = an._ragebotShotTarget
 
                         an._ragebotShotTarget = nil
 
-                        an.shotFired:Fire(aw, ay, az)
+                        an.shotFired:Fire(av, ax, ay)
                         setthreadidentity(2)
                     end
 
                     return true
                 end))
 
-                local aw = aa.GetPacketGroup'VFX'
+                local av = aa.GetPacketGroup'VFX'
 
-                if aw then
-                    local ax, ay, az = {}, 1, 0
-                    local aA, aB = LPH_NO_VIRTUALIZE(function(aA)
-                        while ay <= az and aA - ax[ay].time > ap do
-                            ax[ay] = nil
+                if av then
+                    local aw, ax, ay = {}, 1, 0
+                    local az, aA = LPH_NO_VIRTUALIZE(function(az)
+                        while ax <= ay and az - aw[ax].time > ap do
+                            aw[ax] = nil
+
+                            ax += 1
+                        end
+
+                        if ax > ay then
+                            ax = 1
+                            ay = 0
+                        end
+                    end), av.CreateCharacterMuzzleFlash
+
+                    if aA and type(aA.Listen) == 'function' then
+                        local aB = aA.Listen(LPH_NO_VIRTUALIZE(function(aB)
+                            if typeof(aB) ~= 'table' then
+                                return
+                            end
+
+                            local aC = aB.PlayerName
+
+                            if type(aC) ~= 'string' then
+                                return
+                            end
+
+                            local aD = aj.LocalPlayer
+
+                            if aD and aC == aD.Name then
+                                return
+                            end
+
+                            local aE = os.clock()
+
+                            az(aE)
 
                             ay += 1
-                        end
 
-                        if ay > az then
-                            ay = 1
-                            az = 0
+                            aw[ay] = {
+                                name = aC,
+                                time = aE,
+                            }
+                        end))
+
+                        if type(aB) == 'function' then
+                            an._vfxDisconnects[#an._vfxDisconnects + 1] = aB
                         end
-                    end), aw.CreateCharacterMuzzleFlash
+                    end
+
+                    local aB = av.CreateTracer
 
                     if aB and type(aB.Listen) == 'function' then
                         local aC = aB.Listen(LPH_NO_VIRTUALIZE(function(aC)
@@ -40768,28 +40836,40 @@ do
                                 return
                             end
 
-                            local aD = aC.PlayerName
+                            local aD, aE = aC.Origin, aC.Target
 
-                            if type(aD) ~= 'string' then
+                            if typeof(aD) ~= 'Vector3' or typeof(aE) ~= 'Vector3' then
                                 return
                             end
 
-                            local aE = aj.LocalPlayer
+                            local aF, aG = tonumber(aC.Distance) or (aE - aD).Magnitude, os.clock()
 
-                            if aE and aD == aE.Name then
+                            az(aG)
+
+                            local aH = aw[ax]
+
+                            if not aH then
                                 return
                             end
 
-                            local aF = os.clock()
+                            aw[ax] = nil
 
-                            aA(aF)
+                            ax += 1
 
-                            az += 1
+                            if ax > ay then
+                                ax = 1
+                                ay = 0
+                            end
 
-                            ax[az] = {
-                                name = aD,
-                                time = aF,
-                            }
+                            local aI = (aj.FindFirstChild(aj, aH.name))
+
+                            if not aI or not aI.IsA(aI, 'Player') then
+                                return
+                            end
+
+                            setthreadidentity(8)
+                            an.observedShot:Fire(aI, aD, aE, aF)
+                            setthreadidentity(2)
                         end))
 
                         if type(aC) == 'function' then
@@ -40797,47 +40877,43 @@ do
                         end
                     end
 
-                    local aC = aw.CreateTracer
+                    local aC = av.CreateImpact
 
                     if aC and type(aC.Listen) == 'function' then
                         local aD = aC.Listen(LPH_NO_VIRTUALIZE(function(aD)
-                            if typeof(aD) ~= 'table' then
+                            if typeof(aD) ~= 'table' or aD.Material ~= 'Blood Splatter' or aD.Exit == true then
                                 return
                             end
 
-                            local aE, aF = aD.Origin, aD.Target
+                            local aE = aD.AttackerUserId
 
-                            if typeof(aE) ~= 'Vector3' or typeof(aF) ~= 'Vector3' then
+                            if type(aE) ~= 'string' or aE ~= tostring(ao.UserId) then
                                 return
                             end
 
-                            local aG, aH = tonumber(aD.Distance) or (aF - aE).Magnitude, os.clock()
+                            local aF, aG, aH, aI = nil, nil, nil, aD.Instance
 
-                            aA(aH)
+                            if typeof(aI) == 'Instance' and aI.IsA(aI, 'BasePart') then
+                                aH = aI
 
-                            local aI = ax[ay]
+                                local aJ = aI.FindFirstAncestorOfClass(aI, 'Model')
 
-                            if not aI then
-                                return
-                            end
-
-                            ax[ay] = nil
-
-                            ay += 1
-
-                            if ay > az then
-                                ay = 1
-                                az = 0
-                            end
-
-                            local aJ = (aj.FindFirstChild(aj, aI.name))
-
-                            if not aJ or not aJ.IsA(aJ, 'Player') then
-                                return
+                                aF, aG = resolveVictimFromModel(aJ)
                             end
 
                             setthreadidentity(8)
-                            an.observedShot:Fire(aJ, aE, aF, aG)
+
+                            if aF and aH and aG and (aG.GetTeam(aG) ~= ad.GetTeam() or af.isDeathmatch()) then
+                                local aJ = os.clock()
+
+                                if aJ - (aq[aH] or 0) > 0.15 then
+                                    aq[aH] = aJ
+
+                                    an.hitPlayer:Fire(aF, aH)
+                                end
+                            end
+
+                            an.serverHitConfirmed:Fire(aF, aH)
                             setthreadidentity(2)
                         end))
 
@@ -40845,158 +40921,122 @@ do
                             an._vfxDisconnects[#an._vfxDisconnects + 1] = aD
                         end
                     end
-
-                    local aD = aw.CreateImpact
-
-                    if aD and type(aD.Listen) == 'function' then
-                        local aE = aD.Listen(LPH_NO_VIRTUALIZE(function(aE)
-                            if typeof(aE) ~= 'table' or aE.Material ~= 'Blood Splatter' or aE.Exit == true then
-                                return
-                            end
-
-                            local aF = aE.AttackerUserId
-
-                            if type(aF) ~= 'string' or aF ~= tostring(ao.UserId) then
-                                return
-                            end
-
-                            local aG, aH, aI = nil, nil, aE.Instance
-
-                            if typeof(aI) == 'Instance' and aI.IsA(aI, 'BasePart') then
-                                aH = aI
-
-                                local aJ = aI.FindFirstAncestorOfClass(aI, 'Model')
-
-                                if aJ then
-                                    aG = aj.GetPlayerFromCharacter(aj, aJ)
-                                end
-                            end
-
-                            setthreadidentity(8)
-                            an.serverHitConfirmed:Fire(aG, aH)
-                            setthreadidentity(2)
-                        end))
-
-                        if type(aE) == 'function' then
-                            an._vfxDisconnects[#an._vfxDisconnects + 1] = aE
-                        end
-                    end
                 end
 
-                local ax = aa.GetPacket('UI', 'UIPlayerKilled')
-                local ay = ax and rawget(ax, 'Listen')
+                local aw = aa.GetPacket('UI', 'UIPlayerKilled')
+                local ax = aw and rawget(aw, 'Listen')
 
-                if type(ay) == 'function' then
+                if type(ax) == 'function' then
                     setthreadidentity(2)
 
-                    local az = ay(LPH_NO_VIRTUALIZE(function(az)
+                    local ay = ax(LPH_NO_VIRTUALIZE(function(ay)
                         task.spawn(function()
-                            if typeof(az) ~= 'table' then
+                            if typeof(ay) ~= 'table' then
                                 return
                             end
 
                             setthreadidentity(8)
 
-                            if tonumber(az.Killer) ~= ao.UserId then
+                            if tonumber(ay.Killer) ~= ao.UserId then
                                 return
                             end
 
-                            local aA = aj.GetPlayerByUserId(aj, tonumber(az.Victim) or 
+                            local az = aj.GetPlayerByUserId(aj, tonumber(ay.Victim) or 
 -1)
 
-                            if aA and aA ~= ao then
-                                local aB = typeof(az.DeathPosition) == 'Vector3' and az.DeathPosition or nil
+                            if az and az ~= ao then
+                                local aA = typeof(ay.DeathPosition) == 'Vector3' and ay.DeathPosition or nil
 
-                                an.killedPlayer:Fire(aA, aB)
+                                an.killedPlayer:Fire(az, aA)
                             end
                         end)
                     end))
 
                     setthreadidentity(8)
 
-                    if type(az) == 'function' then
-                        an._killFeedUnsub = az
+                    if type(ay) == 'function' then
+                        an._killFeedUnsub = ay
                     end
                 end
 
                 return an
             end)
-            an.CanEngage = LPH_NO_VIRTUALIZE(function(as)
+            an.CanEngage = LPH_NO_VIRTUALIZE(function(ar)
                 if not am(ae.alive) then
                     return false
                 end
 
-                local at = as.Properties
+                local as = ar.Properties
 
-                if not at or at.Class ~= 'Weapon' then
+                if not as or as.Class ~= 'Weapon' then
                     return false
                 end
 
-                local au = as.Viewmodel.Animation:getAnimation'Equip'
+                local at = ar.Viewmodel.Animation:getAnimation'Equip'
 
                 setthreadidentity(8)
 
-                if tick() - as.WeaponEquippedTick <= au.Length * 0.925 then
+                if tick() - ar.WeaponEquippedTick <= at.Length * 0.925 then
                     return false
-                elseif as.IsAdjustingSuppressor or as.IsReloading or as.Rounds <= 0 then
+                elseif ar.IsAdjustingSuppressor or ar.IsReloading or ar.Rounds <= 0 then
                     return false
                 end
 
                 return true
             end)
-            an.CanShoot = LPH_NO_VIRTUALIZE(function(as)
-                if not an.CanEngage(as) then
+            an.CanShoot = LPH_NO_VIRTUALIZE(function(ar)
+                if not an.CanEngage(ar) then
                     return false
                 end
 
-                return not as.IsShooting and not as.IsChargeFiring
+                return not ar.IsShooting and not ar.IsChargeFiring
             end)
 
-            function an.GetWeaponProperties(as)
-                local at = an._getWeaponProperties
+            function an.GetWeaponProperties(ar)
+                local as = an._getWeaponProperties
 
-                if not at then
-                    local au = ab.GetModule'CharacterAnimator'
+                if not as then
+                    local at = ab.GetModule'CharacterAnimator'
 
-                    at = debug.getupvalue(au.construct, 1)
-                    an._getWeaponProperties = at
+                    as = debug.getupvalue(at.construct, 1)
+                    an._getWeaponProperties = as
                 end
 
-                return (at)(as)
+                return (as)(ar)
             end
-            function an.SetImpactsSuppressed(as)
-                an._suppressImpacts = as
+            function an.SetImpactsSuppressed(ar)
+                an._suppressImpacts = ar
             end
-            function an.NoteRagebotShot(as)
-                an._ragebotShotTarget = as
+            function an.NoteRagebotShot(ar)
+                an._ragebotShotTarget = ar
             end
-            function an.AddImpactCallback(as)
-                table.insert(an._impactCallbacks, as)
+            function an.AddImpactCallback(ar)
+                table.insert(an._impactCallbacks, ar)
             end
-            function an.RemoveImpactCallback(as)
-                local at = an._impactCallbacks
+            function an.RemoveImpactCallback(ar)
+                local as = an._impactCallbacks
 
-                for au = #at, 1, -1 do
-                    if at[au] == as then
-                        table.remove(at, au)
+                for at = #as, 1, -1 do
+                    if as[at] == ar then
+                        table.remove(as, at)
 
                         return
                     end
                 end
             end
-            function an.AddShootTransform(as)
-                table.insert(an._shootTransforms, as)
+            function an.AddShootTransform(ar)
+                table.insert(an._shootTransforms, ar)
 
                 return function()
-                    an.RemoveShootTransform(as)
+                    an.RemoveShootTransform(ar)
                 end
             end
-            function an.RemoveShootTransform(as)
-                local at = an._shootTransforms
+            function an.RemoveShootTransform(ar)
+                local as = an._shootTransforms
 
-                for au = #at, 1, -1 do
-                    if at[au] == as then
-                        table.remove(at, au)
+                for at = #as, 1, -1 do
+                    if as[at] == ar then
+                        table.remove(as, at)
 
                         return
                     end
@@ -41009,20 +41049,20 @@ do
                     an._frameConn = nil
                 end
 
-                local as = an._impactFn
+                local ar = an._impactFn
 
-                if as then
-                    ah.restore(as)
+                if ar then
+                    ah.restore(ar)
 
                     an._impactFn = nil
                 end
 
                 aa.UnhookPacket('Inventory', 'ShootWeapon')
 
-                for at, au in next, an._vfxDisconnects do
-                    au()
+                for as, at in next, an._vfxDisconnects do
+                    at()
 
-                    an._vfxDisconnects[at] = nil
+                    an._vfxDisconnects[as] = nil
                 end
 
                 if an._killFeedUnsub then

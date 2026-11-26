@@ -11,6 +11,7 @@ local peek = Charm.peek
 local PlayerController = {
 	_janitor = nil :: Janitor.Janitor?,
 	_players = Charm.atom({}) :: Charm.Atom<{ [Player]: BasePlayer.BasePlayer }>,
+	_byProxy = {} :: { [any]: BasePlayer.BasePlayer },
 	_class = nil :: BasePlayer.BasePlayer & any,
 	playerAdded = Signal.new() :: Signal.Signal<BasePlayer.BasePlayer>,
 	playerRemoving = Signal.new() :: Signal.Signal<BasePlayer.BasePlayer>,
@@ -44,6 +45,12 @@ function PlayerController.AddEntity(key: any, entity: any): ()
 	if peek(PlayerController._players)[key] then
 		return
 	end
+	if type(entity.GetPlayer) == "function" then
+		local proxy = entity:GetPlayer()
+		if proxy ~= nil then
+			PlayerController._byProxy[proxy] = entity
+		end
+	end
 	PlayerController._players(Sift.Dictionary.set(peek(PlayerController._players), key, entity))
 	PlayerController.playerAdded:Fire(entity)
 end
@@ -53,6 +60,12 @@ function PlayerController.RemoveEntity(key: any): ()
 	local entity = current[key]
 	if not entity then
 		return
+	end
+	if type(entity.GetPlayer) == "function" then
+		local proxy = entity:GetPlayer()
+		if proxy ~= nil then
+			PlayerController._byProxy[proxy] = nil
+		end
 	end
 	PlayerController._players(Sift.Dictionary.removeKey(current, key))
 	PlayerController.playerRemoving:Fire(entity)
@@ -83,13 +96,14 @@ function PlayerController.GetAll(): { [Player]: BasePlayer.BasePlayer }
 end
 
 function PlayerController.Get(player: Player): BasePlayer.BasePlayer?
-	return peek(PlayerController._players)[player]
+	return peek(PlayerController._players)[player] or PlayerController._byProxy[player]
 end
 
 function PlayerController.Destroy(): ()
 	for _, basePlayer in next, peek(PlayerController._players) do
 		basePlayer:Destroy()
 	end
+	table.clear(PlayerController._byProxy)
 	PlayerController._players({})
 
 	local janitor = PlayerController._janitor

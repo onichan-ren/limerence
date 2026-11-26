@@ -36,8 +36,22 @@ local LocalPlayer = Players.LocalPlayer
 
 local MUZZLE_QUEUE_TTL = 0.25
 
-local hitFireFrames = setmetatable({}, { __mode = "k" }) :: { [Instance]: number }
-local currentFrame = 0
+local hitFireTimes = setmetatable({}, { __mode = "k" }) :: { [Instance]: number }
+
+local function resolveVictimFromModel(model: Model?): (any?, any?)
+	if not model or model.ClassName ~= "Model" then
+		return nil, nil
+	end
+	local player = Players:GetPlayerFromCharacter(model)
+	if player then
+		return player, PlayerController.Get(player)
+	end
+	local bot = PlayerController.Get(model :: any)
+	if bot then
+		return bot:GetPlayer(), bot
+	end
+	return nil, nil
+end
 
 type MuzzleEntry = { name: string, time: number }
 
@@ -52,10 +66,6 @@ WeaponController.new = LPH_JIT_MAX(function(): WeaponController
 
 	WeaponController._shoot = shoot
 	fakeShoot.bind(shoot)
-
-	WeaponController._frameConn = RunService.PreRender:Connect(LPH_NO_VIRTUALIZE(function(): ()
-		currentFrame += 1
-	end))
 
 	local impact: any = nil
 	for _, value in next, debug.getupvalues(shoot) do
@@ -99,21 +109,17 @@ WeaponController.new = LPH_JIT_MAX(function(): WeaponController
 					end
 				end
 				local parent = instance.Parent :: Model?
-
-				if parent and parent.ClassName == "Model" then
-					local player = Players:GetPlayerFromCharacter(parent)
-					if player then
-						local playerData = PlayerController.Get(player)
-						if
-							playerData
-							and (playerData:GetTeam() ~= ClientController.GetTeam() or gamemodeState.isDeathmatch())
-						then
-							if hitFireFrames[instance] ~= currentFrame then
-								hitFireFrames[instance] = currentFrame
-								setthreadidentity(8)
-								WeaponController.hitPlayer:Fire(player, instance)
-							end
-						end
+				local victim, playerData = resolveVictimFromModel(parent)
+				if
+					victim
+					and playerData
+					and (playerData:GetTeam() ~= ClientController.GetTeam() or gamemodeState.isDeathmatch())
+				then
+					local now = os.clock()
+					if now - (hitFireTimes[instance] or 0) > 0.05 then
+						hitFireTimes[instance] = now
+						setthreadidentity(8)
+						WeaponController.hitPlayer:Fire(victim, instance)
 					end
 				end
 			end
@@ -295,17 +301,28 @@ WeaponController.new = LPH_JIT_MAX(function(): WeaponController
 				if type(attacker) ~= "string" or attacker ~= tostring(LocalPlayer.UserId) then
 					return
 				end
-				local victim: Player? = nil
+				local victim: any = nil
+				local victimData: any = nil
 				local part: BasePart? = nil
 				local instance = data.Instance
 				if typeof(instance) == "Instance" and instance:IsA("BasePart") then
 					part = instance
 					local model = instance:FindFirstAncestorOfClass("Model")
-					if model then
-						victim = Players:GetPlayerFromCharacter(model)
-					end
+					victim, victimData = resolveVictimFromModel(model)
 				end
 				setthreadidentity(8)
+				if
+					victim
+					and part
+					and victimData
+					and (victimData:GetTeam() ~= ClientController.GetTeam() or gamemodeState.isDeathmatch())
+				then
+					local now = os.clock()
+					if now - (hitFireTimes[part] or 0) > 0.15 then
+						hitFireTimes[part] = now
+						WeaponController.hitPlayer:Fire(victim, part)
+					end
+				end
 				WeaponController.serverHitConfirmed:Fire(victim, part)
 				setthreadidentity(2)
 			end))
