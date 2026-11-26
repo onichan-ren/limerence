@@ -1,4 +1,41 @@
+if not game:IsLoaded() then
+	game.Loaded:Wait()
+end
+
+local cloneref = cloneref or function(instance)
+	return instance
+end
+
+local Players = cloneref(game:GetService("Players"))
+while not Players.LocalPlayer do
+	task.wait()
+end
+
 local BASE_URL = "https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/"
+
+local VALID_TARGETS = {
+	ar2 = true,
+	bedwars = true,
+	bloxstrike = true,
+	dahood = true,
+	mvsd = true,
+	op1 = true,
+	overkill = true,
+	pf = true,
+	rivals = true,
+	universal = true,
+}
+
+local DEBUG_TARGETS = {
+	ar2 = true,
+	bloxstrike = true,
+	mvsd = true,
+	op1 = true,
+	overkill = true,
+	pf = true,
+	rivals = true,
+	universal = true,
+}
 
 local PLACE_TARGETS = {
 	[863266079] = "ar2",
@@ -20,15 +57,35 @@ local GAME_TARGETS = {
 	[6035872082] = "rivals",
 }
 
-local target = (type(_G.LIMERENCE_TARGET) == "string" and _G.LIMERENCE_TARGET)
-	or PLACE_TARGETS[game.PlaceId]
-	or GAME_TARGETS[game.GameId]
-	or "universal"
+local function getGlobal(key)
+	local env = if type(getgenv) == "function" then getgenv() else _G
+	return env[key]
+end
 
-local source = game:HttpGet(BASE_URL .. target .. ".luau")
-local fn, err = loadstring(source)
+local function resolveTarget()
+	local override = getGlobal("LIMERENCE_TARGET")
+	if type(override) == "string" and VALID_TARGETS[override] then
+		return override
+	end
+	return PLACE_TARGETS[game.PlaceId] or GAME_TARGETS[game.GameId] or "universal"
+end
+
+local function fetch(url)
+	local ok, body = pcall(game.HttpGet, game, url)
+	if not ok or type(body) ~= "string" or #body == 0 or body == "404: Not Found" then
+		error("[limerence] failed to fetch: " .. url .. " (" .. tostring(body) .. ")")
+	end
+	return body
+end
+
+local target = resolveTarget()
+local useDebug = getGlobal("LIMERENCE_DEBUG") == true and DEBUG_TARGETS[target]
+local fileName = target .. (if useDebug then ".debug.luau" else ".luau")
+
+local source = fetch(BASE_URL .. fileName)
+local fn, err = loadstring(source, "@limerence/" .. target)
 if not fn then
-	error(err)
+	error("[limerence] failed to compile " .. fileName .. ": " .. tostring(err))
 end
 
 return fn()
