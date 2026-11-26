@@ -71956,255 +71956,139 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace')))
-            local ac, ad, ae = aa.LocalPlayer, {}, nil
-
-            function ad.getActive()
-                if not ae then
-                    local af = ac.FindFirstChild(ac, 'PlayerScripts')
-                    local ag = af and af.FindFirstChild(af, 'PlayerModule')
-
-                    if not ag then
-                        return nil
-                    end
-
-                    setthreadidentity(2)
-
-                    local ah = require(ag)
-
-                    setthreadidentity(8)
-
-                    ae = ah
-                end
-
-                local af = ae.GetControls(ae)
-
-                if type(af) ~= 'table' then
-                    return nil
-                end
-
-                return af.activeController
-            end
-            function ad.realMoveVector(af)
-                local ag, ah = (af.leftValue or 0) + (af.rightValue or 0), (af.forwardValue or 0) + (af.backwardValue or 0)
-
-                return Vector3.new(ag, 0, ah)
-            end
-            function ad.worldToMoveVector(af)
-                local ag = ab.CurrentCamera.CFrame
-                local ah, ai = Vector3.new(ag.LookVector.X, 0, ag.LookVector.Z), Vector3.new(ag.RightVector.X, 0, ag.RightVector.Z)
-
-                if ah.Magnitude < 1e-4 or ai.Magnitude < 1e-4 then
-                    return Vector3.zero
-                end
-
-                ah = ah.Unit
-                ai = ai.Unit
-
-                local aj = Vector3.new(af.X, 0, af.Z)
-                local ak = aj.Magnitude
-
-                if ak < 1e-4 then
-                    return Vector3.zero
-                end
-
-                aj = aj / ak
-
-                return Vector3.new(aj.Dot(aj, ai), 0, -aj.Dot(aj, ah))
-            end
-            function ad.moveVectorToWorld(af)
-                local ag = ab.CurrentCamera.CFrame
-                local ah, ai = Vector3.new(ag.LookVector.X, 0, ag.LookVector.Z), Vector3.new(ag.RightVector.X, 0, ag.RightVector.Z)
-
-                if ah.Magnitude < 1e-4 or ai.Magnitude < 1e-4 then
-                    return Vector3.zero
-                end
-
-                ah = ah.Unit
-                ai = ai.Unit
-
-                local aj = ai * af.X - ah * af.Z
-                local ak = aj.Magnitude
-
-                if ak < 1e-4 then
-                    return Vector3.zero
-                end
-
-                return aj / ak
-            end
-
-            return ad
-        end
-
-        function a.eV()
-            local aa = a.cache.eV
-
-            if not aa then
-                aa = {
-                    c = __modImpl(),
-                }
-                a.cache.eV = aa
-            end
-
-            return aa.c
-        end
-    end
-    do
-        local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'RunService'))), a.l(), a.F(), a.eV(), a.eN(), a.eO(), a.J()
+            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.F(), a.eN(), a.eO(), a.J(), a.c()
 
             a.cy()
 
-            local ai, aj, ak, al, am, an = a.h(), a.i(), math.pi * 2, 0.01, 1, 2.5
-            local ao = aj.peek
+            local ah, ai, aj, ak, al = a.i(), math.pi * 2, 0.01, 1, 2.5
+            local am = ah.peek
 
-            local function rateFromSmoothness(ap)
-                return 8 - (ap / 100) * 7
+            local function rateFromSmoothness(an)
+                return 8 - (an / 100) * 7
+            end
+            local function worldToCmdMove(an, ao)
+                local ap, aq = math.cos(ao), math.sin(ao)
+
+                return Vector2.new(ap * an.X - aq * an.Z, aq * an.X + ap * an.Z)
             end
 
-            local ap = {}
+            local an = {}
 
-            ap.__index = ap
+            an.__index = an
 
-            setmetatable(ap, {__index = ag})
+            setmetatable(an, {__index = ae})
 
-            function ap.new(aq)
-                local ar = (ag.new())
+            function an.new(ao)
+                local ap = (ae.new())
 
-                setmetatable(ar, ap)
-                aq.Toggle(aq, 'directionalStrafe', 'Directional Strafe', false):SetTip{
+                setmetatable(ap, an)
+                ao.Toggle(ao, 'directionalStrafe', 'Directional Strafe', false):SetTip{
                     title = 'Directional Strafe',
                     body = 
 "Steers your air movement toward your keys so turns carve smoothly without losing speed.",
                 }
 
-                local as = aq.OnKey(aq, 'directionalStrafe')
+                local aq = ao.OnKey(ao, 'directionalStrafe')
 
-                as.Submenu(as, 'opts', 'Directional Strafe')
+                aq.Submenu(aq, 'opts', 'Directional Strafe')
 
-                local at = as.OnKey(as, 'opts')
+                local ar = aq.OnKey(aq, 'opts')
 
-                at.Slider(at, 'smoothness', 'Smoothness', 50, 0, 100, 1, nil, '%'):SetTip{
+                ar.Slider(ar, 'smoothness', 'Smoothness', 50, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Smoothness',
                     body = 
 "Higher carves a wider, gentler arc and keeps more speed. Lower turns tighter.",
                 }
 
-                ar._turnRate = rateFromSmoothness(50)
-                ar._touched = false
-                ar._activeJanitor = nil
+                ap._turnRate = rateFromSmoothness(50)
+                ap._sampleFn = nil
+                ap._lastTime = os.clock()
 
-                ar.Track(ar, aq.Get(aq, 'directionalStrafe'):OnChange(function(
-                    au
+                ap.Track(ap, ao.Get(ao, 'directionalStrafe'):OnChange(function(
+                    as
                 )
-                    ar._setEnabled(ar, au)
+                    ap._setEnabled(ap, as)
                 end))
-                ar.Track(ar, aq.Watch(aq, 'directionalStrafe.opts.smoothness', function(
-                    au
+                ap.Track(ap, ao.Watch(ao, 'directionalStrafe.opts.smoothness', function(
+                    as
                 )
-                    ar._turnRate = rateFromSmoothness(au)
+                    ap._turnRate = rateFromSmoothness(as)
                 end))
 
-                return ar
+                return ap
             end
-            function ap._restore(aq)
-                if not aq._touched then
-                    return
-                end
-
-                aq._touched = false
-
-                local ar = ad.getActive()
-
-                if ar then
-                    ar.moveVector = ad.realMoveVector(ar)
-                end
-            end
-            function ap._setEnabled(aq, ar)
-                if ar then
-                    if aq._activeJanitor then
+            function an._setEnabled(ao, ap)
+                if ap then
+                    if ao._sampleFn then
                         return
                     end
 
-                    local as = ai.new()
+                    local aq = aa.FindFirstChild(aa, 'Classes')
+                    local ar = aq and aq.FindFirstChild(aq, 'Character')
 
-                    aq._activeJanitor = as
+                    if not ar then
+                        return
+                    end
 
-                    as.Add(as, aa.Stepped:Connect(LPH_NO_VIRTUALIZE(function(
-                        at,
-                        au
-                    )
-                        if ao(ae.enabled) then
-                            aq._restore(aq)
+                    local as, at = pcall(require, ar)
+                    local au = as and type(at) == 'table' and rawget(at, 'SampleInput')
 
-                            return
+                    if type(au) ~= 'function' then
+                        return
+                    end
+
+                    ao._sampleFn = au
+                    ao._lastTime = os.clock()
+
+                    local av
+
+                    av = af.add(au, LPH_NO_VIRTUALIZE(function(aw, ...)
+                        local ax, ay = av(aw, ...), os.clock()
+                        local az = math.clamp(ay - ao._lastTime, 0, 0.05)
+
+                        ao._lastTime = ay
+
+                        if type(ax) ~= 'table' or am(ac.enabled) or ab.IsClimbing() then
+                            return ax
+                        end
+                        if not aw or aw.OnGround ~= false then
+                            return ax
                         end
 
-                        local av = ao(ab.parts)
-                        local aw, ax = av.HumanoidRootPart, av.Humanoid
+                        local aA = aw.GlobalVelocity
 
-                        if not aw or not af.isAirborne(ax) then
-                            aq._restore(aq)
-
-                            return
-                        end
-                        if ac.IsClimbing() then
-                            aq._restore(aq)
-
-                            return
+                        if typeof(aA) ~= 'Vector3' then
+                            return ax
                         end
 
-                        local ay = ac.GetCharacterObject()
+                        local aB, aC = aA.X, aA.Z
+                        local aD = aB * aB + aC * aC
 
-                        if not ay or rawget(ay, 'IsJumping') ~= true then
-                            aq._restore(aq)
-
-                            return
+                        if aD < ak then
+                            return ax
                         end
 
-                        local az = aw.AssemblyLinearVelocity
-                        local aA, aB = az.X, az.Z
-                        local aC = aA * aA + aB * aB
-
-                        if aC < am then
-                            aq._restore(aq)
-
-                            return
-                        end
-
-                        local aD = ad.getActive()
-
-                        if not aD then
-                            aq._restore(aq)
-
-                            return
-                        end
-
-                        local aE = af.computeWishDir()
+                        local aE = ad.computeWishDir()
 
                         if aE == Vector3.zero then
-                            aq._restore(aq)
-
-                            return
+                            return ax
                         end
 
-                        local aF, aG, aH = aC ^ 0.5, math.atan2(aB, aA), math.atan2(aE.Z, aE.X)
-                        local aI = ((aH - aG + math.pi) % ak) - math.pi
+                        local aF, aG, aH = aD ^ 0.5, math.atan2(aC, aB), math.atan2(aE.Z, aE.X)
+                        local aI = ((aH - aG + math.pi) % ai) - math.pi
                         local aJ = aI >= 0 and aI or -aI
 
-                        if aJ < al then
-                            aq._restore(aq)
-
-                            return
+                        if aJ < aj then
+                            return ax
                         end
 
-                        local aK = an / aF
+                        local aK = al / aF
 
                         if aK > 1 then
                             aK = 1
                         end
 
-                        local aL = aq._turnRate * au
+                        local aL = ao._turnRate * az
 
                         if aL > aJ then
                             aL = aJ
@@ -72216,7 +72100,7 @@ do
                             aL = aM
                         end
 
-                        local aN = (an - aF * math.sin(aL)) / aF
+                        local aN = (al - aF * math.sin(aL)) / aF
 
                         if aN > 1 then
                             aN = 1
@@ -72228,40 +72112,36 @@ do
                         local aP = aI > 0 and aG + aO or aG - aO
                         local aQ = Vector3.new(math.cos(aP), 0, math.sin(aP))
 
-                        aD.moveVector = ad.worldToMoveVector(aQ)
-                        aq._touched = true
-                    end)), 'Disconnect')
-                    as.Add(as, function()
-                        aq._restore(aq)
-                    end)
+                        if type(ax.LookYaw) == 'number' then
+                            ax.Move = worldToCmdMove(aQ, ax.LookYaw)
+                        end
+
+                        return ax
+                    end))
                 else
-                    local as = aq._activeJanitor
+                    if ao._sampleFn then
+                        af.restore(ao._sampleFn)
 
-                    if not as then
-                        return
+                        ao._sampleFn = nil
                     end
-
-                    aq._activeJanitor = nil
-
-                    as.Destroy(as)
                 end
             end
-            function ap.Destroy(aq)
-                aq._setEnabled(aq, false)
-                ag.Destroy(aq)
+            function an.Destroy(ao)
+                ao._setEnabled(ao, false)
+                ae.Destroy(ao)
             end
 
-            return ap
+            return an
         end
 
-        function a.eW()
-            local aa = a.cache.eW
+        function a.eV()
+            local aa = a.cache.eV
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eW = aa
+                a.cache.eV = aa
             end
 
             return aa.c
@@ -72412,6 +72292,101 @@ do
             return an
         end
 
+        function a.eW()
+            local aa = a.cache.eW
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.eW = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
+            local aa, ab = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace')))
+            local ac, ad, ae = aa.LocalPlayer, {}, nil
+
+            function ad.getActive()
+                if not ae then
+                    local af = ac.FindFirstChild(ac, 'PlayerScripts')
+                    local ag = af and af.FindFirstChild(af, 'PlayerModule')
+
+                    if not ag then
+                        return nil
+                    end
+
+                    setthreadidentity(2)
+
+                    local ah = require(ag)
+
+                    setthreadidentity(8)
+
+                    ae = ah
+                end
+
+                local af = ae.GetControls(ae)
+
+                if type(af) ~= 'table' then
+                    return nil
+                end
+
+                return af.activeController
+            end
+            function ad.realMoveVector(af)
+                local ag, ah = (af.leftValue or 0) + (af.rightValue or 0), (af.forwardValue or 0) + (af.backwardValue or 0)
+
+                return Vector3.new(ag, 0, ah)
+            end
+            function ad.worldToMoveVector(af)
+                local ag = ab.CurrentCamera.CFrame
+                local ah, ai = Vector3.new(ag.LookVector.X, 0, ag.LookVector.Z), Vector3.new(ag.RightVector.X, 0, ag.RightVector.Z)
+
+                if ah.Magnitude < 1e-4 or ai.Magnitude < 1e-4 then
+                    return Vector3.zero
+                end
+
+                ah = ah.Unit
+                ai = ai.Unit
+
+                local aj = Vector3.new(af.X, 0, af.Z)
+                local ak = aj.Magnitude
+
+                if ak < 1e-4 then
+                    return Vector3.zero
+                end
+
+                aj = aj / ak
+
+                return Vector3.new(aj.Dot(aj, ai), 0, -aj.Dot(aj, ah))
+            end
+            function ad.moveVectorToWorld(af)
+                local ag = ab.CurrentCamera.CFrame
+                local ah, ai = Vector3.new(ag.LookVector.X, 0, ag.LookVector.Z), Vector3.new(ag.RightVector.X, 0, ag.RightVector.Z)
+
+                if ah.Magnitude < 1e-4 or ai.Magnitude < 1e-4 then
+                    return Vector3.zero
+                end
+
+                ah = ah.Unit
+                ai = ai.Unit
+
+                local aj = ai * af.X - ah * af.Z
+                local ak = aj.Magnitude
+
+                if ak < 1e-4 then
+                    return Vector3.zero
+                end
+
+                return aj / ak
+            end
+
+            return ad
+        end
+
         function a.eX()
             local aa = a.cache.eX
 
@@ -72431,7 +72406,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am = a.l(), a.F(), a.eV(), a.eN(), a.eO(), ab.peek, 1e-3, 1
+            local af, ag, ah, ai, aj, ak, al, am = a.l(), a.F(), a.eX(), a.eN(), a.eO(), ab.peek, 1e-3, 1
 
             local function blocked(an)
                 if aj.isAirborne(an) then
@@ -74732,7 +74707,7 @@ do
 
             a.cy()
 
-            local ad, ae, af, ag, ah, ai = a.e9(), a.l(), a.cB(), a.eV(), ab.peek, {}
+            local ad, ae, af, ag, ah, ai = a.e9(), a.l(), a.cB(), a.eX(), ab.peek, {}
 
             function ai.new(aj)
                 return ad.new(aj, {
@@ -74819,7 +74794,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al = a.l(), a.F(), a.eV(), a.eN(), ab.peek, {
+            local af, ag, ah, ai, aj, ak, al = a.l(), a.F(), a.eX(), a.eN(), ab.peek, {
                 'Fair',
                 'Instant',
             }, 6
@@ -107669,7 +107644,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aC, aD, aE, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, b, ba, bb, bc, bd, be, bf, bg, bh, bi, bj, bk, bl, bm, bn, bo, bp, bq, br, bu, bv, bw, bx, bA, bD, bE, bF, bG, bH, bI, bJ, bK, bL, bM, bN = a.cy(), a.b(), a.H(), a.c4(), a.dI(), a.d7(), a.d9(), a.eb(), a.ee(), a.eh(), a.ej(), a.el(), a.em(), a.eo(), a.er(), a.et(), a.ev(), a.ex(), a.ez(), a.eA(), a.eC(), a.eE(), a.eI(), a.eK(), a.eL(), a.eM(), a.eP(), a.eQ(), a.eR(), a.eS(), a.eT(), a.eU(), a.eW(), a.eX(), a.eY(), a.e_(), a.e0(), a.cz(), a.e1(), a.e2(), a.e3(), a.e4(), a.e5(), a.e6(), a.fa(), a.fb(), a.fo(), a.c7(), a.fn(), a.fp(), a.fu(), a.fw(), a.fC(), a.fD(), a.cb(), a.fG(), a.fI(), a.fK(), a.fP(), a.fR(), a.fS(), a.fU(), a.fW(), a.fZ(), a.f_(), a.f2(), a.f3(), a.f4(), a.f5(), a.f6(), a.f9(), a.gf(), a.gg(), a.gh(), a.gi(), a.gz(), a.gA(), a.gC(), a.gF(), a.gH(), a.gI(), a.gL(), a.gM(), a.gN(), a.gO(), a.gP(), a.gQ(), a.gR(), a.gS(), a.gE(), a.gU(), a.gV(), a.gW(), a.gX(), a.gY(), a.gZ()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aC, aD, aE, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, b, ba, bb, bc, bd, be, bf, bg, bh, bi, bj, bk, bl, bm, bn, bo, bp, bq, br, bu, bv, bw, bx, bA, bD, bE, bF, bG, bH, bI, bJ, bK, bL, bM, bN = a.cy(), a.b(), a.H(), a.c4(), a.dI(), a.d7(), a.d9(), a.eb(), a.ee(), a.eh(), a.ej(), a.el(), a.em(), a.eo(), a.er(), a.et(), a.ev(), a.ex(), a.ez(), a.eA(), a.eC(), a.eE(), a.eI(), a.eK(), a.eL(), a.eM(), a.eP(), a.eQ(), a.eR(), a.eS(), a.eT(), a.eU(), a.eV(), a.eW(), a.eY(), a.e_(), a.e0(), a.cz(), a.e1(), a.e2(), a.e3(), a.e4(), a.e5(), a.e6(), a.fa(), a.fb(), a.fo(), a.c7(), a.fn(), a.fp(), a.fu(), a.fw(), a.fC(), a.fD(), a.cb(), a.fG(), a.fI(), a.fK(), a.fP(), a.fR(), a.fS(), a.fU(), a.fW(), a.fZ(), a.f_(), a.f2(), a.f3(), a.f4(), a.f5(), a.f6(), a.f9(), a.gf(), a.gg(), a.gh(), a.gi(), a.gz(), a.gA(), a.gC(), a.gF(), a.gH(), a.gI(), a.gL(), a.gM(), a.gN(), a.gO(), a.gP(), a.gQ(), a.gR(), a.gS(), a.gE(), a.gU(), a.gV(), a.gW(), a.gX(), a.gY(), a.gZ()
 
             return function()
                 ac.SetPlayerClass(ad)

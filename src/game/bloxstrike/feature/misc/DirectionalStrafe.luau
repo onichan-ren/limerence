@@ -1,12 +1,10 @@
-local RunService = cloneref(game:GetService("RunService")) :: RunService
-local clientState = require("@game/bloxstrike/client/clientState")
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage")) :: ReplicatedStorage
 local ClientController = require("@game/bloxstrike/client/ClientController")
-local moveController = require("@game/bloxstrike/client/moveController")
 local flightState = require("@game/bloxstrike/feature/misc/flightState")
 local strafeShared = require("@game/bloxstrike/feature/misc/strafeShared")
 local BaseFeature = require("@game/BaseFeature")
+local Hook = require("@share/hook")
 local gameUi = require("@game/gameUi")
-local Janitor = require("@pkg/Janitor")
 local Charm = require("@pkg/Charm")
 
 local TAU = math.pi * 2
@@ -18,6 +16,12 @@ local peek = Charm.peek
 
 local function rateFromSmoothness(value: number): number
 	return 8 - (value / 100) * 7
+end
+
+local function worldToCmdMove(worldDir: Vector3, yaw: number): Vector2
+	local c = math.cos(yaw)
+	local s = math.sin(yaw)
+	return Vector2.new(c * worldDir.X - s * worldDir.Z, s * worldDir.X + c * worldDir.Z)
 end
 
 local DirectionalStrafe = {}
@@ -42,8 +46,8 @@ function DirectionalStrafe.new(link: gameUi.Linker): DirectionalStrafe
 	})
 
 	self._turnRate = rateFromSmoothness(50)
-	self._touched = false
-	self._activeJanitor = nil :: Janitor.Janitor?
+	self._sampleFn = nil :: any
+	self._lastTime = os.clock()
 
 	self:Track(link:Get("directionalStrafe"):OnChange(function(value: boolean)
 		self:_setEnabled(value)
@@ -56,70 +60,54 @@ function DirectionalStrafe.new(link: gameUi.Linker): DirectionalStrafe
 	return self
 end
 
-function DirectionalStrafe._restore(self: DirectionalStrafe): ()
-	if not self._touched then
-		return
-	end
-	self._touched = false
-	local controller = moveController.getActive()
-	if controller then
-		controller.moveVector = moveController.realMoveVector(controller)
-	end
-end
-
 function DirectionalStrafe._setEnabled(self: DirectionalStrafe, enabled: boolean): ()
 	if enabled then
-		if self._activeJanitor then
+		if self._sampleFn then
 			return
 		end
-		local janitor = Janitor.new()
-		self._activeJanitor = janitor
+		local classesFolder = ReplicatedStorage:FindFirstChild("Classes")
+		local charModule = classesFolder and classesFolder:FindFirstChild("Character")
+		if not charModule then
+			return
+		end
+		local ok, charClass = pcall(require, charModule :: ModuleScript)
+		local sampleFn = ok and type(charClass) == "table" and rawget(charClass, "SampleInput")
+		if type(sampleFn) ~= "function" then
+			return
+		end
+		self._sampleFn = sampleFn
+		self._lastTime = os.clock()
 
-		janitor:Add(
-			RunService.Stepped:Connect(LPH_NO_VIRTUALIZE(function(_: number, dt: number): ()
-				if peek(flightState.enabled) then
-					self:_restore()
-					return
+		local oldSample: any = nil
+		oldSample = Hook.add(
+			sampleFn,
+			LPH_NO_VIRTUALIZE(function(charSelf: any, ...)
+				local cmd = oldSample(charSelf, ...)
+				local now = os.clock()
+				local dt = math.clamp(now - self._lastTime, 0, 0.05)
+				self._lastTime = now
+
+				if type(cmd) ~= "table" or peek(flightState.enabled) or ClientController.IsClimbing() then
+					return cmd
+				end
+				if not charSelf or charSelf.OnGround ~= false then
+					return cmd
 				end
 
-				local parts = peek(clientState.parts)
-				local hrp = parts.HumanoidRootPart :: any
-				local humanoid = parts.Humanoid :: any
-				if not hrp or not strafeShared.isAirborne(humanoid) then
-					self:_restore()
-					return
+				local vel = charSelf.GlobalVelocity
+				if typeof(vel) ~= "Vector3" then
+					return cmd
 				end
-
-				if ClientController.IsClimbing() then
-					self:_restore()
-					return
-				end
-
-				local charObj = ClientController.GetCharacterObject()
-				if not charObj or rawget(charObj, "IsJumping") ~= true then
-					self:_restore()
-					return
-				end
-
-				local vel = hrp.AssemblyLinearVelocity
 				local vx = vel.X
 				local vz = vel.Z
 				local speedSq = vx * vx + vz * vz
 				if speedSq < MIN_SPEED_SQ then
-					self:_restore()
-					return
-				end
-
-				local controller = moveController.getActive()
-				if not controller then
-					self:_restore()
-					return
+					return cmd
 				end
 
 				local wish = strafeShared.computeWishDir()
 				if wish == Vector3.zero then
-					self:_restore()
-					return
+					return cmd
 				end
 
 				local speed = math.sqrt(speedSq)
@@ -128,8 +116,7 @@ function DirectionalStrafe._setEnabled(self: DirectionalStrafe, enabled: boolean
 				local delta = ((angWish - angVel + math.pi) % TAU) - math.pi
 				local absDelta = delta >= 0 and delta or -delta
 				if absDelta < ALIGN_EPSILON then
-					self:_restore()
-					return
+					return cmd
 				end
 
 				local maxReach = WISH_CAP / speed
@@ -154,21 +141,17 @@ function DirectionalStrafe._setEnabled(self: DirectionalStrafe, enabled: boolean
 				local theta = math.acos(cosTheta)
 				local ang = delta > 0 and angVel + theta or angVel - theta
 				local steered = Vector3.new(math.cos(ang), 0, math.sin(ang))
-				controller.moveVector = moveController.worldToMoveVector(steered)
-				self._touched = true
-			end)),
-			"Disconnect"
+				if type(cmd.LookYaw) == "number" then
+					cmd.Move = worldToCmdMove(steered, cmd.LookYaw)
+				end
+				return cmd
+			end)
 		)
-		janitor:Add(function(): ()
-			self:_restore()
-		end)
 	else
-		local janitor = self._activeJanitor
-		if not janitor then
-			return
+		if self._sampleFn then
+			Hook.restore(self._sampleFn)
+			self._sampleFn = nil
 		end
-		self._activeJanitor = nil
-		janitor:Destroy()
 	end
 end
 
@@ -181,9 +164,8 @@ export type DirectionalStrafe =
 	typeof(setmetatable(
 		{} :: {
 			_turnRate: number,
-			_touched: boolean,
-			_activeJanitor: Janitor.Janitor?,
-			_restore: (DirectionalStrafe) -> (),
+			_sampleFn: any,
+			_lastTime: number,
 			_setEnabled: (DirectionalStrafe, boolean) -> (),
 		},
 		DirectionalStrafe
