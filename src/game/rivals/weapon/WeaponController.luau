@@ -566,41 +566,42 @@ return LPH_JIT_MAX(function()
 			return
 		end
 
-		hook.addInstance(useItem)
-		hook.overrideMethod(
-			useItem,
-			"FireServer",
-			LPH_NO_VIRTUALIZE(function(...)
-				local action = (select(2, ...))
-				local payload = (select(3, ...))
-				local shootEnum = getShootEnum()
-				local reloadEnum = getReloadEnum()
-				local isShoot = shootEnum == nil or action == shootEnum
-				if isShoot and (WeaponController._selfFiring or not checkcaller()) then
-					local manipulators = WeaponController._shotManipulators
-					runShotManipulators(manipulators, payload)
+		local origNamecall: any = nil
+		origNamecall = hookmetamethod(
+			game,
+			"__namecall",
+			newcclosure(function(self: any, ...: any): ...any
+				if self == useItem and getnamecallmethod() == "FireServer" then
+					local action = (select(1, ...))
+					local payload = (select(2, ...))
+					local shootEnum = getShootEnum()
+					local reloadEnum = getReloadEnum()
+					local isShoot = shootEnum == nil or action == shootEnum
+					if isShoot and (WeaponController._selfFiring or not checkcaller()) then
+						local manipulators = WeaponController._shotManipulators
+						runShotManipulators(manipulators, payload)
+					end
+					local isReload = reloadEnum ~= nil and action == reloadEnum
+					if isShoot or isReload then
+						task.defer(function(deferredAction: any, deferredPayload: any)
+							if reloadEnum ~= nil and deferredAction == reloadEnum then
+								WeaponController.reloading(true)
+								return
+							end
+							if shootEnum == nil or deferredAction == shootEnum then
+								WeaponController.reloading(false)
+								local hits = processUseItemPayload(deferredPayload)
+								WeaponController.shotFired:Fire(hits)
+							end
+						end, action, payload)
+					end
 				end
-				local isReload = reloadEnum ~= nil and action == reloadEnum
-				if isShoot or isReload then
-					task.defer(function(...)
-						local deferredAction = (select(2, ...))
-						local deferredPayload = (select(3, ...))
-						if reloadEnum ~= nil and deferredAction == reloadEnum then
-							WeaponController.reloading(true)
-							return
-						end
-						if shootEnum == nil or deferredAction == shootEnum then
-							WeaponController.reloading(false)
-							local hits = processUseItemPayload(deferredPayload)
-							WeaponController.shotFired:Fire(hits)
-						end
-					end, ...)
-				end
-				return ...
+				return origNamecall(self, ...)
 			end)
 		)
 
 		WeaponController._useItemRemote = useItem
+		WeaponController._origNamecall = origNamecall
 	end
 
 	local function installCrosshairVisualHook(): ()
@@ -613,19 +614,19 @@ return LPH_JIT_MAX(function()
 			return
 		end
 
-		local original
-		original = hook.add(
-			setVisuals,
+		rawset(
+			crosshair,
+			"SetHitmarkerVisuals",
 			LPH_NO_VIRTUALIZE(function(self: any, spacing: any, size: any, alpha: any, rotation: any, ...)
 				if WeaponController._suppressGameHit then
-					return original(self, spacing, size, 1, rotation, ...)
+					return setVisuals(self, spacing, size, 1, rotation, ...)
 				end
-				return original(self, spacing, size, alpha, rotation, ...)
+				return setVisuals(self, spacing, size, alpha, rotation, ...)
 			end)
 		)
 
-		WeaponController._crosshairVisualHook = setVisuals
-		WeaponController._crosshairVisualOriginal = original
+		WeaponController._crosshairVisualHook = { crosshair, "SetHitmarkerVisuals", setVisuals }
+		WeaponController._crosshairVisualOriginal = setVisuals
 	end
 
 	WeaponController.SetSuppressGameHit = LPH_NO_VIRTUALIZE(function(suppress: boolean): ()
@@ -646,19 +647,19 @@ return LPH_JIT_MAX(function()
 			return
 		end
 
-		local original
-		original = hook.add(
-			playHitmarkerSound,
+		rawset(
+			viewModel,
+			"PlayHitmarkerSound",
 			LPH_NO_VIRTUALIZE(function(self: any, isHeadshot: boolean, ...)
 				WeaponController.hitDealt:Fire(isHeadshot == true)
 				if WeaponController._suppressHitmarkerSound then
 					return
 				end
-				return original(self, isHeadshot, ...)
+				return playHitmarkerSound(self, isHeadshot, ...)
 			end)
 		)
 
-		WeaponController._hitmarkerSoundHook = playHitmarkerSound
+		WeaponController._hitmarkerSoundHook = { viewModel, "PlayHitmarkerSound", playHitmarkerSound }
 	end
 
 	local function installEliminationFeedHook(): ()
@@ -671,18 +672,18 @@ return LPH_JIT_MAX(function()
 			return
 		end
 
-		local original
-		original = hook.add(
-			play,
+		rawset(
+			feedClass,
+			"Play",
 			LPH_NO_VIRTUALIZE(function(self: any, victim: any, eliminator: any, ...)
 				if eliminator == LocalPlayer and typeof(victim) == "Instance" and victim:IsA("Player") then
 					WeaponController.killedPlayer:Fire(victim)
 				end
-				return original(self, victim, eliminator, ...)
+				return play(self, victim, eliminator, ...)
 			end)
 		)
 
-		WeaponController._eliminationFeedHook = play
+		WeaponController._eliminationFeedHook = { feedClass, "Play", play }
 	end
 
 	local readMuzzlePosition = LPH_NO_VIRTUALIZE(function(viewModel: any): Vector3?
@@ -778,9 +779,9 @@ return LPH_JIT_MAX(function()
 
 		local tracersFn = rawget(gun, "_Tracers")
 		if type(tracersFn) == "function" then
-			local original
-			original = hook.add(
-				tracersFn,
+			rawset(
+				gun,
+				"_Tracers",
 				LPH_NO_VIRTUALIZE(function(self: any, tracerData: any, ...)
 					if
 						self
@@ -796,17 +797,17 @@ return LPH_JIT_MAX(function()
 							end
 						end
 					end
-					return original(self, tracerData, ...)
+					return tracersFn(self, tracerData, ...)
 				end)
 			)
-			WeaponController._gunTracerHook = tracersFn
+			WeaponController._gunTracerHook = { gun, "_Tracers", tracersFn }
 		end
 
 		local shootEffectFn = rawget(gun, "_ShootEffect")
 		if type(shootEffectFn) == "function" then
-			local original
-			original = hook.add(
-				shootEffectFn,
+			rawset(
+				gun,
+				"_ShootEffect",
 				LPH_NO_VIRTUALIZE(function(self: any, effectData: any, ...)
 					local clientFighter = self and self.ClientFighter
 					if
@@ -817,10 +818,10 @@ return LPH_JIT_MAX(function()
 					then
 						processShootEffect(effectData)
 					end
-					return original(self, effectData, ...)
+					return shootEffectFn(self, effectData, ...)
 				end)
 			)
-			WeaponController._gunShootEffectHook = shootEffectFn
+			WeaponController._gunShootEffectHook = { gun, "_ShootEffect", shootEffectFn }
 		end
 	end
 
@@ -1093,30 +1094,36 @@ return LPH_JIT_MAX(function()
 
 	function WeaponController.Destroy(): ()
 		if WeaponController._crosshairVisualHook then
-			hook.restore(WeaponController._crosshairVisualHook)
+			local h = WeaponController._crosshairVisualHook
+			rawset(h[1], h[2], h[3])
 			WeaponController._crosshairVisualHook = nil
 			WeaponController._crosshairVisualOriginal = nil
 		end
 		if WeaponController._hitmarkerSoundHook then
-			hook.restore(WeaponController._hitmarkerSoundHook)
+			local h = WeaponController._hitmarkerSoundHook
+			rawset(h[1], h[2], h[3])
 			WeaponController._hitmarkerSoundHook = nil
 		end
 		if WeaponController._eliminationFeedHook then
-			hook.restore(WeaponController._eliminationFeedHook)
+			local h = WeaponController._eliminationFeedHook
+			rawset(h[1], h[2], h[3])
 			WeaponController._eliminationFeedHook = nil
 		end
 		if WeaponController._gunTracerHook then
-			hook.restore(WeaponController._gunTracerHook)
+			local h = WeaponController._gunTracerHook
+			rawset(h[1], h[2], h[3])
 			WeaponController._gunTracerHook = nil
 		end
 		if WeaponController._gunShootEffectHook then
-			hook.restore(WeaponController._gunShootEffectHook)
+			local h = WeaponController._gunShootEffectHook
+			rawset(h[1], h[2], h[3])
 			WeaponController._gunShootEffectHook = nil
 		end
-		if WeaponController._useItemRemote then
-			hook.restoreInstance(WeaponController._useItemRemote)
-			WeaponController._useItemRemote = nil
+		if WeaponController._origNamecall then
+			hookmetamethod(game, "__namecall", WeaponController._origNamecall)
+			WeaponController._origNamecall = nil
 		end
+		WeaponController._useItemRemote = nil
 		if WeaponController._itemJanitor then
 			WeaponController._itemJanitor:Destroy()
 			WeaponController._itemJanitor = nil

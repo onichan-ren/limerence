@@ -48157,8 +48157,11 @@ do
     do
         local function __modImpl()
             return LPH_JIT_MAX(function()
-                local aa, ab, ac, ad, ae, af, ag, ah, ai = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.g(), a.t(), a.l(), a.n(), a.cV(), a.c6(), a.cZ()
-                local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az = ac.atom, ac.peek, aa.LocalPlayer, 0.08, 1, utf8.char(0), utf8.char(2), utf8.char(3), 3, 8, utf8.char(0), utf8.char(1), utf8.char(2), utf8.char(3), utf8.char(4), utf8.char(5), utf8.char(1)
+                local aa, ab, ac, ad, ae = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.g(), a.t(), a.l()
+
+                a.n()
+
+                local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az = a.cV(), a.c6(), a.cZ(), ac.atom, ac.peek, aa.LocalPlayer, 0.08, 1, utf8.char(0), utf8.char(2), utf8.char(3), 3, 8, utf8.char(0), utf8.char(1), utf8.char(2), utf8.char(3), utf8.char(4), utf8.char(5), utf8.char(1)
                 local aA, aB = {
                     item = aj(nil),
                     name = aj(nil),
@@ -48765,44 +48768,47 @@ do
                         return
                     end
 
-                    af.addInstance(aJ)
-                    af.overrideMethod(aJ, 'FireServer', LPH_NO_VIRTUALIZE(function(
+                    local aK
+
+                    aK = hookmetamethod(game, '__namecall', newcclosure(function(
+                        aL,
                         ...
                     )
-                        local aK, aL, aM, aN = (select(2, ...)), (select(3, ...)), aG(), aH()
-                        local aO = aM == nil or aK == aM
+                        if aL == aJ and getnamecallmethod() == 'FireServer' then
+                            local aM, aN, aO, aP = (select(1, ...)), (select(2, 
+...)), aG(), aH()
+                            local aQ = aO == nil or aM == aO
 
-                        if aO and (aA._selfFiring or not checkcaller()) then
-                            local aP = aA._shotManipulators
+                            if aQ and (aA._selfFiring or not checkcaller()) then
+                                local aR = aA._shotManipulators
 
-                            aB(aP, aL)
+                                aB(aR, aN)
+                            end
+
+                            local aR = aP ~= nil and aM == aP
+
+                            if aQ or aR then
+                                task.defer(function(aS, aT)
+                                    if aP ~= nil and aS == aP then
+                                        aA.reloading(true)
+
+                                        return
+                                    end
+                                    if aO == nil or aS == aO then
+                                        aA.reloading(false)
+
+                                        local aU = aI(aT)
+
+                                        aA.shotFired:Fire(aU)
+                                    end
+                                end, aM, aN)
+                            end
                         end
 
-                        local aP = aN ~= nil and aK == aN
-
-                        if aO or aP then
-                            task.defer(function(...)
-                                local aQ, aR = (select(2, ...)), (select(3, ...))
-
-                                if aN ~= nil and aQ == aN then
-                                    aA.reloading(true)
-
-                                    return
-                                end
-                                if aM == nil or aQ == aM then
-                                    aA.reloading(false)
-
-                                    local aS = aI(aR)
-
-                                    aA.shotFired:Fire(aS)
-                                end
-                            end, ...)
-                        end
-
-                        return ...
+                        return aK(aL, ...)
                     end))
-
                     aA._useItemRemote = aJ
+                    aA._origNamecall = aK
                 end
                 local function installCrosshairVisualHook()
                     local aJ = ag.GetModule'Crosshair'
@@ -48817,24 +48823,27 @@ do
                         return
                     end
 
-                    local aL
-
-                    aL = af.add(aK, LPH_NO_VIRTUALIZE(function(
+                    rawset(aJ, 'SetHitmarkerVisuals', LPH_NO_VIRTUALIZE(function(
+                        aL,
                         aM,
                         aN,
                         aO,
                         aP,
-                        aQ,
                         ...
                     )
                         if aA._suppressGameHit then
-                            return aL(aM, aN, aO, 1, aQ, ...)
+                            return aK(aL, aM, aN, 1, aP, ...)
                         end
 
-                        return aL(aM, aN, aO, aP, aQ, ...)
+                        return aK(aL, aM, aN, aO, aP, ...)
                     end))
-                    aA._crosshairVisualHook = aK
-                    aA._crosshairVisualOriginal = aL
+
+                    aA._crosshairVisualHook = {
+                        aJ,
+                        'SetHitmarkerVisuals',
+                        aK,
+                    }
+                    aA._crosshairVisualOriginal = aK
                 end
 
                 aA.SetSuppressGameHit = LPH_NO_VIRTUALIZE(function(aJ)
@@ -48857,18 +48866,25 @@ do
                         return
                     end
 
-                    local aL
-
-                    aL = af.add(aK, LPH_NO_VIRTUALIZE(function(aM, aN, ...)
-                        aA.hitDealt:Fire(aN == true)
+                    rawset(aJ, 'PlayHitmarkerSound', LPH_NO_VIRTUALIZE(function(
+                        aL,
+                        aM,
+                        ...
+                    )
+                        aA.hitDealt:Fire(aM == true)
 
                         if aA._suppressHitmarkerSound then
                             return
                         end
 
-                        return aL(aM, aN, ...)
+                        return aK(aL, aM, ...)
                     end))
-                    aA._hitmarkerSoundHook = aK
+
+                    aA._hitmarkerSoundHook = {
+                        aJ,
+                        'PlayHitmarkerSound',
+                        aK,
+                    }
                 end
                 local function installEliminationFeedHook()
                     local aJ = ag.GetModule'EliminationFeed'
@@ -48883,16 +48899,24 @@ do
                         return
                     end
 
-                    local aL
-
-                    aL = af.add(aK, LPH_NO_VIRTUALIZE(function(aM, aN, aO, ...)
-                        if aO == al and typeof(aN) == 'Instance' and aN.IsA(aN, 'Player') then
-                            aA.killedPlayer:Fire(aN)
+                    rawset(aJ, 'Play', LPH_NO_VIRTUALIZE(function(
+                        aL,
+                        aM,
+                        aN,
+                        ...
+                    )
+                        if aN == al and typeof(aM) == 'Instance' and aM.IsA(aM, 'Player') then
+                            aA.killedPlayer:Fire(aM)
                         end
 
-                        return aL(aM, aN, aO, ...)
+                        return aK(aL, aM, aN, ...)
                     end))
-                    aA._eliminationFeedHook = aK
+
+                    aA._eliminationFeedHook = {
+                        aJ,
+                        'Play',
+                        aK,
+                    }
                 end
 
                 local aJ, aK, aL = LPH_NO_VIRTUALIZE(function(aJ)
@@ -49012,41 +49036,55 @@ do
                     local aO = rawget(aN, '_Tracers')
 
                     if type(aO) == 'function' then
-                        local aP
+                        rawset(aN, '_Tracers', LPH_NO_VIRTUALIZE(function(
+                            aP,
+                            aQ,
+                            ...
+                        )
+                            if aP and type(aQ) == 'table' and aQ.IsLocal and aA.gunTracer._handlerListHead then
+                                local aR = aJ(aP.ViewModel)
 
-                        aP = af.add(aO, LPH_NO_VIRTUALIZE(function(aQ, aR, ...)
-                            if aQ and type(aR) == 'table' and aR.IsLocal and aA.gunTracer._handlerListHead then
-                                local aS = aJ(aQ.ViewModel)
+                                if aR then
+                                    local aS = aK(aQ.RaycastResults, aR)
 
-                                if aS then
-                                    local aT = aK(aR.RaycastResults, aS)
-
-                                    if aT then
-                                        aA.gunTracer:Fire(aT)
+                                    if aS then
+                                        aA.gunTracer:Fire(aS)
                                     end
                                 end
                             end
 
-                            return aP(aQ, aR, ...)
+                            return aO(aP, aQ, ...)
                         end))
-                        aA._gunTracerHook = aO
+
+                        aA._gunTracerHook = {
+                            aN,
+                            '_Tracers',
+                            aO,
+                        }
                     end
 
                     local aP = rawget(aN, '_ShootEffect')
 
                     if type(aP) == 'function' then
-                        local aQ
+                        rawset(aN, '_ShootEffect', LPH_NO_VIRTUALIZE(function(
+                            aQ,
+                            aR,
+                            ...
+                        )
+                            local aS = aQ and aQ.ClientFighter
 
-                        aQ = af.add(aP, LPH_NO_VIRTUALIZE(function(aR, aS, ...)
-                            local aT = aR and aR.ClientFighter
-
-                            if aT and aT.IsLocalPlayer and type(aS) == 'table' and (aA.hitTarget._handlerListHead or aA.hitPlayer._handlerListHead) then
-                                aM(aS)
+                            if aS and aS.IsLocalPlayer and type(aR) == 'table' and (aA.hitTarget._handlerListHead or aA.hitPlayer._handlerListHead) then
+                                aM(aR)
                             end
 
-                            return aQ(aR, aS, ...)
+                            return aP(aQ, aR, ...)
                         end))
-                        aA._gunShootEffectHook = aP
+
+                        aA._gunShootEffectHook = {
+                            aN,
+                            '_ShootEffect',
+                            aP,
+                        }
                     end
                 end
 
@@ -49335,36 +49373,49 @@ do
                 end
                 function aA.Destroy()
                     if aA._crosshairVisualHook then
-                        af.restore(aA._crosshairVisualHook)
+                        local aP = aA._crosshairVisualHook
+
+                        rawset(aP[1], aP[2], aP[3])
 
                         aA._crosshairVisualHook = nil
                         aA._crosshairVisualOriginal = nil
                     end
                     if aA._hitmarkerSoundHook then
-                        af.restore(aA._hitmarkerSoundHook)
+                        local aP = aA._hitmarkerSoundHook
+
+                        rawset(aP[1], aP[2], aP[3])
 
                         aA._hitmarkerSoundHook = nil
                     end
                     if aA._eliminationFeedHook then
-                        af.restore(aA._eliminationFeedHook)
+                        local aP = aA._eliminationFeedHook
+
+                        rawset(aP[1], aP[2], aP[3])
 
                         aA._eliminationFeedHook = nil
                     end
                     if aA._gunTracerHook then
-                        af.restore(aA._gunTracerHook)
+                        local aP = aA._gunTracerHook
+
+                        rawset(aP[1], aP[2], aP[3])
 
                         aA._gunTracerHook = nil
                     end
                     if aA._gunShootEffectHook then
-                        af.restore(aA._gunShootEffectHook)
+                        local aP = aA._gunShootEffectHook
+
+                        rawset(aP[1], aP[2], aP[3])
 
                         aA._gunShootEffectHook = nil
                     end
-                    if aA._useItemRemote then
-                        af.restoreInstance(aA._useItemRemote)
+                    if aA._origNamecall then
+                        hookmetamethod(game, '__namecall', aA._origNamecall)
 
-                        aA._useItemRemote = nil
+                        aA._origNamecall = nil
                     end
+
+                    aA._useItemRemote = nil
+
                     if aA._itemJanitor then
                         aA._itemJanitor:Destroy()
 
