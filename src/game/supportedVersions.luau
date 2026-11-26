@@ -2,7 +2,7 @@ local supportedVersions: { [string]: { [number]: number } } = {
 	["apocalypse rising 2"] = {},
 	["bedwars"] = {},
 	["bloxstrike"] = {
-		[114234929420007] = 9894,
+		[114234929420007] = 9965,
 	},
 	["da hood"] = {},
 	["murderers vs sheriffs duels"] = {},

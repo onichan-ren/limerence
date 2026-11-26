@@ -918,15 +918,12 @@ do
                 SoundClass = {
                     'PlaySoundAtPosition',
                 },
-                Movement = {
-                    'CheckGroundContact',
-                },
                 Inventory = {
                     'newInventoryItem',
                     'Initialize',
                 },
                 SmokeClass = {
-                    'GetActiveVoxelCount',
+                    'DoesRayIntersectActiveSmoke',
                     'Disrupt',
                 },
                 FireClass = {
@@ -957,7 +954,8 @@ do
                     'RemoveListener',
                 },
                 CharacterAnimator = {
-                    'unregisterGroup',
+                    'unregister',
+                    'freezeAnimations',
                 },
                 Skins = {
                     'GetAllSkinsForWeapon',
@@ -54427,7 +54425,7 @@ do
             local aa = {
                 ['apocalypse rising 2'] = {},
                 bedwars = {},
-                bloxstrike = {[114234929420007] = 9894},
+                bloxstrike = {[114234929420007] = 9965},
                 ['da hood'] = {},
                 ['murderers vs sheriffs duels'] = {},
                 ['operation one'] = {},

@@ -21,15 +21,12 @@ local Modules = {
 	SoundClass = {
 		"PlaySoundAtPosition",
 	},
-	Movement = {
-		"CheckGroundContact",
-	},
 	Inventory = {
 		"newInventoryItem",
 		"Initialize",
 	},
 	SmokeClass = {
-		"GetActiveVoxelCount",
+		"DoesRayIntersectActiveSmoke",
 		"Disrupt",
 	},
 	FireClass = {
@@ -60,7 +57,8 @@ local Modules = {
 		"RemoveListener",
 	},
 	CharacterAnimator = {
-		"unregisterGroup",
+		"unregister",
+		"freezeAnimations",
 	},
 	Skins = {
 		"GetAllSkinsForWeapon",
