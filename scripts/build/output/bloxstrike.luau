@@ -62709,8 +62709,14 @@ do
                 aq._enabled = true
 
                 local ar = ae.GetModule'SoundController'
-                local as = (rawget(ar, 'OnStateChanged'))
-                local at, au = getupvalue(as, 4), nil
+                local as = ar and (rawget(ar, 'OnStateChanged'))
+                local at = as and getupvalue(as, 4)
+
+                if type(at) ~= 'function' then
+                    return
+                end
+
+                local au
 
                 au = aa.add(at, LPH_NO_VIRTUALIZE(function(av, aw, ...)
                     setthreadidentity(8)
@@ -88975,9 +88981,26 @@ do
                 aA._flashesEnabled = true
 
                 local aC, aD = ad.GetModule'FlashClass', aA._flashLink
-                local aE = (rawget(aC, 'Flash'))
-                local aF = debug.getupvalue(aE, 4)
+                local aE, aF = (rawget(aC, 'Flash')), nil
 
+                for aG, aH in next, debug.getupvalues(aE)do
+                    if type(aH) == 'function' then
+                        local aI = debug.getinfo(aH)
+
+                        if aI and aI.name == 'calculateFlash' then
+                            aF = aH
+
+                            break
+                        end
+                    end
+                end
+
+                if type(aF) ~= 'function' then
+                    aF = debug.getupvalue(aE, 4)
+                end
+                if type(aF) ~= 'function' then
+                    return
+                end
                 if not ah.isFunctionHooked(aF) then
                     local aG
 
@@ -88999,8 +89022,26 @@ do
                 aA._flashesEnabled = false
 
                 local aC = ad.GetModule'FlashClass'
-                local aD = (rawget(aC, 'Flash'))
-                local aE = debug.getupvalue(aD, 4)
+                local aD, aE = (rawget(aC, 'Flash')), nil
+
+                for aF, aG in next, debug.getupvalues(aD)do
+                    if type(aG) == 'function' then
+                        local aH = debug.getinfo(aG)
+
+                        if aH and aH.name == 'calculateFlash' then
+                            aE = aG
+
+                            break
+                        end
+                    end
+                end
+
+                if type(aE) ~= 'function' then
+                    aE = debug.getupvalue(aD, 4)
+                end
+                if type(aE) ~= 'function' then
+                    return
+                end
 
                 ah.restore(aE)
             end
@@ -89086,7 +89127,12 @@ do
                     return
                 end
 
-                local aE = getupvalue(aD, 23)
+                local aE = getupvalue(aD, 28)
+
+                if type(aE) ~= 'function' then
+                    return
+                end
+
                 local aF = getupvalue(aE, 1)
 
                 debug.setupvalue(aE, 1, {
@@ -89109,9 +89155,11 @@ do
                     return
                 end
 
-                local aE = getupvalue(aD, 23)
+                local aE = getupvalue(aD, 28)
 
-                debug.setupvalue(aE, 1, aA._oldWeaponKick)
+                if type(aE) == 'function' and aA._oldWeaponKick ~= nil then
+                    debug.setupvalue(aE, 1, aA._oldWeaponKick)
+                end
             end
             function ax.EnableBulletHoles(aA)
                 if aA._bulletHolesEnabled then
@@ -89127,9 +89175,9 @@ do
                     return
                 end
 
-                local aE = debug.getupvalue(aD, 22)
+                local aE = debug.getupvalue(aD, 27)
 
-                if not ah.isFunctionHooked(aE) then
+                if type(aE) == 'function' and not ah.isFunctionHooked(aE) then
                     ah.add(aE, LPH_NO_VIRTUALIZE(function() end))
                 end
 
@@ -89157,7 +89205,11 @@ do
                     return
                 end
 
-                ah.restore(debug.getupvalue(aD, 22))
+                local aE = debug.getupvalue(aD, 27)
+
+                if type(aE) == 'function' then
+                    ah.restore(aE)
+                end
             end
             function ax.EnableBulletImpacts(aA)
                 if aA._bulletImpactsEnabled then
@@ -92509,7 +92561,21 @@ do
                             local bf = bd(be, ...)
 
                             if type(bf) == 'table' then
-                                bf.LookYaw = a7._desiredYaw
+                                local bg, bh = bf.LookYaw, a7._desiredYaw
+
+                                if type(bg) == 'number' and typeof(bf.Move) == 'Vector2' then
+                                    local bi = bf.Move
+
+                                    if bi.X ~= 0 or bi.Y ~= 0 then
+                                        local bj = bg - bh
+                                        local bk, bl = math.cos(bj), math.sin(bj)
+
+                                        bf.Move = Vector2.new(bi.X * bk + bi.Y * bl, 
+-bi.X * bl + bi.Y * bk)
+                                    end
+                                end
+
+                                bf.LookYaw = bh
                                 bf.VerticalLook = math.clamp(a7._desiredPitch, -1, 1)
                             end
 
@@ -97515,9 +97581,15 @@ do
                     return false
                 end
 
-                ae._visibilityFn = debug.getupvalue(af.UpdatePlayerIcons, 9)
+                local ag = debug.getupvalue(af.UpdatePlayerIcons, 10)
 
-                return ae._visibilityFn ~= nil
+                if type(ag) ~= 'function' then
+                    return false
+                end
+
+                ae._visibilityFn = ag
+
+                return true
             end
             function ad.Enable(ae)
                 if ae._enabled then
@@ -97645,30 +97717,45 @@ do
                     return
                 end
 
-                local aj, ak = debug.getupvalue(ah, 2), nil
+                local aj, ak
 
-                debug.setupvalue(ah, 2, {
-                    setGoal = LPH_NO_VIRTUALIZE(function(al, am)
-                        if am == 70 then
-                            ak = nil
+                for al, am in next, debug.getupvalues(ah)do
+                    if type(am) == 'table' and type(rawget(am, 'setGoal')) == 'function' then
+                        aj = am
+                        ak = al
+
+                        break
+                    end
+                end
+
+                if not aj or not ak then
+                    return
+                end
+
+                local al
+
+                debug.setupvalue(ah, ak, {
+                    setGoal = LPH_NO_VIRTUALIZE(function(am, an)
+                        if an == 70 then
+                            al = nil
 
                             return aj.setGoal(aj, af._fov)
                         end
 
-                        ak = (70 - am)
+                        al = (70 - an)
 
-                        local an = ak * ((100 - af._scopeZoom) / 100)
+                        local ao = al * ((100 - af._scopeZoom) / 100)
 
-                        return aj.setGoal(aj, af._fov - an)
+                        return aj.setGoal(aj, af._fov - ao)
                     end),
                 })
 
                 getfenv(ai).math = {
-                    clamp = function(al)
-                        return al
+                    clamp = function(am)
+                        return am
                     end,
-                    abs = function(al)
-                        return math.abs(al)
+                    abs = function(am)
+                        return math.abs(am)
                     end,
                 }
 
@@ -97677,20 +97764,20 @@ do
 
                     getfenv(ai).math = nil
                 end, true)
-                af._janitor:Add(af._optionsLink:Get'fov':OnChange(function(al)
-                    af._fov = al
+                af._janitor:Add(af._optionsLink:Get'fov':OnChange(function(am)
+                    af._fov = am
 
                     aj.setGoal(aj, af._fov)
                 end), true)
                 af._janitor:Add(af._optionsLink:Get'scopeZoom':OnChange(function(
-                    al
+                    am
                 )
-                    af._scopeZoom = al
+                    af._scopeZoom = am
 
-                    if ak then
-                        local am = ak * ((100 - af._scopeZoom) / 100)
+                    if al then
+                        local an = al * ((100 - af._scopeZoom) / 100)
 
-                        aj.setGoal(aj, af._fov - am)
+                        aj.setGoal(aj, af._fov - an)
                     end
                 end), true)
                 aj.setGoal(aj, af._fov)

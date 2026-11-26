@@ -341,7 +341,22 @@ function Removals.EnableFlashes(self: Removals): ()
 	local flashLink = self._flashLink
 
 	local flashClosure = rawget(FlashClass, "Flash") :: any
-	local internalCalc = debug.getupvalue(flashClosure, 4)
+	local internalCalc: any = nil
+	for _, v in next, debug.getupvalues(flashClosure) do
+		if type(v) == "function" then
+			local d = debug.getinfo(v)
+			if d and d.name == "calculateFlash" then
+				internalCalc = v
+				break
+			end
+		end
+	end
+	if type(internalCalc) ~= "function" then
+		internalCalc = debug.getupvalue(flashClosure, 4)
+	end
+	if type(internalCalc) ~= "function" then
+		return
+	end
 
 	if not hook.isFunctionHooked(internalCalc) then
 		local oldInternalCalc
@@ -369,7 +384,22 @@ function Removals.DisableFlashes(self: Removals): ()
 	local FlashClass = ModuleController.GetModule("FlashClass")
 
 	local flashClosure = rawget(FlashClass, "Flash") :: any
-	local internalCalc = debug.getupvalue(flashClosure, 4)
+	local internalCalc: any = nil
+	for _, v in next, debug.getupvalues(flashClosure) do
+		if type(v) == "function" then
+			local d = debug.getinfo(v)
+			if d and d.name == "calculateFlash" then
+				internalCalc = v
+				break
+			end
+		end
+	end
+	if type(internalCalc) ~= "function" then
+		internalCalc = debug.getupvalue(flashClosure, 4)
+	end
+	if type(internalCalc) ~= "function" then
+		return
+	end
 
 	hook.restore(internalCalc)
 end
@@ -459,7 +489,10 @@ function Removals.EnableWeaponKick(self: Removals): ()
 		return
 	end
 
-	local kickCamera = getupvalue(shoot, 23)
+	local kickCamera = getupvalue(shoot, 28)
+	if type(kickCamera) ~= "function" then
+		return
+	end
 	local oldWeaponKick = getupvalue(kickCamera, 1)
 
 	debug.setupvalue(kickCamera, 1, {
@@ -481,8 +514,10 @@ function Removals.DisableWeaponKick(self: Removals): ()
 		return
 	end
 
-	local kickCamera = getupvalue(shoot, 23)
-	debug.setupvalue(kickCamera, 1, self._oldWeaponKick)
+	local kickCamera = getupvalue(shoot, 28)
+	if type(kickCamera) == "function" and self._oldWeaponKick ~= nil then
+		debug.setupvalue(kickCamera, 1, self._oldWeaponKick)
+	end
 end
 function Removals.EnableBulletHoles(self: Removals): ()
 	if self._bulletHolesEnabled then
@@ -496,9 +531,8 @@ function Removals.EnableBulletHoles(self: Removals): ()
 		return
 	end
 
-	local createMarker = debug.getupvalue(shoot, 22)
-
-	if not hook.isFunctionHooked(createMarker) then
+	local createMarker = debug.getupvalue(shoot, 27)
+	if type(createMarker) == "function" and not hook.isFunctionHooked(createMarker) then
 		hook.add(createMarker, LPH_NO_VIRTUALIZE(function(): () end))
 	end
 
@@ -524,7 +558,10 @@ function Removals.DisableBulletHoles(self: Removals): ()
 		return
 	end
 
-	hook.restore(debug.getupvalue(shoot, 22))
+	local createMarker = debug.getupvalue(shoot, 27)
+	if type(createMarker) == "function" then
+		hook.restore(createMarker)
+	end
 end
 
 function Removals.EnableBulletImpacts(self: Removals): ()

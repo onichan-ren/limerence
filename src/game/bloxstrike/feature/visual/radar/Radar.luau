@@ -39,8 +39,12 @@ function Radar._resolve(self: Radar): boolean
 	if not module then
 		return false
 	end
-	self._visibilityFn = debug.getupvalue(module.UpdatePlayerIcons, 9)
-	return self._visibilityFn ~= nil
+	local cand = debug.getupvalue(module.UpdatePlayerIcons, 10)
+	if type(cand) ~= "function" then
+		return false
+	end
+	self._visibilityFn = cand
+	return true
 end
 
 function Radar.Enable(self: Radar): ()

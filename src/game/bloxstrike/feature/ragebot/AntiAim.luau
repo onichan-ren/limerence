@@ -819,7 +819,21 @@ function AntiAim.Enable(self: AntiAim): ()
 				LPH_NO_VIRTUALIZE(function(charSelf: any, ...)
 					local cmd = oldSample(charSelf, ...)
 					if type(cmd) == "table" then
-						cmd.LookYaw = self._desiredYaw
+						local oldYaw = cmd.LookYaw
+						local newYaw = self._desiredYaw
+						if type(oldYaw) == "number" and typeof(cmd.Move) == "Vector2" then
+							local move = cmd.Move
+							if move.X ~= 0 or move.Y ~= 0 then
+								local delta = oldYaw - newYaw
+								local cosD = math.cos(delta)
+								local sinD = math.sin(delta)
+								cmd.Move = Vector2.new(
+									move.X * cosD + move.Y * sinD,
+									-move.X * sinD + move.Y * cosD
+								)
+							end
+						end
+						cmd.LookYaw = newYaw
 						cmd.VerticalLook = math.clamp(self._desiredPitch, -1, 1)
 					end
 					return cmd

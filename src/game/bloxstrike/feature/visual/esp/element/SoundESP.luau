@@ -80,9 +80,11 @@ function SoundESP.Enable(self: SoundESP): ()
 	self._enabled = true
 
 	local SoundController = ModuleController.GetModule("SoundController")
-	local onStateChanged = rawget(SoundController, "OnStateChanged") :: any
-
-	local playFootstepSound = getupvalue(onStateChanged, 4)
+	local onStateChanged = SoundController and rawget(SoundController, "OnStateChanged") :: any
+	local playFootstepSound = onStateChanged and getupvalue(onStateChanged, 4)
+	if type(playFootstepSound) ~= "function" then
+		return
+	end
 
 	local oldPlayFootstepSound = nil
 	oldPlayFootstepSound = hook.add(playFootstepSound, LPH_NO_VIRTUALIZE(function(hrp, _, ...)

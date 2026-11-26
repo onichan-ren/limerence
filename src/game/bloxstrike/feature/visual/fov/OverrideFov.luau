@@ -71,9 +71,20 @@ function OverrideFov.Enable(self: OverrideFov): ()
 		return
 	end
 
-	local spring = debug.getupvalue(updateCameraFOV, 2)
+	local spring: any = nil
+	local springIdx: number? = nil
+	for idx, value in next, debug.getupvalues(updateCameraFOV) do
+		if type(value) == "table" and type(rawget(value, "setGoal")) == "function" then
+			spring = value
+			springIdx = idx
+			break
+		end
+	end
+	if not spring or not springIdx then
+		return
+	end
 	local currentScoped = nil :: number?
-	debug.setupvalue(updateCameraFOV, 2, {
+	debug.setupvalue(updateCameraFOV, springIdx, {
 		setGoal = LPH_NO_VIRTUALIZE(function(_: any, value: number): ()
 			if value == 70 then
 				currentScoped = nil
