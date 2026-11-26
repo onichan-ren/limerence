@@ -72,7 +72,7 @@ do
     do
         local function __modImpl()
             return {
-                version = '2',
+                version = '3',
                 url = 
 "https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/packages.luau",
             }
@@ -97,7 +97,7 @@ do
             local d, e, f, g = string.format('%s/packages-v%s.luau', tostring(c), tostring(b.version)), '@limerence_pkgs', {}, nil
 
             local function fetchSource()
-                local h = game.HttpGet(game, b.url)
+                local h = game.HttpGet(game, b.url .. '?t=' .. tostring(os.time()))
 
                 if not h or #h == 0 then
                     error('pkgBootstrap: response body is empty)')
@@ -917,13 +917,20 @@ do
             end
 
             d.addInstance = function(h)
-                if f[h] then
+                if not h or f[h] then
+                    return
+                end
+
+                local i = (getrawmetatable(h))
+
+                if not i then
+                    c.warn(c, 'missing metatable for instance:', h)
+
                     return
                 end
 
                 c.debug(c, 'hooking instance:', h)
 
-                local i = (getrawmetatable(h))
                 local j, k, l, m, n, o, p = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}
                 local q = {
                     originalProperties = n,
@@ -44941,7 +44948,7 @@ do
             local aa = {
                 ['apocalypse rising 2'] = {},
                 bedwars = {},
-                bloxstrike = {[114234929420007] = 9894},
+                bloxstrike = {[114234929420007] = 9965},
                 ['da hood'] = {},
                 ['murderers vs sheriffs duels'] = {},
                 ['operation one'] = {},
@@ -45653,6 +45660,7 @@ do
             local ag, ah = ad.peek, {
                 _janitor = nil,
                 _players = (ad.atom{}),
+                _byProxy = {},
                 _class = nil,
                 playerAdded = (af.new()),
                 playerRemoving = (af.new()),
@@ -45684,6 +45692,43 @@ do
             function ah.SetPlayerClass(ai)
                 ah._class = ai
             end
+            function ah.AddEntity(ai, aj)
+                if ag(ah._players)[ai] then
+                    return
+                end
+                if type(aj.GetPlayer) == 'function' then
+                    local ak = aj.GetPlayer(aj)
+
+                    if ak ~= nil then
+                        ah._byProxy[ak] = aj
+                    end
+                end
+
+                ah._players(ae.Dictionary.set(ag(ah._players), ai, aj))
+                ah.playerAdded:Fire(aj)
+            end
+            function ah.RemoveEntity(ai)
+                local aj = ag(ah._players)
+                local ak = aj[ai]
+
+                if not ak then
+                    return
+                end
+                if type(ak.GetPlayer) == 'function' then
+                    local al = ak.GetPlayer(ak)
+
+                    if al ~= nil then
+                        ah._byProxy[al] = nil
+                    end
+                end
+
+                ah._players(ae.Dictionary.removeKey(aj, ai))
+                ah.playerRemoving:Fire(ak)
+
+                if type(ak.Destroy) == 'function' then
+                    ak.Destroy(ak)
+                end
+            end
             function ah.new()
                 local ai = ac.new()
 
@@ -45706,13 +45751,14 @@ do
                 return ag(ah._players)
             end
             function ah.Get(ai)
-                return ag(ah._players)[ai]
+                return ag(ah._players)[ai] or ah._byProxy[ai]
             end
             function ah.Destroy()
                 for ai, aj in next, ag(ah._players)do
                     aj.Destroy(aj)
                 end
 
+                table.clear(ah._byProxy)
                 ah._players{}
 
                 local ai = ah._janitor
@@ -52899,9 +52945,9 @@ do
                         end
 
                         local H, I, J = a2[E] == true, a3[E] == true, a1[E]
-                        local K, L, M = (J and J.alpha or 0), aB(F.alive), false
+                        local K, L, M = (J and J.alpha or 0), aB(F.alive), (F).culled ~= nil and aB((F).culled) == true
 
-                        if a5 and (a6 or not (F).isBot) then
+                        if not M and a5 and (a6 or not (F).isBot) then
                             M = a5(F) == true
                         end
                         if K <= aN and not H and not I then
@@ -60719,7 +60765,7 @@ do
                     end
 
                     local function processTarget(bk)
-                        if not av(bk.alive) then
+                        if not av(bk.alive) or (bk.culled and av(bk.culled)) then
                             return
                         end
 
@@ -86492,6 +86538,104 @@ do
     end
     do
         local function __modImpl()
+            local aa, ab, ac = (cloneref(game.GetService(game, 'RunService'))), a.c1(), a.c_()
+
+            a.cV()
+
+            local ae, af, ag = a.t(), 1.6666666666666665E-2, {}
+
+            ag.__index = ag
+
+            setmetatable(ag, {__index = ab})
+
+            function ag.new(ah)
+                local ai = (ab.new())
+
+                setmetatable(ai, ag)
+
+                ai._activeJanitor = nil
+                ai._offset = 0
+                ai._acc = 0
+
+                ah.Toggle(ah, 'reverseTime', 'Reverse Time', false):SetTip{
+                    title = 'Reverse Time',
+                    body = 'Reverses outgoing network timestamps by 1/60s every 1/60s.',
+                }
+                ai.Track(ai, ah.Get(ah, 'reverseTime'):OnChange(function(aj)
+                    ai._setEnabled(ai, aj)
+                end))
+
+                return ai
+            end
+            function ag._setEnabled(ah, ai)
+                if ai then
+                    if ah._activeJanitor then
+                        return
+                    end
+
+                    local aj = ae.new()
+
+                    ah._activeJanitor = aj
+                    ah._offset = 0
+                    ah._acc = 0
+
+                    aj.Add(aj, aa.Heartbeat:Connect(LPH_NO_VIRTUALIZE(function(
+                        ak
+                    )
+                        ah._acc += ak
+
+                        if ah._acc < af then
+                            return
+                        end
+
+                        while ah._acc >= af do
+                            ah._acc -= af
+                            ah._offset -= af
+                        end
+
+                        ac.SetCurrentAddition(ah._offset)
+                    end)), 'Disconnect')
+                    aj.Add(aj, function()
+                        ah._offset = 0
+                        ah._acc = 0
+
+                        ac.SetCurrentAddition(0)
+                    end, true)
+                else
+                    local aj = ah._activeJanitor
+
+                    if not aj then
+                        return
+                    end
+
+                    ah._activeJanitor = nil
+
+                    aj.Destroy(aj)
+                end
+            end
+            function ag.Destroy(ah)
+                ah._setEnabled(ah, false)
+                ab.Destroy(ah)
+            end
+
+            return ag
+        end
+
+        function a.fh()
+            local aa = a.cache.fh
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.fh = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
             local aa, ab = a.c1(), a.cZ()
 
             a.cV()
@@ -86575,14 +86719,14 @@ do
             return ae
         end
 
-        function a.fh()
-            local aa = a.cache.fh
+        function a.fi()
+            local aa = a.cache.fi
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fh = aa
+                a.cache.fi = aa
             end
 
             return aa.c
@@ -86694,14 +86838,14 @@ do
             return ai
         end
 
-        function a.fi()
-            local aa = a.cache.fi
+        function a.fj()
+            local aa = a.cache.fj
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fi = aa
+                a.cache.fj = aa
             end
 
             return aa.c
@@ -86872,14 +87016,14 @@ do
             return ak
         end
 
-        function a.fj()
-            local aa = a.cache.fj
+        function a.fk()
+            local aa = a.cache.fk
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fj = aa
+                a.cache.fk = aa
             end
 
             return aa.c
@@ -86902,14 +87046,14 @@ do
             return ac
         end
 
-        function a.fk()
-            local aa = a.cache.fk
+        function a.fl()
+            local aa = a.cache.fl
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fk = aa
+                a.cache.fl = aa
             end
 
             return aa.c
@@ -87173,14 +87317,14 @@ do
             return ac
         end
 
-        function a.fl()
-            local aa = a.cache.fl
+        function a.fm()
+            local aa = a.cache.fm
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fl = aa
+                a.cache.fm = aa
             end
 
             return aa.c
@@ -87188,7 +87332,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al = a.h(), a.cZ(), a.fk(), a.fl(), a.A(), a.n(), {}, {}, false, nil, nil, nil
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al = a.h(), a.cZ(), a.fl(), a.fm(), a.A(), a.n(), {}, {}, false, nil, nil, nil
 
             local function ensureSlot(am, an)
                 local ao = ah[am]
@@ -87673,14 +87817,14 @@ do
             return ag
         end
 
-        function a.fm()
-            local aa = a.cache.fm
+        function a.fn()
+            local aa = a.cache.fn
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fm = aa
+                a.cache.fn = aa
             end
 
             return aa.c
@@ -87707,14 +87851,14 @@ do
             return aa
         end
 
-        function a.fn()
-            local aa = a.cache.fn
+        function a.fo()
+            local aa = a.cache.fo
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fn = aa
+                a.cache.fo = aa
             end
 
             return aa.c
@@ -87722,7 +87866,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai = a.h(), a.g(), a.f(), a.T(), a.S(), a.H(), a.ah(), a.U(), a.fn()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai = a.h(), a.g(), a.f(), a.T(), a.S(), a.H(), a.ah(), a.U(), a.fo()
             local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az = ab.useEffect, ab.useMemo, ab.useCallback, ab.useRef, ad.useSpring, ac.useAtom, ab.memo, ab.createElement, af.colors.window, af.colors.window.element, 28, 38, 20, ai.CONTENT_PAD_X, ai.CONTENT_PAD_Y, ai.FIELD_PAD_X, ai.ELEMENT_GAP
 
             local function WeaponRowComponent(aA)
@@ -88127,14 +88271,14 @@ do
             end
         end
 
-        function a.fo()
-            local aa = a.cache.fo
+        function a.fp()
+            local aa = a.cache.fp
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fo = aa
+                a.cache.fp = aa
             end
 
             return aa.c
@@ -88142,7 +88286,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah = a.h(), a.g(), a.T(), a.S(), a.H(), a.ah(), a.U(), a.fn()
+            local aa, ab, ac, ad, ae, af, ag, ah = a.h(), a.g(), a.T(), a.S(), a.H(), a.ah(), a.U(), a.fo()
             local ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = ab.useEffect, ab.useMemo, ab.useCallback, ab.useRef, ac.useSpring, ab.createElement, 0.06, ae.colors.window.element, ah.BUTTON_HEIGHT, 8, ah.ELEMENT_GAP, 5
 
             local function ActionButton(au)
@@ -88318,14 +88462,14 @@ do
             end
         end
 
-        function a.fp()
-            local aa = a.cache.fp
+        function a.fq()
+            local aa = a.cache.fq
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fp = aa
+                a.cache.fq = aa
             end
 
             return aa.c
@@ -88385,14 +88529,14 @@ do
             return ah
         end
 
-        function a.fq()
-            local aa = a.cache.fq
+        function a.fr()
+            local aa = a.cache.fr
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fq = aa
+                a.cache.fr = aa
             end
 
             return aa.c
@@ -88400,7 +88544,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = a.g(), a.f(), a.h(), a.H(), a.E(), a.fn(), a.fq()
+            local aa, ab, ac, ad, ae, af, ag = a.g(), a.f(), a.h(), a.H(), a.E(), a.fo(), a.fr()
             local ah, ai, aj, ak, al, am, an, ao, ap, aq, ar = aa.useState, aa.useEffect, aa.useMemo, aa.useRef, ab.useAtom, aa.createElement, ad.colors.window.element, af.CARD_MIN_WIDTH, af.CARD_HEIGHT, af.CONTENT_PAD_X, 2
             local as = ap + ag.GAP_Y
 
@@ -88557,14 +88701,14 @@ do
             end
         end
 
-        function a.fr()
-            local aa = a.cache.fr
+        function a.fs()
+            local aa = a.cache.fs
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fr = aa
+                a.cache.fs = aa
             end
 
             return aa.c
@@ -88644,14 +88788,14 @@ do
             return aa
         end
 
-        function a.fs()
-            local aa = a.cache.fs
+        function a.ft()
+            local aa = a.cache.ft
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fs = aa
+                a.cache.ft = aa
             end
 
             return aa.c
@@ -88659,7 +88803,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'RunService'))), a.h(), a.g(), a.fs()
+            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'RunService'))), a.h(), a.g(), a.ft()
             local ae, af, ag, ah, ai, aj, ak, al, am, an, ao = ac.useRef, ac.useEffect, ac.memo, ac.createElement, 0.9, 9, 0.002, math.pi * 2, Color3.fromRGB(150, 150, 150), Color3.fromRGB(255, 255, 255), Vector3.new(
 -0.35, -1, -0.6)
 
@@ -88762,14 +88906,14 @@ do
             return ap
         end
 
-        function a.ft()
-            local aa = a.cache.ft
+        function a.fu()
+            local aa = a.cache.fu
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ft = aa
+                a.cache.fu = aa
             end
 
             return aa.c
@@ -88777,9 +88921,9 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae = a.h(), a.g(), a.T(), a.f(), a.ft()
+            local aa, ab, ac, ad, ae = a.h(), a.g(), a.T(), a.f(), a.fu()
 
-            a.fs()
+            a.ft()
 
             local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as = a.S(), a.H(), a.ah(), a.ae(), a.ad(), a.U(), ab.useEffect, ab.useMemo, ab.useCallback, ac.useSpring, ad.useAtom, ab.memo, ab.createElement
             local at, au, av, aw, ax, ay, az = ah.colors.window.element, ah.colors.inventory, 178, 104, 6, 16, 3
@@ -89115,14 +89259,14 @@ do
             return aA
         end
 
-        function a.fu()
-            local aa = a.cache.fu
+        function a.fv()
+            local aa = a.cache.fv
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fu = aa
+                a.cache.fv = aa
             end
 
             return aa.c
@@ -89349,14 +89493,14 @@ do
             return aw
         end
 
-        function a.fv()
-            local aa = a.cache.fv
+        function a.fw()
+            local aa = a.cache.fw
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fv = aa
+                a.cache.fw = aa
             end
 
             return aa.c
@@ -89364,7 +89508,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae = a.g(), a.f(), a.S(), a.H(), a.fn()
+            local aa, ab, ac, ad, ae = a.g(), a.f(), a.S(), a.H(), a.fo()
             local af, ag, ah, ai, aj, ak, al, am, an, ao = aa.useEffect, aa.useCallback, aa.useRef, ab.useAtom, aa.createElement, ad.colors.window, ad.colors.window.element, ae.FIELD_PAD_X, ae.ELEMENT_GAP, 12
 
             return function(ap)
@@ -89466,14 +89610,14 @@ do
             end
         end
 
-        function a.fw()
-            local aa = a.cache.fw
+        function a.fx()
+            local aa = a.cache.fx
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fw = aa
+                a.cache.fx = aa
             end
 
             return aa.c
@@ -89481,7 +89625,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = a.h(), a.g(), a.f(), a.S(), a.H(), a.ah(), a.fn()
+            local aa, ab, ac, ad, ae, af, ag = a.h(), a.g(), a.f(), a.S(), a.H(), a.ah(), a.fo()
             local ah, ai, aj, ak, al, am, an, ao, ap, aq = ab.useMemo, ab.useCallback, ab.useRef, ac.useAtom, ab.createElement, ae.colors.window.element, 20, ag.CONTENT_PAD_X, ag.ELEMENT_GAP, ag.META_HEIGHT
 
             local function BackButton(ar)
@@ -89579,14 +89723,14 @@ do
             end
         end
 
-        function a.fx()
-            local aa = a.cache.fx
+        function a.fy()
+            local aa = a.cache.fy
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fx = aa
+                a.cache.fy = aa
             end
 
             return aa.c
@@ -89594,7 +89738,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = a.h(), a.g(), a.S(), a.H(), a.ah(), a.fl()
+            local aa, ab, ac, ad, ae, af = a.h(), a.g(), a.S(), a.H(), a.ah(), a.fm()
             local ag, ah, ai, aj, ak, al, am, an = ab.useState, ab.useEffect, ab.useMemo, ab.useCallback, ab.createElement, ad.colors.window.element, 22, 6
 
             local function SlotTab(ao)
@@ -89705,14 +89849,14 @@ do
             end
         end
 
-        function a.fy()
-            local aa = a.cache.fy
+        function a.fz()
+            local aa = a.cache.fz
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fy = aa
+                a.cache.fz = aa
             end
 
             return aa.c
@@ -89722,9 +89866,9 @@ do
         local function __modImpl()
             local aa, ab, ac, ad, ae, af, ag = a.g(), a.f(), a.S(), a.H(), a.bk(), a.bo(), a.aS()
 
-            a.fk()
+            a.fl()
 
-            local ai, aj, ak, al, am, an, ao, ap, aq, ar, as = a.fl(), a.fm(), aa.useMemo, aa.useEffect, aa.useRef, ab.useAtom, aa.createElement, ad.colors.window.element, {
+            local ai, aj, ak, al, am, an, ao, ap, aq, ar, as = a.fm(), a.fn(), aa.useMemo, aa.useEffect, aa.useRef, ab.useAtom, aa.createElement, ad.colors.window.element, {
                 textOffsetY = -1,
             }, 'Default', Color3.fromRGB(255, 255, 255)
             local at = (function()
@@ -89975,14 +90119,14 @@ do
             end
         end
 
-        function a.fz()
-            local aa = a.cache.fz
+        function a.fA()
+            local aa = a.cache.fA
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fz = aa
+                a.cache.fA = aa
             end
 
             return aa.c
@@ -89990,7 +90134,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.h(), a.g(), a.f(), a.T(), a.S(), a.H(), a.ah(), a.U(), a.fk(), a.fl(), a.fm(), a.fo(), a.fp(), a.fr(), a.fu(), a.fv(), a.fw(), a.fx(), a.fn(), a.fy(), a.fz()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.h(), a.g(), a.f(), a.T(), a.S(), a.H(), a.ah(), a.U(), a.fl(), a.fm(), a.fn(), a.fp(), a.fq(), a.fs(), a.fv(), a.fw(), a.fx(), a.fy(), a.fo(), a.fz(), a.fA()
             local av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM, aN, aO = ab.useState, ab.useMemo, ab.useCallback, ab.useEffect, ac.useAtom, ad.useSpring, ab.createElement, af.colors.window, af.colors.window.element, as.SIDEBAR_WIDTH, as.META_HEIGHT, as.SEARCH_HEIGHT, 22, 24, 176, as.SECTION_GAP, as.CONTENT_PAD_X, as.FIELD_PAD_X, as.ELEMENT_GAP, 70
             local aP = {
                 {
@@ -90419,37 +90563,6 @@ do
             end
         end
 
-        function a.fA()
-            local aa = a.cache.fA
-
-            if not aa then
-                aa = {
-                    c = __modImpl(),
-                }
-                a.cache.fA = aa
-            end
-
-            return aa.c
-        end
-    end
-    do
-        local function __modImpl()
-            local aa, ab = a.g(), a.fA()
-            local ac, ad = aa.createElement, {}
-
-            function ad.Attach(ae)
-                if not ae or not ae.SetRenderer then
-                    return
-                end
-
-                ae.SetRenderer(ae, function(af)
-                    return ac(ab, {})
-                end)
-            end
-
-            return ad
-        end
-
         function a.fB()
             local aa = a.cache.fB
 
@@ -90465,141 +90578,20 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9 = a.cV(), a.d(), a.cX(), a.cY(), a.c0(), a.ds(), a.du(), a.dw(), a.dL(), a.dM(), a.dO(), a.dQ(), a.dS(), a.dU(), a.dW(), a.dY(), a.d0(), a.d2(), a.d4(), a.d6(), a.d8(), a.ee(), a.ef(), a.bZ(), a.ei(), a.ek(), a.eo(), a.ep(), a.eq(), a.er(), a.es(), a.et(), a.ew(), a.dE(), a.ex(), a.ey(), a.ez(), a.eB(), a.eE(), a.eK(), a.eL(), a.eS(), a.eU(), a.eV(), a.eW(), a.eX(), a.eZ(), a.e2(), a.e3(), a.e5(), a.e6(), a.e8(), a.e9(), a.fa(), a.fb(), a.fc(), a.ff(), a.fg(), a.fh(), a.fi(), a.fj(), a.e0(), a.fB()
+            local aa, ab = a.g(), a.fB()
+            local ac, ad = aa.createElement, {}
 
-            return function()
-                ac.SetPlayerClass(ad)
-                ac.new()
-                ab.addDestroyer(ac.Destroy)
-                aO.Setup()
-                ab.addDestroyer(aO.Destroy)
-                ab.mount(ae)
+            function ad.Attach(ae)
+                if not ae or not ae.SetRenderer then
+                    return
+                end
 
-                local b = aa.Group'ASSISTANCE'
-                local ba = aa.Tab(b, 'Ragebot', 'aim')
-                local bb = aa.Section(ba, 'RAGEBOT', 1, 'ragebot')
-
-                aa.Mount(aG, bb)
-
-                local bc = aa.Section(ba, 'ANTI AIM', 2, 'antiAim')
-
-                aa.Mount(aF, bc)
-
-                local bd = aa.Section(ba, 'WEAPON', 2, 'weaponr')
-
-                aa.Mount(aC, bd)
-                aa.Mount(aD, bd)
-                aa.Mount(aI, bd)
-                aa.Mount(aJ, bd)
-
-                local be = aa.Section(ba, 'MELEE', 2, 'melee')
-
-                aa.Mount(aE, be)
-
-                local bf = aa.Tab(b, 'Legitbot', 'rifle')
-                local bg, bh, bi, bj, bk, bl, bm, bn = aa.ScopedSection(bf, 'MAIN', 1, 'legitbot'), aa.ScopedSection(bf, 'TARGETTING', 1, 'targetting'), aa.ScopedSection(bf, 'AIM', 1, 'aim'), aa.ScopedSection(bf, 'TRIGGER', 2, 'trigger'), aa.ScopedSection(bf, 'BULLET REDIRECTION', 1, 'bulletRedirection'), aa.ScopedSection(bf, 'RECOIL', 2, 'recoil'), aa.ScopedSection(bf, 'VISUALS', 2, 'visuals'), aa.Section(bf, 'BACKTRACK', 2, 'backtrack')
-
-                bf.UseScope(bf, true)
-                aa.Mount(ak, bm)
-                aa.Mount(ai, bg, {
-                    targettingLink = bh,
-                    aimLink = bi,
-                    triggerLink = bj,
-                    bulletRedirectionLink = bk,
-                    visualsLink = bm,
-                })
-                aa.Mount(aj, bl)
-                aa.Mount(aH, bn)
-
-                local bo = aa.Group'VISUALS'
-                local bp = aa.Tab(bo, 'Visuals', 'terrain')
-                local bq = aa.Subtab(bp, 'Players', 'person')
-                local br = aa.Section(bq, 'PLAYER ESP', 1, 'esp')
-
-                aa.Mount(af, br, {previewLink = br})
-                ag.setup(br)
-                ah.setup(br)
-
-                local bs = aa.Section(bq, 'HIT FEEDBACK', 2, 'effects')
-
-                aa.Mount(al, bs)
-                aa.Mount(am, bs)
-                aa.Mount(an, bs)
-                aa.Mount(ao, bs)
-                aa.Mount(ap, bs)
-                aa.Mount(aq, bs)
-                aa.Mount(ar, bs)
-                aa.Mount(as, bs)
-                aa.Mount(at, bs)
-                aa.Mount(au, bs)
-
-                local bt = aa.Section(bq, 'SELF', 2, 'selfEsp')
-
-                aa.Mount(aW, bt)
-                aa.Mount(aV, bt)
-                aa.Mount(a8, bt)
-                aa.Mount(aX, bt)
-
-                local bu = aa.Subtab(bp, 'World', 'globe')
-                local bv = aa.Section(bu, 'AMBIENCE', 1, 'modulations')
-
-                ax.mapSource = aw
-
-                aa.Mount(av, bv, {mapSource = aw})
-
-                local bw = aa.Section(bu, 'INDICATORS', 1, 'effects')
-
-                aa.Mount(az, bw)
-                aa.Mount(aA, bw)
-                bw.Options(bw, 'droppedWeapons', 'Dropped Weapons')
-
-                local bx = bw.OnKey(bw, 'droppedWeapons')
-
-                aa.Mount(ay, bx)
-                aa.Mount(aY, bx)
-
-                local by = aa.Section(bu, 'VIEW', 2, 'overlay')
-
-                aa.Mount(aU, by)
-                aa.Mount(aS, by)
-                aa.Mount(aL, by)
-                aa.Mount(aR, by)
-                aa.Mount(aT, by)
-                aa.Mount(aK, by)
-                aa.Mount(aN, aa.SettingsHudSection'hud')
-                aa.Mount(aM, by)
-
-                local bz = aa.Section(bu, 'EFFECTS', 2, 'effects')
-
-                aa.Mount(aP, bz)
-                aa.Mount(aQ, bz)
-                aa.Mount(aB, bz.WithPrefix(bz, 'removals'))
-
-                local bB = aa.Group'OTHER'
-                local bC = aa.Tab(bB, 'Misc', 'bolt')
-                local bE = aa.Section(bC, 'MOVEMENT', 1, 'movement')
-
-                aa.Mount(a2, bE)
-                aa.Mount(a3, bE)
-                aa.Mount(a1, bE)
-
-                local bF = aa.Section(bC, 'UTILITY', 2, 'utility')
-
-                aa.Mount(a6, bF)
-                aa.Mount(a7, bF)
-                aa.Mount(a5, bF)
-                aa.Mount(a4, bF)
-
-                local bG = aa.Section(bC, 'SPOOFING', 2, 'spoofing')
-
-                aa.Mount(aZ, bG)
-                aa.Mount(a_, bG)
-                aa.Mount(a0, bG)
-
-                local bH = aa.Tab(bB, 'Inventory', 'karambit')
-
-                a9.Attach(bH)
+                ae.SetRenderer(ae, function(af)
+                    return ac(ab, {})
+                end)
             end
+
+            return ad
         end
 
         function a.fC()
@@ -90610,6 +90602,159 @@ do
                     c = __modImpl(),
                 }
                 a.cache.fC = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, b = a.cV(), a.d(), a.cX(), a.cY(), a.c0(), a.ds(), a.du(), a.dw(), a.dL(), a.dM(), a.dO(), a.dQ(), a.dS(), a.dU(), a.dW(), a.dY(), a.d0(), a.d2(), a.d4(), a.d6(), a.d8(), a.ee(), a.ef(), a.bZ(), a.ei(), a.ek(), a.eo(), a.ep(), a.eq(), a.er(), a.es(), a.et(), a.ew(), a.dE(), a.ex(), a.ey(), a.ez(), a.eB(), a.eE(), a.eK(), a.eL(), a.eS(), a.eU(), a.eV(), a.eW(), a.eX(), a.eZ(), a.e2(), a.e3(), a.e5(), a.e6(), a.e8(), a.e9(), a.fa(), a.fb(), a.fc(), a.ff(), a.fg(), a.fh(), a.fi(), a.fj(), a.fk(), a.e0(), a.fC()
+
+            return function()
+                ac.SetPlayerClass(ad)
+                ac.new()
+                ab.addDestroyer(ac.Destroy)
+                aO.Setup()
+                ab.addDestroyer(aO.Destroy)
+                ab.mount(ae)
+
+                local ba = aa.Group'ASSISTANCE'
+                local bb = aa.Tab(ba, 'Ragebot', 'aim')
+                local bc = aa.Section(bb, 'RAGEBOT', 1, 'ragebot')
+
+                aa.Mount(aG, bc)
+
+                local bd = aa.Section(bb, 'ANTI AIM', 2, 'antiAim')
+
+                aa.Mount(aF, bd)
+
+                local be = aa.Section(bb, 'WEAPON', 2, 'weaponr')
+
+                aa.Mount(aC, be)
+                aa.Mount(aD, be)
+                aa.Mount(aI, be)
+                aa.Mount(aJ, be)
+
+                local bf = aa.Section(bb, 'MELEE', 2, 'melee')
+
+                aa.Mount(aE, bf)
+
+                local bg = aa.Tab(ba, 'Legitbot', 'rifle')
+                local bh, bi, bj, bk, bl, bm, bn, bo = aa.ScopedSection(bg, 'MAIN', 1, 'legitbot'), aa.ScopedSection(bg, 'TARGETTING', 1, 'targetting'), aa.ScopedSection(bg, 'AIM', 1, 'aim'), aa.ScopedSection(bg, 'TRIGGER', 2, 'trigger'), aa.ScopedSection(bg, 'BULLET REDIRECTION', 1, 'bulletRedirection'), aa.ScopedSection(bg, 'RECOIL', 2, 'recoil'), aa.ScopedSection(bg, 'VISUALS', 2, 'visuals'), aa.Section(bg, 'BACKTRACK', 2, 'backtrack')
+
+                bg.UseScope(bg, true)
+                aa.Mount(ak, bn)
+                aa.Mount(ai, bh, {
+                    targettingLink = bi,
+                    aimLink = bj,
+                    triggerLink = bk,
+                    bulletRedirectionLink = bl,
+                    visualsLink = bn,
+                })
+                aa.Mount(aj, bm)
+                aa.Mount(aH, bo)
+
+                local bp = aa.Group'VISUALS'
+                local bq = aa.Tab(bp, 'Visuals', 'terrain')
+                local br = aa.Subtab(bq, 'Players', 'person')
+                local bs = aa.Section(br, 'PLAYER ESP', 1, 'esp')
+
+                aa.Mount(af, bs, {previewLink = bs})
+                ag.setup(bs)
+                ah.setup(bs)
+
+                local bt = aa.Section(br, 'HIT FEEDBACK', 2, 'effects')
+
+                aa.Mount(al, bt)
+                aa.Mount(am, bt)
+                aa.Mount(an, bt)
+                aa.Mount(ao, bt)
+                aa.Mount(ap, bt)
+                aa.Mount(aq, bt)
+                aa.Mount(ar, bt)
+                aa.Mount(as, bt)
+                aa.Mount(at, bt)
+                aa.Mount(au, bt)
+
+                local bu = aa.Section(br, 'SELF', 2, 'selfEsp')
+
+                aa.Mount(aW, bu)
+                aa.Mount(aV, bu)
+                aa.Mount(a9, bu)
+                aa.Mount(aX, bu)
+
+                local bv = aa.Subtab(bq, 'World', 'globe')
+                local bw = aa.Section(bv, 'AMBIENCE', 1, 'modulations')
+
+                ax.mapSource = aw
+
+                aa.Mount(av, bw, {mapSource = aw})
+
+                local bx = aa.Section(bv, 'INDICATORS', 1, 'effects')
+
+                aa.Mount(az, bx)
+                aa.Mount(aA, bx)
+                bx.Options(bx, 'droppedWeapons', 'Dropped Weapons')
+
+                local by = bx.OnKey(bx, 'droppedWeapons')
+
+                aa.Mount(ay, by)
+                aa.Mount(aY, by)
+
+                local bz = aa.Section(bv, 'VIEW', 2, 'overlay')
+
+                aa.Mount(aU, bz)
+                aa.Mount(aS, bz)
+                aa.Mount(aL, bz)
+                aa.Mount(aR, bz)
+                aa.Mount(aT, bz)
+                aa.Mount(aK, bz)
+                aa.Mount(aN, aa.SettingsHudSection'hud')
+                aa.Mount(aM, bz)
+
+                local bB = aa.Section(bv, 'EFFECTS', 2, 'effects')
+
+                aa.Mount(aP, bB)
+                aa.Mount(aQ, bB)
+                aa.Mount(aB, bB.WithPrefix(bB, 'removals'))
+
+                local bC = aa.Group'OTHER'
+                local bE = aa.Tab(bC, 'Misc', 'bolt')
+                local bF = aa.Section(bE, 'MOVEMENT', 1, 'movement')
+
+                aa.Mount(a2, bF)
+                aa.Mount(a3, bF)
+                aa.Mount(a1, bF)
+
+                local bG = aa.Section(bE, 'UTILITY', 2, 'utility')
+
+                aa.Mount(a7, bG)
+                aa.Mount(a8, bG)
+                aa.Mount(a6, bG)
+                aa.Mount(a4, bG)
+                aa.Mount(a5, bG)
+
+                local bH = aa.Section(bE, 'SPOOFING', 2, 'spoofing')
+
+                aa.Mount(aZ, bH)
+                aa.Mount(a_, bH)
+                aa.Mount(a0, bH)
+
+                local bI = aa.Tab(bC, 'Inventory', 'karambit')
+
+                b.Attach(bI)
+            end
+        end
+
+        function a.fD()
+            local aa = a.cache.fD
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.fD = aa
             end
 
             return aa.c
@@ -90663,14 +90808,14 @@ do
             return ag
         end
 
-        function a.fD()
-            local aa = a.cache.fD
+        function a.fE()
+            local aa = a.cache.fE
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fD = aa
+                a.cache.fE = aa
             end
 
             return aa.c
@@ -90704,14 +90849,14 @@ do
             return ac
         end
 
-        function a.fE()
-            local aa = a.cache.fE
+        function a.fF()
+            local aa = a.cache.fF
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fE = aa
+                a.cache.fF = aa
             end
 
             return aa.c
@@ -90886,14 +91031,14 @@ do
             return ae
         end
 
-        function a.fF()
-            local aa = a.cache.fF
+        function a.fG()
+            local aa = a.cache.fG
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fF = aa
+                a.cache.fG = aa
             end
 
             return aa.c
@@ -91011,14 +91156,14 @@ do
             return aj
         end
 
-        function a.fG()
-            local aa = a.cache.fG
+        function a.fH()
+            local aa = a.cache.fH
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fG = aa
+                a.cache.fH = aa
             end
 
             return aa.c
@@ -91026,7 +91171,7 @@ do
     end
 end
 
-local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an = a.c(), a.cU(), a.bZ(), a.d(), a.j(), a.fC(), a.dx(), a.fD(), a.cZ(), a.c_(), a.fE(), a.dy(), a.fF(), a.fm()
+local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an = a.c(), a.cU(), a.bZ(), a.d(), a.j(), a.fD(), a.dx(), a.fE(), a.cZ(), a.c_(), a.fF(), a.dy(), a.fG(), a.fn()
 
 ac.name = 'phantom forces'
 
@@ -91066,7 +91211,7 @@ ab({
         ac.clientApi = {signals = ao}
         ac.clientState = ag
 
-        a.fG()
+        a.fH()
     end,
     af,
 }, {})
