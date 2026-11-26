@@ -40,6 +40,27 @@ function PlayerController.SetPlayerClass(class: any): ()
 	PlayerController._class = class
 end
 
+function PlayerController.AddEntity(key: any, entity: any): ()
+	if peek(PlayerController._players)[key] then
+		return
+	end
+	PlayerController._players(Sift.Dictionary.set(peek(PlayerController._players), key, entity))
+	PlayerController.playerAdded:Fire(entity)
+end
+
+function PlayerController.RemoveEntity(key: any): ()
+	local current = peek(PlayerController._players)
+	local entity = current[key]
+	if not entity then
+		return
+	end
+	PlayerController._players(Sift.Dictionary.removeKey(current, key))
+	PlayerController.playerRemoving:Fire(entity)
+	if type(entity.Destroy) == "function" then
+		entity:Destroy()
+	end
+end
+
 function PlayerController.new(): PlayerController
 	local janitor = Janitor.new()
 	PlayerController._janitor = janitor

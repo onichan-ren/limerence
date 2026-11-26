@@ -4006,6 +4006,29 @@ do
             function i.SetPlayerClass(j)
                 i._class = j
             end
+            function i.AddEntity(j, k)
+                if h(i._players)[j] then
+                    return
+                end
+
+                i._players(f.Dictionary.set(h(i._players), j, k))
+                i.playerAdded:Fire(k)
+            end
+            function i.RemoveEntity(j)
+                local k = h(i._players)
+                local l = k[j]
+
+                if not l then
+                    return
+                end
+
+                i._players(f.Dictionary.removeKey(k, j))
+                i.playerRemoving:Fire(l)
+
+                if type(l.Destroy) == 'function' then
+                    l.Destroy(l)
+                end
+            end
             function i.new()
                 local j = d.new()
 
@@ -54908,6 +54931,243 @@ do
     end
     do
         local function __modImpl()
+            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'ReplicatedStorage'))), (cloneref(game.GetService(game, 'Workspace'))), a.i(), a.h(), a.j(), a.H()
+            local ah, ai, aj, ak = ad.atom, ad.peek, '_PVS_CulledCharacters', {
+                kevlar = false,
+                helmet = false,
+                health = 0,
+            }
+
+            local function isCulled(al)
+                local am = al.Parent
+
+                if not am or am.Name == aj or am == ab then
+                    return true
+                end
+
+                return not al.IsDescendantOf(al, ac)
+            end
+            local function makeBotProxy(al)
+                local am = -(tonumber(al.GetAttribute(al, 'CombatantId')) or tonumber(al.GetAttribute(al, 'ActorId')) or 1)
+
+                return {
+                    Name = al.Name,
+                    DisplayName = al.Name,
+                    UserId = am,
+                    GetAttribute = function(an, ao)
+                        return al.GetAttribute(al, ao)
+                    end,
+                    GetAttributeChangedSignal = function(an, ao)
+                        return al.GetAttributeChangedSignal(al, ao)
+                    end,
+                }
+            end
+
+            local al = {}
+
+            al.__index = al
+
+            function al.new(am)
+                local an, ao = (setmetatable({}, al)), makeBotProxy(am)
+
+                an.isBot = true
+                an._model = am
+                an._proxy = ao
+                an._janitor = ae.new()
+                an.character = ah(am)
+                an.hrp = ah((am.FindFirstChild(am, 'HumanoidRootPart')))
+                an.humanoid = ah(nil)
+                an.alive = ah(false)
+                an.health = ah(100)
+                an.maxHealth = ah(100)
+                an.parts = ah{}
+                an.team = ah(am.GetAttribute(am, 'Team'))
+                an.culled = ah(isCulled(am))
+                an.invincible = ah(am.GetAttribute(am, 'Invincible') == true)
+                an.armor = ah(ak)
+                an.currentEquipped = ah(nil)
+                an.isPlanting = ah(false)
+                an.isDefusing = ah(false)
+                an.isRescuing = ah(false)
+                an.isCarrying = ah(false)
+                an.hasC4 = ah(false)
+                an.hasDefuseKit = ah(false)
+                an.isReloading = ah(false)
+                an.isBlind = ah(false)
+                an.isScoped = ah(false)
+
+                local ap = {}
+
+                for aq, ar in next, am.GetChildren(am)do
+                    ap[ar.Name] = ar
+                end
+
+                an.parts(ap)
+
+                local function syncState()
+                    local aq, ar = tonumber(am.GetAttribute(am, 'MaxHealth')) or 100, tonumber(am.GetAttribute(am, 'Health'))
+
+                    if ar == nil then
+                        ar = aq
+                    end
+
+                    local as, at = am.GetAttribute(am, 'Dead') == true, am.GetAttribute(am, 'Team')
+
+                    an.team(at)
+                    an.maxHealth(aq)
+                    an.health(ar)
+                    an.alive(not as and (ar) > 0 and at ~= nil)
+                end
+
+                syncState()
+                an._janitor:Add(am.GetAttributeChangedSignal(am, 'Health'):Connect(syncState))
+                an._janitor:Add(am.GetAttributeChangedSignal(am, 'MaxHealth'):Connect(syncState))
+                an._janitor:Add(am.GetAttributeChangedSignal(am, 'Dead'):Connect(syncState))
+                an._janitor:Add(am.GetAttributeChangedSignal(am, 'Team'):Connect(syncState))
+                an._janitor:Add(am.GetAttributeChangedSignal(am, 'Invincible'):Connect(function(
+                )
+                    an.invincible(am.GetAttribute(am, 'Invincible') == true)
+                end))
+                an._janitor:Add(am.GetPropertyChangedSignal(am, 'Parent'):Connect(function(
+                )
+                    if not am.Parent then
+                        ag.RemoveEntity(am)
+
+                        return
+                    end
+
+                    an.culled(isCulled(am))
+                end))
+                an._janitor:Add(am.ChildAdded:Connect(function(aq)
+                    if aq.Name == 'HumanoidRootPart' and aq.IsA(aq, 'BasePart') then
+                        an.hrp(aq)
+                    end
+
+                    an.parts(af.Dictionary.set(ai(an.parts), aq.Name, aq))
+                end))
+                an._janitor:Add(am.ChildRemoved:Connect(function(aq)
+                    if aq == ai(an.hrp) then
+                        an.hrp(nil)
+                    end
+
+                    an.parts(af.Dictionary.removeKey(ai(an.parts), aq.Name))
+                end))
+
+                return an
+            end
+            function al.GetPlayer(am)
+                return am._proxy
+            end
+            function al.GetTeam(am)
+                return ai(am.team)
+            end
+            function al.IsAlive(am)
+                return ai(am.alive)
+            end
+            function al.Destroy(am)
+                if am._janitor then
+                    am._janitor:Destroy()
+                end
+
+                am.character(nil)
+                am.hrp(nil)
+                am.alive(false)
+                am.parts{}
+            end
+
+            local am
+
+            local function tryTrackModel(an)
+                if not an.IsA(an, 'Model') then
+                    return
+                end
+                if an.GetAttribute(an, 'Bot') ~= true then
+                    return
+                end
+                if aa.GetPlayerFromCharacter(aa, an) then
+                    return
+                end
+                if ag.Get(an) then
+                    return
+                end
+                if not an.FindFirstChild(an, 'HumanoidRootPart') then
+                    an.WaitForChild(an, 'HumanoidRootPart', 5)
+                end
+                if not an.Parent or ag.Get(an) then
+                    return
+                end
+
+                ag.AddEntity(an, al.new(an))
+            end
+            local function watchFolder(an, ao)
+                for ap, aq in next, ao.GetChildren(ao)do
+                    task.spawn(tryTrackModel, aq)
+                end
+
+                an.Add(an, ao.ChildAdded:Connect(function(ap)
+                    task.spawn(tryTrackModel, ap)
+                end))
+            end
+
+            function al.Start()
+                if am then
+                    return
+                end
+
+                local an = ae.new()
+
+                am = an
+
+                local ao = ac.FindFirstChild(ac, 'Characters')
+
+                if ao then
+                    watchFolder(an, ao)
+                else
+                    an.Add(an, ac.ChildAdded:Connect(function(ap)
+                        if ap.Name == 'Characters' then
+                            watchFolder(an, ap)
+                        end
+                    end))
+                end
+
+                local ap = ab.FindFirstChild(ab, aj)
+
+                if ap then
+                    watchFolder(an, ap)
+                else
+                    an.Add(an, ab.ChildAdded:Connect(function(aq)
+                        if aq.Name == aj then
+                            watchFolder(an, aq)
+                        end
+                    end))
+                end
+            end
+            function al.Stop()
+                if am then
+                    am.Destroy(am)
+
+                    am = nil
+                end
+            end
+
+            return al
+        end
+
+        function a.dI()
+            local aa = a.cache.dI
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.dI = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
             local aa, ab = a.i(), a.j()
             local ac, ad, ae = aa.atom, aa.peek, {}
 
@@ -54933,14 +55193,14 @@ do
             return ae
         end
 
-        function a.dI()
-            local aa = a.cache.dI
+        function a.dJ()
+            local aa = a.cache.dJ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dI = aa
+                a.cache.dJ = aa
             end
 
             return aa.c
@@ -55069,14 +55329,14 @@ do
             return ah
         end
 
-        function a.dJ()
-            local aa = a.cache.dJ
+        function a.dK()
+            local aa = a.cache.dK
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dJ = aa
+                a.cache.dK = aa
             end
 
             return aa.c
@@ -55088,9 +55348,9 @@ do
 
             local ab, ac = a.K(), a.N()
 
-            a.dI()
+            a.dJ()
 
-            local ae, af, ag = a.dJ(), ab.createElement, ac.useAtom
+            local ae, af, ag = a.dK(), ab.createElement, ac.useAtom
             local ah = ae.vector2ToUDim2Offset
 
             return LPH_NO_VIRTUALIZE(function(ai)
@@ -55142,14 +55402,14 @@ do
             end)
         end
 
-        function a.dK()
-            local aa = a.cache.dK
+        function a.dL()
+            local aa = a.cache.dL
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dK = aa
+                a.cache.dL = aa
             end
 
             return aa.c
@@ -55571,14 +55831,14 @@ do
             return ap
         end
 
-        function a.dL()
-            local aa = a.cache.dL
+        function a.dM()
+            local aa = a.cache.dM
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dL = aa
+                a.cache.dM = aa
             end
 
             return aa.c
@@ -55616,14 +55876,14 @@ do
             }
         end
 
-        function a.dM()
-            local aa = a.cache.dM
+        function a.dN()
+            local aa = a.cache.dN
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dM = aa
+                a.cache.dN = aa
             end
 
             return aa.c
@@ -55774,14 +56034,14 @@ do
             return {generate = ar}
         end
 
-        function a.dN()
-            local aa = a.cache.dN
+        function a.dO()
+            local aa = a.cache.dO
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dN = aa
+                a.cache.dO = aa
             end
 
             return aa.c
@@ -55793,7 +56053,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al = a.dJ(), a.dL(), a.dN(), ab.createElement, ac.useAtom, aa.peek, aa.subscribe, ab.joinBindings
+            local ae, af, ag, ah, ai, aj, ak, al = a.dK(), a.dM(), a.dO(), ab.createElement, ac.useAtom, aa.peek, aa.subscribe, ab.joinBindings
             local am, an, ao, ap, aq = ae.createBindable, ae.fadedTransparency, UDim2.new(), UDim2.fromScale(1, 1), identifyexecutor() ~= 'Volt'
             local ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD = aq and {
                 'Normal',
@@ -56202,14 +56462,14 @@ do
             }
         end
 
-        function a.dO()
-            local aa = a.cache.dO
+        function a.dP()
+            local aa = a.cache.dP
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dO = aa
+                a.cache.dP = aa
             end
 
             return aa.c
@@ -56220,9 +56480,9 @@ do
             local aa, ab = a.h(), a.i()
 
             a.cy()
-            a.dJ()
+            a.dK()
 
-            local ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq = a.dL(), ab.peek, ab.subscribe, {
+            local ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq = a.dM(), ab.peek, ab.subscribe, {
                 'ForceField',
                 'Neon',
             }, Color3.fromRGB(195, 95, 95), 'Neon', 0.005, 1, {
@@ -56887,14 +57147,14 @@ do
             }
         end
 
-        function a.dP()
-            local aa = a.cache.dP
+        function a.dQ()
+            local aa = a.cache.dQ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dP = aa
+                a.cache.dQ = aa
             end
 
             return aa.c
@@ -56906,7 +57166,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj = a.dJ(), a.dL(), aa.peek, aa.subscribe, ab.createElement, ac.useAtom
+            local ae, af, ag, ah, ai, aj = a.dK(), a.dM(), aa.peek, aa.subscribe, ab.createElement, ac.useAtom
             local ak, al, am, an, ao, ap, aq, ar, as, at = ae.createBindable, ae.fadedTransparency, 10, math.exp, 
 -1, 0, ColorSequence.new{
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 153)),
@@ -57099,14 +57359,14 @@ do
             }
         end
 
-        function a.dQ()
-            local aa = a.cache.dQ
+        function a.dR()
+            local aa = a.cache.dR
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dQ = aa
+                a.cache.dR = aa
             end
 
             return aa.c
@@ -57118,7 +57378,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al = a.dJ(), a.dL(), (aa).__subscribeToBinding, ab.peek, ab.subscribe, Color3.fromRGB(0, 255, 238), Color3.fromRGB(199, 143, 255), 1e-3
+            local ae, af, ag, ah, ai, aj, ak, al = a.dK(), a.dM(), (aa).__subscribeToBinding, ab.peek, ab.subscribe, Color3.fromRGB(0, 255, 238), Color3.fromRGB(199, 143, 255), 1e-3
             local am = {
                 folder = nil,
                 masterActive = false,
@@ -57465,14 +57725,14 @@ do
             }
         end
 
-        function a.dR()
-            local aa = a.cache.dR
+        function a.dS()
+            local aa = a.cache.dS
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dR = aa
+                a.cache.dS = aa
             end
 
             return aa.c
@@ -57483,9 +57743,9 @@ do
             local aa, ab, ac = a.K(), a.i(), a.L()
 
             a.cy()
-            a.dJ()
+            a.dK()
 
-            local af, ag, ah, ai, aj, ak, al, am = a.dL(), ab.peek, ab.subscribe, (aa).__subscribeToBinding, Color3.fromRGB(152, 188, 255), 5, Vector3.new(0.03, 0.03, 0.03), 1e-3
+            local af, ag, ah, ai, aj, ak, al, am = a.dM(), ab.peek, ab.subscribe, (aa).__subscribeToBinding, Color3.fromRGB(152, 188, 255), 5, Vector3.new(0.03, 0.03, 0.03), 1e-3
             local an = {
                 folder = nil,
                 masterActive = false,
@@ -57821,14 +58081,14 @@ do
             }
         end
 
-        function a.dS()
-            local aa = a.cache.dS
+        function a.dT()
+            local aa = a.cache.dT
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dS = aa
+                a.cache.dT = aa
             end
 
             return aa.c
@@ -57836,7 +58096,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'Workspace'))), a.L(), a.dM(), cloneref(gethui()), math.deg, math.atan2, math.sqrt, 0.2, nil, {}
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'Workspace'))), a.L(), a.dN(), cloneref(gethui()), math.deg, math.atan2, math.sqrt, 0.2, nil, {}
 
             local function ensureGui()
                 local ak = ai
@@ -58036,14 +58296,14 @@ do
             }
         end
 
-        function a.dT()
-            local aa = a.cache.dT
+        function a.dU()
+            local aa = a.cache.dU
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dT = aa
+                a.cache.dU = aa
             end
 
             return aa.c
@@ -58126,14 +58386,14 @@ do
             }
         end
 
-        function a.dU()
-            local aa = a.cache.dU
+        function a.dV()
+            local aa = a.cache.dV
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dU = aa
+                a.cache.dV = aa
             end
 
             return aa.c
@@ -58144,9 +58404,9 @@ do
             local aa, ab = a.K(), a.i()
 
             a.cy()
-            a.dJ()
+            a.dK()
 
-            local ae, af, ag, ah, ai, aj, ak, al = a.dL(), a.dT(), a.dU(), ab.peek, ab.subscribe, (aa).__subscribeToBinding, Color3.fromRGB(225, 225, 225), Color3.fromRGB(18, 18, 18)
+            local ae, af, ag, ah, ai, aj, ak, al = a.dM(), a.dU(), a.dV(), ab.peek, ab.subscribe, (aa).__subscribeToBinding, Color3.fromRGB(225, 225, 225), Color3.fromRGB(18, 18, 18)
             local am, an = ag.MAX_EDGES, {
                 masterActive = false,
                 settings = nil,
@@ -58419,14 +58679,14 @@ do
             }
         end
 
-        function a.dV()
-            local aa = a.cache.dV
+        function a.dW()
+            local aa = a.cache.dW
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dV = aa
+                a.cache.dW = aa
             end
 
             return aa.c
@@ -58438,7 +58698,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah = a.dJ(), a.dL(), aa.createElement, ab.useAtom
+            local ae, af, ag, ah = a.dK(), a.dM(), aa.createElement, ab.useAtom
             local ai, aj, ak, al, am, an, ao = ae.createBindable, ae.fadedTransparency, Vector2.new(0.5, 1), ColorSequence.new(Color3.fromRGB(225, 225, 225)), Color3.fromRGB(18, 18, 18), Color3.new(1, 1, 1), 3
 
             local function setup(ap)
@@ -58550,14 +58810,14 @@ do
             }
         end
 
-        function a.dW()
-            local aa = a.cache.dW
+        function a.dX()
+            local aa = a.cache.dX
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dW = aa
+                a.cache.dX = aa
             end
 
             return aa.c
@@ -58569,7 +58829,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak = a.dJ(), a.dL(), aa.peek, aa.subscribe, ab.createElement, ac.useAtom
+            local af, ag, ah, ai, aj, ak = a.dK(), a.dM(), aa.peek, aa.subscribe, ab.createElement, ac.useAtom
             local al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax = af.createBindable, af.fadedTransparency, ab.joinBindings, math.floor, Vector2.new(1, 0), ColorSequence.new(Color3.fromRGB(200, 200, 200)), Color3.fromRGB(18, 18, 18), Color3.new(1, 1, 1), 5, 8, math.exp, 
 -1, 0
 
@@ -58761,14 +59021,14 @@ do
             }
         end
 
-        function a.dX()
-            local aa = a.cache.dX
+        function a.dY()
+            local aa = a.cache.dY
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dX = aa
+                a.cache.dY = aa
             end
 
             return aa.c
@@ -58780,7 +59040,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al = a.dJ(), a.dL(), aa.atom, aa.peek, aa.subscribe, ab.createElement, ac.useAtom
+            local af, ag, ah, ai, aj, ak, al = a.dK(), a.dM(), aa.atom, aa.peek, aa.subscribe, ab.createElement, ac.useAtom
             local am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS = af.createBindable, af.fadedTransparency, af.vector2ToUDim2Offset, Vector2.new, math.atan2, math.deg, math.sqrt, math.floor, math.exp, 20, 0.004, 
 -1, 0, Color3.fromRGB(220, 90, 90), ColorSequence.new{
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(120, 200, 130)),
@@ -59179,14 +59439,14 @@ do
             }
         end
 
-        function a.dY()
-            local aa = a.cache.dY
+        function a.dZ()
+            local aa = a.cache.dZ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dY = aa
+                a.cache.dZ = aa
             end
 
             return aa.c
@@ -59194,7 +59454,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'ContentProvider'))), a.K(), a.M(), a.i(), a.L(), a.dI(), a.dK(), a.dL(), a.dT(), a.dM(), a.v(), a.aP()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'ContentProvider'))), a.K(), a.M(), a.i(), a.L(), a.dJ(), a.dL(), a.dM(), a.dU(), a.dN(), a.v(), a.aP()
             local ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE = ae.createElement, ag.atom, ag.peek, ag.subscribe, (ae).__subscribeToBinding, 
 -2147483647, 'rbxassetid://10921259953', Vector3.new(0, 0, 0), Vector3.new(0.1, 0.3, 0), 180, 0, 60, 10, 0.0075, 1.2, {
                 'Head',
@@ -60048,14 +60308,14 @@ do
             return aG
         end
 
-        function a.dZ()
-            local aa = a.cache.dZ
+        function a.d_()
+            local aa = a.cache.d_
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.dZ = aa
+                a.cache.d_ = aa
             end
 
             return aa.c
@@ -60067,7 +60327,7 @@ do
 
             a.cy()
 
-            local ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, aH = a.H(), a.dI(), a.dJ(), a.dK(), a.dL(), a.dM(), a.dO(), a.dP(), a.dQ(), a.dR(), a.dS(), a.dV(), a.dW(), a.dX(), a.dY(), a.dZ(), a.bD(), ad.createElement, af.atom, af.peek, af.subscribe, math.floor, Vector2.new, os.clock, 2.5, 3.8
+            local ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD, aE, aF, aG, aH = a.H(), a.dJ(), a.dK(), a.dL(), a.dM(), a.dN(), a.dP(), a.dQ(), a.dR(), a.dS(), a.dT(), a.dW(), a.dX(), a.dY(), a.dZ(), a.d_(), a.bD(), ad.createElement, af.atom, af.peek, af.subscribe, math.floor, Vector2.new, os.clock, 2.5, 3.8
             local aI, aJ = aG + aH, 4.2
             local aK, aL, aM, aN, aO = aJ * 0.5, {
                 'Head',
@@ -61139,14 +61399,14 @@ do
             return aZ
         end
 
-        function a.d_()
-            local aa = a.cache.d_
+        function a.d0()
+            local aa = a.cache.d0
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d_ = aa
+                a.cache.d0 = aa
             end
 
             return aa.c
@@ -61158,7 +61418,7 @@ do
 
             a.cy()
 
-            local ag, ah, ai, aj, ak, al, am, an, ao = a.ai(), a.dJ(), a.c5(), aa.createElement, ad.useAtom, ab.useSpring, aa.useEffect, aa.useMemo, aa.joinBindings
+            local ag, ah, ai, aj, ak, al, am, an, ao = a.ai(), a.dK(), a.c5(), aa.createElement, ad.useAtom, ab.useSpring, aa.useEffect, aa.useMemo, aa.joinBindings
             local ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB = ah.createBindable, math.floor, 1, 8, 3, 2, 8, Color3.fromRGB(200, 200, 200), Color3.fromRGB(18, 18, 18), Color3.fromRGB(225, 205, 150), {}, 'm', ac.atom(nil)
 
             local function Configure(aC)
@@ -61458,14 +61718,14 @@ do
             return aH
         end
 
-        function a.d0()
-            local aa = a.cache.d0
+        function a.d1()
+            local aa = a.cache.d1
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d0 = aa
+                a.cache.d1 = aa
             end
 
             return aa.c
@@ -61473,7 +61733,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.i(), a.dJ()
+            local aa, ab, ac = (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.i(), a.dK()
             local ad, ae, af, ag, ah = ab.peek, ab.subscribe, {}, {}, {}
 
             ah.createBindable = ac.createBindable
@@ -61685,14 +61945,14 @@ do
             return ah
         end
 
-        function a.d1()
-            local aa = a.cache.d1
+        function a.d2()
+            local aa = a.cache.d2
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d1 = aa
+                a.cache.d2 = aa
             end
 
             return aa.c
@@ -61704,7 +61964,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah = a.d1(), a.dL(), aa.createElement, ab.useAtom
+            local ae, af, ag, ah = a.d2(), a.dM(), aa.createElement, ab.useAtom
             local ai, aj, ak, al, am, an, ao, ap = ae.createBindable, ae.fadedTransparency, ae.stepSwitchFade, ColorSequence.new(Color3.fromRGB(200, 200, 200)), Color3.fromRGB(18, 18, 18), Color3.new(1, 1, 1), 3, Vector2.new(0.5, 0)
 
             local function belowToUDim2(aq)
@@ -61849,14 +62109,14 @@ do
             }
         end
 
-        function a.d2()
-            local aa = a.cache.d2
+        function a.d3()
+            local aa = a.cache.d3
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d2 = aa
+                a.cache.d3 = aa
             end
 
             return aa.c
@@ -61868,7 +62128,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj = a.d1(), a.dL(), aa.peek, aa.subscribe, ac.createElement, ab.useAtom
+            local ae, af, ag, ah, ai, aj = a.d2(), a.dM(), aa.peek, aa.subscribe, ac.createElement, ab.useAtom
             local ak, al, am, an, ao, ap, aq, ar, as = ae.createBindable, ae.fadedTransparency, ae.vector2ToUDim2Offset, ae.stepSwitchFade, Vector2.new, 3, 2, Color3.new(1, 1, 1), Vector2.new(0.5, 0)
 
             local function belowToUDim2(at)
@@ -61996,14 +62256,14 @@ do
             }
         end
 
-        function a.d3()
-            local aa = a.cache.d3
+        function a.d4()
+            local aa = a.cache.d4
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d3 = aa
+                a.cache.d4 = aa
             end
 
             return aa.c
@@ -62015,7 +62275,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj = a.d1(), a.dL(), aa.peek, aa.subscribe, ac.createElement, ab.useAtom
+            local ae, af, ag, ah, ai, aj = a.d2(), a.dM(), aa.peek, aa.subscribe, ac.createElement, ab.useAtom
             local ak, al, am, an, ao = ae.createBindable, ae.fadedTransparency, ae.stepSwitchFade, 10, 3
             local ap, aq, ar, as, at, au, av, aw = UDim2.new(0, 0, 1, ao), ColorSequence.new{
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 255, 153)),
@@ -62191,14 +62451,14 @@ do
             }
         end
 
-        function a.d4()
-            local aa = a.cache.d4
+        function a.d5()
+            local aa = a.cache.d5
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d4 = aa
+                a.cache.d5 = aa
             end
 
             return aa.c
@@ -62210,7 +62470,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah = a.d1(), a.dL(), aa.createElement, ab.useAtom
+            local ae, af, ag, ah = a.d2(), a.dM(), aa.createElement, ab.useAtom
             local ai, aj, ak, al, am, an, ao, ap = ae.createBindable, ae.fadedTransparency, ae.stepSwitchFade, ColorSequence.new(Color3.fromRGB(200, 200, 200)), Color3.fromRGB(18, 18, 18), Color3.new(1, 1, 1), 3, Vector2.new(0.5, 0)
 
             local function belowToUDim2(aq)
@@ -62350,14 +62610,14 @@ do
             }
         end
 
-        function a.d5()
-            local aa = a.cache.d5
+        function a.d6()
+            local aa = a.cache.d6
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d5 = aa
+                a.cache.d6 = aa
             end
 
             return aa.c
@@ -62365,11 +62625,11 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = a.i(), a.d_(), a.dP(), a.l(), a.c3(), a.k()
+            local aa, ab, ac, ad, ae, af = a.i(), a.d0(), a.dQ(), a.l(), a.c3(), a.k()
 
             a.cy()
 
-            local ah, ai, aj, ak, al, am, an, ao = a.I(), a.d0(), a.d2(), a.d3(), a.d4(), a.d5(), aa.peek, aa.subscribe
+            local ah, ai, aj, ak, al, am, an, ao = a.I(), a.d1(), a.d3(), a.d4(), a.d5(), a.d6(), aa.peek, aa.subscribe
 
             ai.Configure{
                 {
@@ -62617,24 +62877,6 @@ do
             return ar
         end
 
-        function a.d6()
-            local aa = a.cache.d6
-
-            if not aa then
-                aa = {
-                    c = __modImpl(),
-                }
-                a.cache.d6 = aa
-            end
-
-            return aa.c
-        end
-    end
-    do
-        local function __modImpl()
-            return a.g().get'Ripple'
-        end
-
         function a.d7()
             local aa = a.cache.d7
 
@@ -62650,11 +62892,29 @@ do
     end
     do
         local function __modImpl()
+            return a.g().get'Ripple'
+        end
+
+        function a.d8()
+            local aa = a.cache.d8
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.d8 = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
             local aa, ab, ac, ad, ae, af = a.c(), a.h(), a.i(), a.J(), a.e(), a.l()
 
             a.cy()
 
-            local ah, ai, aj, ak, al, am, an, ao, ap = a.I(), a.H(), a.L(), a.ag(), a.d7(), cloneref(workspace), cloneref(gethui()), ac.peek, {}
+            local ah, ai, aj, ak, al, am, an, ao, ap = a.I(), a.H(), a.L(), a.ag(), a.d8(), cloneref(workspace), cloneref(gethui()), ac.peek, {}
 
             ap.__index = ap
 
@@ -62846,14 +63106,14 @@ do
             return ap
         end
 
-        function a.d8()
-            local aa = a.cache.d8
+        function a.d9()
+            local aa = a.cache.d9
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d8 = aa
+                a.cache.d9 = aa
             end
 
             return aa.c
@@ -63019,14 +63279,14 @@ do
             return ag
         end
 
-        function a.d9()
-            local aa = a.cache.d9
+        function a.ea()
+            local aa = a.cache.ea
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.d9 = aa
+                a.cache.ea = aa
             end
 
             return aa.c
@@ -63034,7 +63294,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae = a.d9(), a.e(), a.cB(), a.H(), a.c()
+            local aa, ab, ac, ad, ae = a.ea(), a.e(), a.cB(), a.H(), a.c()
 
             a.cy()
 
@@ -63185,14 +63445,14 @@ do
             return ah
         end
 
-        function a.ea()
-            local aa = a.cache.ea
+        function a.eb()
+            local aa = a.cache.eb
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ea = aa
+                a.cache.eb = aa
             end
 
             return aa.c
@@ -63807,14 +64067,14 @@ do
             end)
         end
 
-        function a.eb()
-            local aa = a.cache.eb
+        function a.ec()
+            local aa = a.cache.ec
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eb = aa
+                a.cache.ec = aa
             end
 
             return aa.c
@@ -64086,14 +64346,14 @@ do
             return an
         end
 
-        function a.ec()
-            local aa = a.cache.ec
+        function a.ed()
+            local aa = a.cache.ed
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ec = aa
+                a.cache.ed = aa
             end
 
             return aa.c
@@ -64105,7 +64365,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap = a.L(), a.eb(), a.ec(), aa.createElement, (aa).__subscribeToBinding, Color3.fromRGB(195, 110, 110), Color3.fromRGB(220, 190, 110), Color3.fromRGB(28, 28, 28), Color3.fromRGB(195, 110, 110), Color3.fromRGB(120, 175, 200), Color3.fromRGB(165, 75, 75), Color3.fromRGB(85, 130, 155)
+            local ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap = a.L(), a.ec(), a.ed(), aa.createElement, (aa).__subscribeToBinding, Color3.fromRGB(195, 110, 110), Color3.fromRGB(220, 190, 110), Color3.fromRGB(28, 28, 28), Color3.fromRGB(195, 110, 110), Color3.fromRGB(120, 175, 200), Color3.fromRGB(165, 75, 75), Color3.fromRGB(85, 130, 155)
 
             local function bindColor(aq, ar)
                 ar(aq.getValue(aq))
@@ -64221,14 +64481,14 @@ do
             return aq
         end
 
-        function a.ed()
-            local aa = a.cache.ed
+        function a.ee()
+            local aa = a.cache.ee
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ed = aa
+                a.cache.ee = aa
             end
 
             return aa.c
@@ -64398,14 +64658,14 @@ do
             return al
         end
 
-        function a.ee()
-            local aa = a.cache.ee
+        function a.ef()
+            local aa = a.cache.ef
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ee = aa
+                a.cache.ef = aa
             end
 
             return aa.c
@@ -64579,14 +64839,14 @@ do
             }
         end
 
-        function a.ef()
-            local aa = a.cache.ef
+        function a.eg()
+            local aa = a.cache.eg
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ef = aa
+                a.cache.eg = aa
             end
 
             return aa.c
@@ -64598,7 +64858,7 @@ do
 
             a.cy()
 
-            local ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao = a.L(), a.ee(), a.i(), a.h(), a.l(), a.c3(), a.H(), a.K(), a.I(), a.M(), a.ef(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
+            local ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao = a.L(), a.ef(), a.i(), a.h(), a.l(), a.c3(), a.H(), a.K(), a.I(), a.M(), a.eg(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
             local ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB, aC, aD = ao.Terrain, ae.peek, aj.createElement, Color3.fromRGB(145, 190, 215), Color3.fromRGB(120, 200, 130), 0.06, 0.15, 0.06, 22.3, 0.27, 0.574, 8, 13, 20, Color3.fromRGB(245, 175, 80)
 
             local function resolveColor(aE, aF)
@@ -65013,14 +65273,14 @@ do
             return aF
         end
 
-        function a.eg()
-            local aa = a.cache.eg
+        function a.eh()
+            local aa = a.cache.eh
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eg = aa
+                a.cache.eh = aa
             end
 
             return aa.c
@@ -65450,14 +65710,14 @@ do
             end
         end
 
-        function a.eh()
-            local aa = a.cache.eh
+        function a.ei()
+            local aa = a.cache.ei
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eh = aa
+                a.cache.ei = aa
             end
 
             return aa.c
@@ -65469,7 +65729,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al, am = a.L(), a.eh(), aa.createElement, Color3.fromRGB(220, 190, 110), Color3.fromRGB(145, 190, 215), Color3.fromRGB(195, 110, 110), Color3.fromRGB(120, 175, 200), Color3.fromRGB(42, 42, 42), {}
+            local ae, af, ag, ah, ai, aj, ak, al, am = a.L(), a.ei(), aa.createElement, Color3.fromRGB(220, 190, 110), Color3.fromRGB(145, 190, 215), Color3.fromRGB(195, 110, 110), Color3.fromRGB(120, 175, 200), Color3.fromRGB(42, 42, 42), {}
 
             am.__index = am
 
@@ -65540,14 +65800,14 @@ do
             return am
         end
 
-        function a.ei()
-            local aa = a.cache.ei
+        function a.ej()
+            local aa = a.cache.ej
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ei = aa
+                a.cache.ej = aa
             end
 
             return aa.c
@@ -66187,14 +66447,14 @@ do
             }
         end
 
-        function a.ej()
-            local aa = a.cache.ej
+        function a.ek()
+            local aa = a.cache.ek
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ej = aa
+                a.cache.ek = aa
             end
 
             return aa.c
@@ -66206,7 +66466,7 @@ do
 
             a.cy()
 
-            local ad, ae, af, ag, ah, ai, aj, ak, al = a.L(), a.ej(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), aa.peek, 14, 0.15, 0.2, {}
+            local ad, ae, af, ag, ah, ai, aj, ak, al = a.L(), a.ek(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), aa.peek, 14, 0.15, 0.2, {}
 
             al.__index = al
 
@@ -66414,14 +66674,14 @@ do
             return al
         end
 
-        function a.ek()
-            local aa = a.cache.ek
+        function a.el()
+            local aa = a.cache.el
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ek = aa
+                a.cache.el = aa
             end
 
             return aa.c
@@ -66431,7 +66691,7 @@ do
         local function __modImpl()
             local aa = a.cI()
 
-            a.ej()
+            a.ek()
 
             local ac, ad, ae, af, ag = Color3.fromRGB(176, 198, 224), Color3.fromRGB(126, 168, 220), Color3.fromRGB(232, 146, 72), Color3.fromRGB(236, 108, 44), LPH_JIT_MAX(function(
                 ag,
@@ -66513,14 +66773,14 @@ do
             }
         end
 
-        function a.el()
-            local aa = a.cache.el
+        function a.em()
+            local aa = a.cache.em
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.el = aa
+                a.cache.em = aa
             end
 
             return aa.c
@@ -66528,7 +66788,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.N(), a.ah(), a.ag(), a.d1(), a.cL(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
+            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.N(), a.ah(), a.ag(), a.d2(), a.cL(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
             local ai = ah.CurrentCamera
 
             ah.GetPropertyChangedSignal(ah, 'CurrentCamera'):Connect(function()
@@ -66776,14 +67036,14 @@ do
             end)
         end
 
-        function a.em()
-            local aa = a.cache.em
+        function a.en()
+            local aa = a.cache.en
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.em = aa
+                a.cache.en = aa
             end
 
             return aa.c
@@ -66795,7 +67055,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al, am, an = a.L(), a.em(), aa.createElement, Color3.fromRGB(200, 200, 200), Color3.fromRGB(220, 190, 110), Color3.fromRGB(145, 190, 215), Color3.fromRGB(18, 18, 18), ColorSequence.new{
+            local ae, af, ag, ah, ai, aj, ak, al, am, an = a.L(), a.en(), aa.createElement, Color3.fromRGB(200, 200, 200), Color3.fromRGB(220, 190, 110), Color3.fromRGB(145, 190, 215), Color3.fromRGB(18, 18, 18), ColorSequence.new{
                 ColorSequenceKeypoint.new(0, Color3.fromRGB(220, 95, 95)),
                 ColorSequenceKeypoint.new(1, Color3.fromRGB(200, 186, 160)),
             }, Color3.fromRGB(42, 42, 42), {}
@@ -66931,14 +67191,14 @@ do
             return an
         end
 
-        function a.en()
-            local aa = a.cache.en
+        function a.eo()
+            local aa = a.cache.eo
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.en = aa
+                a.cache.eo = aa
             end
 
             return aa.c
@@ -67082,14 +67342,14 @@ do
             return au
         end
 
-        function a.eo()
-            local aa = a.cache.eo
+        function a.ep()
+            local aa = a.cache.ep
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eo = aa
+                a.cache.ep = aa
             end
 
             return aa.c
@@ -67105,7 +67365,7 @@ do
 
             a.cy()
 
-            local ag, ah, ai, aj, ak, al, am = a.L(), a.eo(), ad.createElement, Color3.fromRGB(225, 225, 225), Color3.fromRGB(220, 95, 95), Color3.fromRGB(18, 18, 18), {}
+            local ag, ah, ai, aj, ak, al, am = a.L(), a.ep(), ad.createElement, Color3.fromRGB(225, 225, 225), Color3.fromRGB(220, 95, 95), Color3.fromRGB(18, 18, 18), {}
 
             am.__index = am
 
@@ -67220,14 +67480,14 @@ do
             return am
         end
 
-        function a.ep()
-            local aa = a.cache.ep
+        function a.eq()
+            local aa = a.cache.eq
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ep = aa
+                a.cache.eq = aa
             end
 
             return aa.c
@@ -67235,7 +67495,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.ep(), a.cB()
+            local aa, ab = a.eq(), a.cB()
 
             a.cy()
 
@@ -67257,14 +67517,14 @@ do
             return ad
         end
 
-        function a.eq()
-            local aa = a.cache.eq
+        function a.er()
+            local aa = a.cache.er
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eq = aa
+                a.cache.er = aa
             end
 
             return aa.c
@@ -67272,7 +67532,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = cloneref(game.GetService(game, 'Workspace')), (cloneref(game.GetService(game, 'RunService'))), a.d7()
+            local aa, ab, ac = cloneref(game.GetService(game, 'Workspace')), (cloneref(game.GetService(game, 'RunService'))), a.d8()
 
             a.t()
 
@@ -67280,7 +67540,7 @@ do
 
             a.cy()
 
-            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az = a.L(), a.dM(), a.ag(), Color3.fromRGB(245, 245, 245), Color3.fromRGB(255, 96, 96), Color3.fromRGB(10, 10, 12), 0.55, 5, 5, 16, 0.45, 1.5, 1, 1.15, 0.25, 25, 0.6, 2.2, 0.5, {
+            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az = a.L(), a.dN(), a.ag(), Color3.fromRGB(245, 245, 245), Color3.fromRGB(255, 96, 96), Color3.fromRGB(10, 10, 12), 0.55, 5, 5, 16, 0.45, 1.5, 1, 1.15, 0.25, 25, 0.6, 2.2, 0.5, {
                 dampingRatio = 0.6,
                 frequency = 7,
                 precision = 0.001,
@@ -67623,14 +67883,14 @@ do
             return aD
         end
 
-        function a.er()
-            local aa = a.cache.er
+        function a.es()
+            local aa = a.cache.es
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.er = aa
+                a.cache.es = aa
             end
 
             return aa.c
@@ -67638,7 +67898,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.er(), a.cB()
+            local aa, ab = a.es(), a.cB()
 
             a.cy()
 
@@ -67662,14 +67922,14 @@ do
             return ad
         end
 
-        function a.es()
-            local aa = a.cache.es
+        function a.et()
+            local aa = a.cache.et
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.es = aa
+                a.cache.et = aa
             end
 
             return aa.c
@@ -67685,7 +67945,7 @@ do
 
             a.t()
 
-            local af, ag, ah, ai, aj, ak, al = a.L(), a.ag(), a.d7(), Color3.fromRGB(225, 225, 225), Color3.fromRGB(220, 95, 95), 0.12, {}
+            local af, ag, ah, ai, aj, ak, al = a.L(), a.ag(), a.d8(), Color3.fromRGB(225, 225, 225), Color3.fromRGB(220, 95, 95), 0.12, {}
 
             al.__index = al
 
@@ -67856,14 +68116,14 @@ do
             return al
         end
 
-        function a.et()
-            local aa = a.cache.et
+        function a.eu()
+            local aa = a.cache.eu
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.et = aa
+                a.cache.eu = aa
             end
 
             return aa.c
@@ -67871,7 +68131,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.et(), a.cB()
+            local aa, ab = a.eu(), a.cB()
 
             a.cy()
 
@@ -67893,14 +68153,14 @@ do
             return ad
         end
 
-        function a.eu()
-            local aa = a.cache.eu
+        function a.ev()
+            local aa = a.cache.ev
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eu = aa
+                a.cache.ev = aa
             end
 
             return aa.c
@@ -67908,7 +68168,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'Workspace'))), (cloneref(game.GetService(game, 'RunService'))), a.H(), a.d7()
+            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'Workspace'))), (cloneref(game.GetService(game, 'RunService'))), a.H(), a.d8()
 
             a.t()
 
@@ -68242,14 +68502,14 @@ do
             return ar
         end
 
-        function a.ev()
-            local aa = a.cache.ev
+        function a.ew()
+            local aa = a.cache.ew
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ev = aa
+                a.cache.ew = aa
             end
 
             return aa.c
@@ -68257,7 +68517,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.ev(), a.cB()
+            local aa, ab = a.ew(), a.cB()
 
             a.cy()
 
@@ -68278,14 +68538,14 @@ do
             return ad
         end
 
-        function a.ew()
-            local aa = a.cache.ew
+        function a.ex()
+            local aa = a.cache.ex
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ew = aa
+                a.cache.ex = aa
             end
 
             return aa.c
@@ -68293,11 +68553,11 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), a.H(), a.d7()
+            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), a.H(), a.d8()
 
             a.t()
 
-            local af, ag, ah, ai, aj = a.K(), a.J(), a.L(), a.dM(), a.dU()
+            local af, ag, ah, ai, aj = a.K(), a.J(), a.L(), a.dN(), a.dV()
 
             a.cy()
 
@@ -68634,14 +68894,14 @@ do
             return ax
         end
 
-        function a.ex()
-            local aa = a.cache.ex
+        function a.ey()
+            local aa = a.cache.ey
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ex = aa
+                a.cache.ey = aa
             end
 
             return aa.c
@@ -68649,7 +68909,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.ex(), a.cB()
+            local aa, ab = a.ey(), a.cB()
 
             a.cy()
 
@@ -68670,14 +68930,14 @@ do
             return ad
         end
 
-        function a.ey()
-            local aa = a.cache.ey
+        function a.ez()
+            local aa = a.cache.ez
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ey = aa
+                a.cache.ez = aa
             end
 
             return aa.c
@@ -69090,14 +69350,14 @@ do
             return ao
         end
 
-        function a.ez()
-            local aa = a.cache.ez
+        function a.eA()
+            local aa = a.cache.eA
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ez = aa
+                a.cache.eA = aa
             end
 
             return aa.c
@@ -69513,14 +69773,14 @@ do
             return ak
         end
 
-        function a.eA()
-            local aa = a.cache.eA
+        function a.eB()
+            local aa = a.cache.eB
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eA = aa
+                a.cache.eB = aa
             end
 
             return aa.c
@@ -69528,7 +69788,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = a.eA(), a.cB(), a.H()
+            local aa, ab, ac = a.eB(), a.cB(), a.H()
 
             a.cy()
 
@@ -69568,14 +69828,14 @@ do
             return ae
         end
 
-        function a.eB()
-            local aa = a.cache.eB
+        function a.eC()
+            local aa = a.cache.eC
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eB = aa
+                a.cache.eC = aa
             end
 
             return aa.c
@@ -69744,14 +70004,14 @@ do
             return an
         end
 
-        function a.eC()
-            local aa = a.cache.eC
+        function a.eD()
+            local aa = a.cache.eD
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eC = aa
+                a.cache.eD = aa
             end
 
             return aa.c
@@ -69759,7 +70019,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.eC(), a.cB()
+            local aa, ab = a.eD(), a.cB()
 
             a.cy()
 
@@ -69781,14 +70041,14 @@ do
             return ad
         end
 
-        function a.eD()
-            local aa = a.cache.eD
+        function a.eE()
+            local aa = a.cache.eE
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eD = aa
+                a.cache.eE = aa
             end
 
             return aa.c
@@ -69870,14 +70130,14 @@ do
             return ad
         end
 
-        function a.eE()
-            local aa = a.cache.eE
+        function a.eF()
+            local aa = a.cache.eF
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eE = aa
+                a.cache.eF = aa
             end
 
             return aa.c
@@ -69955,14 +70215,14 @@ do
             }
         end
 
-        function a.eF()
-            local aa = a.cache.eF
+        function a.eG()
+            local aa = a.cache.eG
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eF = aa
+                a.cache.eG = aa
             end
 
             return aa.c
@@ -69970,7 +70230,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.i(), a.eF()
+            local aa, ab = a.i(), a.eG()
             local ac, ad, ae, af = aa.peek, ab.PART_TO_HITBOX, ab.DAMAGE_PART_KEY, 500
 
             return LPH_NO_VIRTUALIZE(function(ag, ah, ai, aj, ak)
@@ -70025,14 +70285,14 @@ do
             end)
         end
 
-        function a.eG()
-            local aa = a.cache.eG
+        function a.eH()
+            local aa = a.cache.eH
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eG = aa
+                a.cache.eH = aa
             end
 
             return aa.c
@@ -70040,7 +70300,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'Workspace'))), a.eE(), a.cB(), a.H(), a.c3(), a.eG()
+            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'Workspace'))), a.eF(), a.cB(), a.H(), a.c3(), a.eH()
 
             a.cy()
 
@@ -70195,14 +70455,14 @@ do
             return aj
         end
 
-        function a.eH()
-            local aa = a.cache.eH
+        function a.eI()
+            local aa = a.cache.eI
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eH = aa
+                a.cache.eI = aa
             end
 
             return aa.c
@@ -70210,7 +70470,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = cloneref(game.GetService(game, 'Workspace')), (cloneref(game.GetService(game, 'RunService'))), a.d7()
+            local aa, ab, ac = cloneref(game.GetService(game, 'Workspace')), (cloneref(game.GetService(game, 'RunService'))), a.d8()
 
             a.t()
 
@@ -70218,7 +70478,7 @@ do
 
             a.cy()
 
-            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB = a.L(), a.dM(), a.ag(), Color3.fromRGB(245, 245, 245), Color3.fromRGB(255, 96, 96), Color3.fromRGB(10, 10, 12), 0.55, 0.35, 3, 0.55, 0.6, 18, 1.6, 1, 1.15, 6, 12, 0.6, 2.6, {
+            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aB = a.L(), a.dN(), a.ag(), Color3.fromRGB(245, 245, 245), Color3.fromRGB(255, 96, 96), Color3.fromRGB(10, 10, 12), 0.55, 0.35, 3, 0.55, 0.6, 18, 1.6, 1, 1.15, 6, 12, 0.6, 2.6, {
                 dampingRatio = 0.6,
                 frequency = 7,
                 precision = 0.001,
@@ -70546,14 +70806,14 @@ do
             return aB
         end
 
-        function a.eI()
-            local aa = a.cache.eI
+        function a.eJ()
+            local aa = a.cache.eJ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eI = aa
+                a.cache.eJ = aa
             end
 
             return aa.c
@@ -70561,7 +70821,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'Workspace'))), a.eI(), a.cB(), a.H(), a.c3(), a.eG()
+            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'Workspace'))), a.eJ(), a.cB(), a.H(), a.c3(), a.eH()
 
             a.cy()
 
@@ -70622,14 +70882,14 @@ do
             return aj
         end
 
-        function a.eJ()
-            local aa = a.cache.eJ
+        function a.eK()
+            local aa = a.cache.eK
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eJ = aa
+                a.cache.eK = aa
             end
 
             return aa.c
@@ -70757,14 +71017,14 @@ do
             return ai
         end
 
-        function a.eK()
-            local aa = a.cache.eK
+        function a.eL()
+            local aa = a.cache.eL
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eK = aa
+                a.cache.eL = aa
             end
 
             return aa.c
@@ -70918,14 +71178,14 @@ do
             return af
         end
 
-        function a.eL()
-            local aa = a.cache.eL
+        function a.eM()
+            local aa = a.cache.eM
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eL = aa
+                a.cache.eM = aa
             end
 
             return aa.c
@@ -70941,14 +71201,14 @@ do
             return ab
         end
 
-        function a.eM()
-            local aa = a.cache.eM
+        function a.eN()
+            local aa = a.cache.eN
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eM = aa
+                a.cache.eN = aa
             end
 
             return aa.c
@@ -71004,14 +71264,14 @@ do
             return ad
         end
 
-        function a.eN()
-            local aa = a.cache.eN
+        function a.eO()
+            local aa = a.cache.eO
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eN = aa
+                a.cache.eO = aa
             end
 
             return aa.c
@@ -71019,7 +71279,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), a.l(), a.eM(), a.eN(), a.J()
+            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), a.l(), a.eN(), a.eO(), a.J()
 
             a.cy()
 
@@ -71175,14 +71435,14 @@ do
             return ap
         end
 
-        function a.eO()
-            local aa = a.cache.eO
+        function a.eP()
+            local aa = a.cache.eP
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eO = aa
+                a.cache.eP = aa
             end
 
             return aa.c
@@ -71293,14 +71553,14 @@ do
             return aj
         end
 
-        function a.eP()
-            local aa = a.cache.eP
+        function a.eQ()
+            local aa = a.cache.eQ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eP = aa
+                a.cache.eQ = aa
             end
 
             return aa.c
@@ -71349,14 +71609,14 @@ do
             return ad
         end
 
-        function a.eQ()
-            local aa = a.cache.eQ
+        function a.eR()
+            local aa = a.cache.eR
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eQ = aa
+                a.cache.eR = aa
             end
 
             return aa.c
@@ -71450,14 +71710,14 @@ do
             return am
         end
 
-        function a.eR()
-            local aa = a.cache.eR
+        function a.eS()
+            local aa = a.cache.eS
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eR = aa
+                a.cache.eS = aa
             end
 
             return aa.c
@@ -71539,14 +71799,14 @@ do
             return ag
         end
 
-        function a.eS()
-            local aa = a.cache.eS
+        function a.eT()
+            local aa = a.cache.eT
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eS = aa
+                a.cache.eT = aa
             end
 
             return aa.c
@@ -71554,7 +71814,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), a.F(), a.eM(), a.J()
+            local aa, ab, ac, ad, ae = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace'))), a.F(), a.eN(), a.J()
 
             a.cy()
 
@@ -71681,14 +71941,14 @@ do
             return aq
         end
 
-        function a.eT()
-            local aa = a.cache.eT
+        function a.eU()
+            local aa = a.cache.eU
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eT = aa
+                a.cache.eU = aa
             end
 
             return aa.c
@@ -71776,14 +72036,14 @@ do
             return ad
         end
 
-        function a.eU()
-            local aa = a.cache.eU
+        function a.eV()
+            local aa = a.cache.eV
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eU = aa
+                a.cache.eV = aa
             end
 
             return aa.c
@@ -71791,7 +72051,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'RunService'))), a.l(), a.F(), a.eU(), a.eM(), a.eN(), a.J()
+            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'RunService'))), a.l(), a.F(), a.eV(), a.eN(), a.eO(), a.J()
 
             a.cy()
 
@@ -71994,14 +72254,14 @@ do
             return ap
         end
 
-        function a.eV()
-            local aa = a.cache.eV
+        function a.eW()
+            local aa = a.cache.eW
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eV = aa
+                a.cache.eW = aa
             end
 
             return aa.c
@@ -72009,7 +72269,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'RunService'))), a.l(), a.F(), a.eM(), a.eN(), a.J()
+            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'RunService'))), a.l(), a.F(), a.eN(), a.eO(), a.J()
 
             a.cy()
 
@@ -72152,14 +72412,14 @@ do
             return an
         end
 
-        function a.eW()
-            local aa = a.cache.eW
+        function a.eX()
+            local aa = a.cache.eX
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eW = aa
+                a.cache.eX = aa
             end
 
             return aa.c
@@ -72171,7 +72431,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am = a.l(), a.F(), a.eU(), a.eM(), a.eN(), ab.peek, 1e-3, 1
+            local af, ag, ah, ai, aj, ak, al, am = a.l(), a.F(), a.eV(), a.eN(), a.eO(), ab.peek, 1e-3, 1
 
             local function blocked(an)
                 if aj.isAirborne(an) then
@@ -72269,14 +72529,14 @@ do
             return an
         end
 
-        function a.eX()
-            local aa = a.cache.eX
+        function a.eY()
+            local aa = a.cache.eY
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eX = aa
+                a.cache.eY = aa
             end
 
             return aa.c
@@ -72728,14 +72988,14 @@ do
             return ar
         end
 
-        function a.eY()
-            local aa = a.cache.eY
+        function a.eZ()
+            local aa = a.cache.eZ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eY = aa
+                a.cache.eZ = aa
             end
 
             return aa.c
@@ -72743,7 +73003,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = a.eY(), a.l(), a.i()
+            local aa, ab, ac = a.eZ(), a.l(), a.i()
 
             a.cy()
 
@@ -72769,14 +73029,14 @@ do
             return af
         end
 
-        function a.eZ()
-            local aa = a.cache.eZ
+        function a.e_()
+            local aa = a.cache.e_
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.eZ = aa
+                a.cache.e_ = aa
             end
 
             return aa.c
@@ -73004,14 +73264,14 @@ do
             return ak
         end
 
-        function a.e_()
-            local aa = a.cache.e_
+        function a.e0()
+            local aa = a.cache.e0
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e_ = aa
+                a.cache.e0 = aa
             end
 
             return aa.c
@@ -73131,14 +73391,14 @@ do
             return ah
         end
 
-        function a.e0()
-            local aa = a.cache.e0
+        function a.e1()
+            local aa = a.cache.e1
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e0 = aa
+                a.cache.e1 = aa
             end
 
             return aa.c
@@ -73247,14 +73507,14 @@ do
             return ah
         end
 
-        function a.e1()
-            local aa = a.cache.e1
+        function a.e2()
+            local aa = a.cache.e2
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e1 = aa
+                a.cache.e2 = aa
             end
 
             return aa.c
@@ -73442,14 +73702,14 @@ do
             return aj
         end
 
-        function a.e2()
-            local aa = a.cache.e2
+        function a.e3()
+            local aa = a.cache.e3
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e2 = aa
+                a.cache.e3 = aa
             end
 
             return aa.c
@@ -73554,14 +73814,14 @@ do
             return ai
         end
 
-        function a.e3()
-            local aa = a.cache.e3
+        function a.e4()
+            local aa = a.cache.e4
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e3 = aa
+                a.cache.e4 = aa
             end
 
             return aa.c
@@ -73675,14 +73935,14 @@ do
             return ah
         end
 
-        function a.e4()
-            local aa = a.cache.e4
+        function a.e5()
+            local aa = a.cache.e5
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e4 = aa
+                a.cache.e5 = aa
             end
 
             return aa.c
@@ -73803,26 +74063,6 @@ do
             return af
         end
 
-        function a.e5()
-            local aa = a.cache.e5
-
-            if not aa then
-                aa = {
-                    c = __modImpl(),
-                }
-                a.cache.e5 = aa
-            end
-
-            return aa.c
-        end
-    end
-    do
-        local function __modImpl()
-            local aa = {current = nil}
-
-            return aa
-        end
-
         function a.e6()
             local aa = a.cache.e6
 
@@ -73838,7 +74078,27 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = a.e6(), a.db(), {}
+            local aa = {current = nil}
+
+            return aa
+        end
+
+        function a.e7()
+            local aa = a.cache.e7
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.e7 = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
+            local aa, ab, ac = a.e7(), a.db(), {}
 
             ab.RegisterFeature('autopeek', function()
                 local ad = {}
@@ -73879,14 +74139,14 @@ do
             return ac
         end
 
-        function a.e7()
-            local aa = a.cache.e7
+        function a.e8()
+            local aa = a.cache.e8
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e7 = aa
+                a.cache.e8 = aa
             end
 
             return aa.c
@@ -73900,9 +74160,9 @@ do
 
             a.cy()
 
-            local ad, ae, af, ag = a.h(), a.L(), a.d7(), a.e6()
+            local ad, ae, af, ag = a.h(), a.L(), a.d8(), a.e7()
 
-            a.e7()
+            a.e8()
 
             local ah, ai, aj, ak, al, am, an = 2.8, 0.01, 0.4, {
                 tension = 1000,
@@ -74453,14 +74713,14 @@ do
             return an
         end
 
-        function a.e8()
-            local aa = a.cache.e8
+        function a.e9()
+            local aa = a.cache.e9
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e8 = aa
+                a.cache.e9 = aa
             end
 
             return aa.c
@@ -74472,7 +74732,7 @@ do
 
             a.cy()
 
-            local ad, ae, af, ag, ah, ai = a.e8(), a.l(), a.cB(), a.eU(), ab.peek, {}
+            local ad, ae, af, ag, ah, ai = a.e9(), a.l(), a.cB(), a.eV(), ab.peek, {}
 
             function ai.new(aj)
                 return ad.new(aj, {
@@ -74540,14 +74800,14 @@ do
             return ai
         end
 
-        function a.e9()
-            local aa = a.cache.e9
+        function a.fa()
+            local aa = a.cache.fa
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.e9 = aa
+                a.cache.fa = aa
             end
 
             return aa.c
@@ -74559,7 +74819,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al = a.l(), a.F(), a.eU(), a.eM(), ab.peek, {
+            local af, ag, ah, ai, aj, ak, al = a.l(), a.F(), a.eV(), a.eN(), ab.peek, {
                 'Fair',
                 'Instant',
             }, 6
@@ -74752,14 +75012,14 @@ do
             return as
         end
 
-        function a.fa()
-            local aa = a.cache.fa
+        function a.fb()
+            local aa = a.cache.fb
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fa = aa
+                a.cache.fb = aa
             end
 
             return aa.c
@@ -75050,14 +75310,14 @@ do
             return ar
         end
 
-        function a.fb()
-            local aa = a.cache.fb
+        function a.fc()
+            local aa = a.cache.fc
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fb = aa
+                a.cache.fc = aa
             end
 
             return aa.c
@@ -75136,14 +75396,14 @@ do
             return aj
         end
 
-        function a.fc()
-            local aa = a.cache.fc
+        function a.fd()
+            local aa = a.cache.fd
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fc = aa
+                a.cache.fd = aa
             end
 
             return aa.c
@@ -75151,7 +75411,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = a.ag(), a.L(), a.fc(), Color3.fromRGB(255, 255, 255), LPH_NO_VIRTUALIZE(function(
+            local aa, ab, ac, ad, ae, af = a.ag(), a.L(), a.fd(), Color3.fromRGB(255, 255, 255), LPH_NO_VIRTUALIZE(function(
                 ae
             )
                 if typeof(ae) == 'ColorSequence' then
@@ -75282,14 +75542,14 @@ do
             return af
         end
 
-        function a.fd()
-            local aa = a.cache.fd
+        function a.fe()
+            local aa = a.cache.fe
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fd = aa
+                a.cache.fe = aa
             end
 
             return aa.c
@@ -75297,7 +75557,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = (cloneref(game.GetService(game, 'RunService'))), a.K(), a.fd()
+            local aa, ab, ac = (cloneref(game.GetService(game, 'RunService'))), a.K(), a.fe()
             local ad, ae, af, ag, ah, ai = (ab).__subscribeToBinding, ColorSequence.new(Color3.fromRGB(196, 184, 255)), ColorSequence.new(Color3.fromRGB(255, 255, 255)), 0.5, 0, {}
 
             function ai.attach(aj, ak, al)
@@ -75447,14 +75707,14 @@ do
             return ai
         end
 
-        function a.fe()
-            local aa = a.cache.fe
+        function a.ff()
+            local aa = a.cache.ff
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fe = aa
+                a.cache.ff = aa
             end
 
             return aa.c
@@ -75475,14 +75735,14 @@ do
             return aa
         end
 
-        function a.ff()
-            local aa = a.cache.ff
+        function a.fg()
+            local aa = a.cache.fg
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ff = aa
+                a.cache.fg = aa
             end
 
             return aa.c
@@ -75544,14 +75804,14 @@ do
             return ad
         end
 
-        function a.fg()
-            local aa = a.cache.fg
+        function a.fh()
+            local aa = a.cache.fh
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fg = aa
+                a.cache.fh = aa
             end
 
             return aa.c
@@ -76027,14 +76287,14 @@ do
             end)()
         end
 
-        function a.fh()
-            local aa = a.cache.fh
+        function a.fi()
+            local aa = a.cache.fi
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fh = aa
+                a.cache.fi = aa
             end
 
             return aa.c
@@ -76042,7 +76302,7 @@ do
     end
     do
         local function __modImpl()
-            local aa = a.fh()
+            local aa = a.fi()
 
             return (LPH_NO_VIRTUALIZE(function()
                 local ab, ac, ad, ae, af = 1.1111111111111112E-2, 192, {}, 0, (setmetatable({}, {
@@ -76171,14 +76431,14 @@ do
             end)())
         end
 
-        function a.fi()
-            local aa = a.cache.fi
+        function a.fj()
+            local aa = a.cache.fj
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fi = aa
+                a.cache.fj = aa
             end
 
             return aa.c
@@ -76232,14 +76492,14 @@ do
             return aa
         end
 
-        function a.fj()
-            local aa = a.cache.fj
+        function a.fk()
+            local aa = a.cache.fk
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fj = aa
+                a.cache.fk = aa
             end
 
             return aa.c
@@ -76394,14 +76654,14 @@ do
             return ab
         end
 
-        function a.fk()
-            local aa = a.cache.fk
+        function a.fl()
+            local aa = a.cache.fl
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fk = aa
+                a.cache.fl = aa
             end
 
             return aa.c
@@ -76409,7 +76669,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = a.B(), a.fk(), {}, false
+            local aa, ab, ac, ad = a.B(), a.fl(), {}, false
 
             function ac.build()
                 if ad then
@@ -76439,14 +76699,14 @@ do
             return ac
         end
 
-        function a.fl()
-            local aa = a.cache.fl
+        function a.fm()
+            local aa = a.cache.fm
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fl = aa
+                a.cache.fm = aa
             end
 
             return aa.c
@@ -76459,7 +76719,7 @@ do
 
                 a.cy()
 
-                local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM = a.B(), a.H(), a.l(), a.F(), a.cD(), a.C(), a.cB(), a.d(), a.I(), a.cA(), a.eF(), a.fe(), a.ff(), a.fg(), a.D(), a.eG(), a.fi(), a.fh(), a.fj(), a.fl(), a.c7(), a.e_(), a.cz(), a.fb(), a.fa(), a.c5(), a.b6(), a.cH(), a.dM(), ad.peek, ad.subscribe, ab.LocalPlayer
+                local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM = a.B(), a.H(), a.l(), a.F(), a.cD(), a.C(), a.cB(), a.d(), a.I(), a.cA(), a.eG(), a.ff(), a.fg(), a.fh(), a.D(), a.eH(), a.fj(), a.fi(), a.fk(), a.fm(), a.c7(), a.e0(), a.cz(), a.fc(), a.fb(), a.c5(), a.b6(), a.cH(), a.dN(), ad.peek, ad.subscribe, ab.LocalPlayer
                 local aN, aO, aP, aQ, aR, aS = aq.HITBOX_PARTS, {
                     'Head',
                     'Torso',
@@ -78455,14 +78715,14 @@ do
             end)()
         end
 
-        function a.fm()
-            local aa = a.cache.fm
+        function a.fn()
+            local aa = a.cache.fn
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fm = aa
+                a.cache.fn = aa
             end
 
             return aa.c
@@ -78474,7 +78734,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw = a.h(), a.c(), a.F(), a.l(), a.cD(), a.C(), a.cB(), a.fb(), a.fm(), ac.peek, ab.LocalPlayer, 'DuckAssistRender', 'DuckAssistKeepView', 0.3, 0.6, Vector3.new(0, 
+            local af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw = a.h(), a.c(), a.F(), a.l(), a.cD(), a.C(), a.cB(), a.fc(), a.fn(), ac.peek, ab.LocalPlayer, 'DuckAssistRender', 'DuckAssistKeepView', 0.3, 0.6, Vector3.new(0, 
 -0.15, 0), 0.05, {}
 
             aw.__index = aw
@@ -78774,14 +79034,14 @@ do
             return aw
         end
 
-        function a.fn()
-            local aa = a.cache.fn
+        function a.fo()
+            local aa = a.cache.fo
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fn = aa
+                a.cache.fo = aa
             end
 
             return aa.c
@@ -78793,7 +79053,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am = a.H(), a.l(), a.F(), a.C(), a.d(), a.I(), a.eF(), ac.peek
+            local af, ag, ah, ai, aj, ak, al, am = a.H(), a.l(), a.F(), a.C(), a.d(), a.I(), a.eG(), ac.peek
             local an, ao, ap, aq, ar, as, at, au = al.HITBOX_PARTS, {
                 'Head',
                 'Torso',
@@ -79184,14 +79444,14 @@ do
             return ax
         end
 
-        function a.fo()
-            local aa = a.cache.fo
+        function a.fp()
+            local aa = a.cache.fp
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fo = aa
+                a.cache.fp = aa
             end
 
             return aa.c
@@ -79252,14 +79512,14 @@ do
             end)
         end
 
-        function a.fp()
-            local aa = a.cache.fp
+        function a.fq()
+            local aa = a.cache.fq
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fp = aa
+                a.cache.fq = aa
             end
 
             return aa.c
@@ -79267,7 +79527,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'Workspace'))), (cloneref(game.GetService(game, 'RunService'))), a.L(), a.dM(), cloneref(gethui()), math.deg, math.atan2, math.sqrt, 0.2, nil
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'Workspace'))), (cloneref(game.GetService(game, 'RunService'))), a.L(), a.dN(), cloneref(gethui()), math.deg, math.atan2, math.sqrt, 0.2, nil
 
             local function ensureGui()
                 local ak = aj
@@ -79416,14 +79676,14 @@ do
             return ao
         end
 
-        function a.fq()
-            local aa = a.cache.fq
+        function a.fr()
+            local aa = a.cache.fr
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fq = aa
+                a.cache.fr = aa
             end
 
             return aa.c
@@ -79508,14 +79768,14 @@ do
             return ag
         end
 
-        function a.fr()
-            local aa = a.cache.fr
+        function a.fs()
+            local aa = a.cache.fs
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fr = aa
+                a.cache.fs = aa
             end
 
             return aa.c
@@ -79527,7 +79787,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj = a.fp(), a.fq(), a.fr(), a.ag(), {}
+            local af, ag, ah, ai, aj = a.fq(), a.fr(), a.fs(), a.ag(), {}
 
             aj.__index = aj
 
@@ -80275,14 +80535,14 @@ do
             return aj
         end
 
-        function a.fs()
-            local aa = a.cache.fs
+        function a.ft()
+            local aa = a.cache.ft
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fs = aa
+                a.cache.ft = aa
             end
 
             return aa.c
@@ -80290,7 +80550,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = a.fs(), a.cF(), a.cB(), a.H(), a.F(), a.h()
+            local aa, ab, ac, ad, ae, af = a.ft(), a.cF(), a.cB(), a.H(), a.F(), a.h()
 
             a.cy()
 
@@ -80510,14 +80770,14 @@ do
             return an
         end
 
-        function a.ft()
-            local aa = a.cache.ft
+        function a.fu()
+            local aa = a.cache.fu
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ft = aa
+                a.cache.fu = aa
             end
 
             return aa.c
@@ -80525,7 +80785,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = cloneref(game.GetService(game, 'Workspace')), (cloneref(game.GetService(game, 'RunService'))), a.d7(), a.h()
+            local aa, ab, ac, ad = cloneref(game.GetService(game, 'Workspace')), (cloneref(game.GetService(game, 'RunService'))), a.d8(), a.h()
 
             a.t()
 
@@ -80775,14 +81035,14 @@ do
             return ah
         end
 
-        function a.fu()
-            local aa = a.cache.fu
+        function a.fv()
+            local aa = a.cache.fv
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fu = aa
+                a.cache.fv = aa
             end
 
             return aa.c
@@ -80790,7 +81050,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.fu(), a.cB()
+            local aa, ab = a.fv(), a.cB()
 
             a.cy()
 
@@ -80830,14 +81090,14 @@ do
             return af
         end
 
-        function a.fv()
-            local aa = a.cache.fv
+        function a.fw()
+            local aa = a.cache.fw
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fv = aa
+                a.cache.fw = aa
             end
 
             return aa.c
@@ -81563,14 +81823,14 @@ do
             return ap
         end
 
-        function a.fw()
-            local aa = a.cache.fw
+        function a.fx()
+            local aa = a.cache.fx
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fw = aa
+                a.cache.fx = aa
             end
 
             return aa.c
@@ -81801,14 +82061,14 @@ do
             return ah
         end
 
-        function a.fx()
-            local aa = a.cache.fx
+        function a.fy()
+            local aa = a.cache.fy
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fx = aa
+                a.cache.fy = aa
             end
 
             return aa.c
@@ -82192,14 +82452,14 @@ do
             return ai
         end
 
-        function a.fy()
-            local aa = a.cache.fy
+        function a.fz()
+            local aa = a.cache.fz
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fy = aa
+                a.cache.fz = aa
             end
 
             return aa.c
@@ -82538,14 +82798,14 @@ do
             return ai
         end
 
-        function a.fz()
-            local aa = a.cache.fz
+        function a.fA()
+            local aa = a.cache.fA
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fz = aa
+                a.cache.fA = aa
             end
 
             return aa.c
@@ -82553,7 +82813,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.ah(), a.N(), a.W(), a.ag(), a.ai(), a.ap(), a.fz()
+            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.ah(), a.N(), a.W(), a.ag(), a.ai(), a.ap(), a.fA()
             local ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = ac.useAtom, aa.useState, aa.useEffect, ab.useSpring, aa.createElement, ad.colors.subwindow, ad.colors.window.element, ah.GLOBAL_ID, 28, 8, 4, 335
 
             local function Toggle(au)
@@ -82891,14 +83151,14 @@ do
             end
         end
 
-        function a.fA()
-            local aa = a.cache.fA
+        function a.fB()
+            local aa = a.cache.fB
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fA = aa
+                a.cache.fB = aa
             end
 
             return aa.c
@@ -82910,7 +83170,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al = a.fw(), a.fx(), a.fy(), a.fz(), a.fA(), ab.subscribe, ac.createElement, {}
+            local ae, af, ag, ah, ai, aj, ak, al = a.fx(), a.fy(), a.fz(), a.fA(), a.fB(), ab.subscribe, ac.createElement, {}
 
             al.__index = al
 
@@ -82975,14 +83235,14 @@ do
             return al
         end
 
-        function a.fB()
-            local aa = a.cache.fB
+        function a.fC()
+            local aa = a.cache.fC
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fB = aa
+                a.cache.fC = aa
             end
 
             return aa.c
@@ -83031,14 +83291,14 @@ do
             return ac
         end
 
-        function a.fC()
-            local aa = a.cache.fC
+        function a.fD()
+            local aa = a.cache.fD
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fC = aa
+                a.cache.fD = aa
             end
 
             return aa.c
@@ -83069,14 +83329,14 @@ do
             }
         end
 
-        function a.fD()
-            local aa = a.cache.fD
+        function a.fE()
+            local aa = a.cache.fE
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fD = aa
+                a.cache.fE = aa
             end
 
             return aa.c
@@ -83084,7 +83344,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.N(), a.ah(), a.ag(), a.cQ(), a.fD(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
+            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.N(), a.ah(), a.ag(), a.cQ(), a.fE(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
             local ai = ah.CurrentCamera
 
             ah.GetPropertyChangedSignal(ah, 'CurrentCamera'):Connect(function()
@@ -83342,14 +83602,14 @@ do
             end)
         end
 
-        function a.fE()
-            local aa = a.cache.fE
+        function a.fF()
+            local aa = a.cache.fF
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fE = aa
+                a.cache.fF = aa
             end
 
             return aa.c
@@ -83361,7 +83621,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = a.L(), a.cQ(), a.fE(), (aa).__subscribeToBinding, ac.peek, ac.subscribe, aa.createElement, Color3.fromRGB(220, 190, 110), Color3.fromRGB(200, 186, 160), Color3.fromRGB(120, 200, 130), Color3.fromRGB(42, 42, 42), Color3.fromRGB(195, 95, 95), Color3.fromRGB(225, 225, 225), 15, {}
+            local af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = a.L(), a.cQ(), a.fF(), (aa).__subscribeToBinding, ac.peek, ac.subscribe, aa.createElement, Color3.fromRGB(220, 190, 110), Color3.fromRGB(200, 186, 160), Color3.fromRGB(120, 200, 130), Color3.fromRGB(42, 42, 42), Color3.fromRGB(195, 95, 95), Color3.fromRGB(225, 225, 225), 15, {}
 
             at.__index = at
 
@@ -83513,14 +83773,14 @@ do
             return at
         end
 
-        function a.fF()
-            local aa = a.cache.fF
+        function a.fG()
+            local aa = a.cache.fG
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fF = aa
+                a.cache.fG = aa
             end
 
             return aa.c
@@ -83961,14 +84221,14 @@ do
             end)
         end
 
-        function a.fG()
-            local aa = a.cache.fG
+        function a.fH()
+            local aa = a.cache.fH
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fG = aa
+                a.cache.fH = aa
             end
 
             return aa.c
@@ -83980,7 +84240,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am, an = a.L(), a.cQ(), a.fG(), a.T(), a.N(), ac.peek, aa.createElement, 101, {}
+            local af, ag, ah, ai, aj, ak, al, am, an = a.L(), a.cQ(), a.fH(), a.T(), a.N(), ac.peek, aa.createElement, 101, {}
 
             an.__index = an
 
@@ -84050,14 +84310,14 @@ do
             return an
         end
 
-        function a.fH()
-            local aa = a.cache.fH
+        function a.fI()
+            local aa = a.cache.fI
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fH = aa
+                a.cache.fI = aa
             end
 
             return aa.c
@@ -84065,7 +84325,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.N(), a.ah(), a.ag(), a.cV(), a.fD(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
+            local aa, ab, ac, ad, ae, af, ag, ah = a.K(), a.N(), a.ah(), a.ag(), a.cV(), a.fE(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Workspace')))
             local ai, aj, ak, al, am, an, ao = aa.createElement, aa.useBinding, aa.useEffect, ac.useSpring, ab.useAtom, 400, 0.85
             local ap = an * ao
             local aq, ar, as, at, au, av, aw, ax, ay, az, aA = math.max(an - ap, 1), {
@@ -84342,14 +84602,14 @@ do
             end)
         end
 
-        function a.fI()
-            local aa = a.cache.fI
+        function a.fJ()
+            local aa = a.cache.fJ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fI = aa
+                a.cache.fJ = aa
             end
 
             return aa.c
@@ -84361,7 +84621,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = a.L(), a.cV(), a.fI(), (aa).__subscribeToBinding, ac.peek, ac.subscribe, aa.createElement, Color3.fromRGB(200, 186, 160), Color3.fromRGB(220, 190, 110), Color3.fromRGB(120, 200, 130), Color3.fromRGB(42, 42, 42), Color3.fromRGB(120, 200, 130), Color3.fromRGB(225, 225, 225), 15, {}
+            local af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = a.L(), a.cV(), a.fJ(), (aa).__subscribeToBinding, ac.peek, ac.subscribe, aa.createElement, Color3.fromRGB(200, 186, 160), Color3.fromRGB(220, 190, 110), Color3.fromRGB(120, 200, 130), Color3.fromRGB(42, 42, 42), Color3.fromRGB(120, 200, 130), Color3.fromRGB(225, 225, 225), 15, {}
 
             at.__index = at
 
@@ -84525,14 +84785,14 @@ do
             return at
         end
 
-        function a.fJ()
-            local aa = a.cache.fJ
+        function a.fK()
+            local aa = a.cache.fK
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fJ = aa
+                a.cache.fK = aa
             end
 
             return aa.c
@@ -85173,14 +85433,14 @@ do
             end
         end
 
-        function a.fK()
-            local aa = a.cache.fK
+        function a.fL()
+            local aa = a.cache.fL
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fK = aa
+                a.cache.fL = aa
             end
 
             return aa.c
@@ -85194,7 +85454,7 @@ do
 
                 a.cy()
 
-                local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax = a.B(), a.H(), a.dj(), a.di(), a.fK(), a.fd(), a.eF(), a.ff(), a.c5(), a.v(), a.dM(), a.fc(), af.peek, (ag).__subscribeToBinding, ad.LocalPlayer
+                local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax = a.B(), a.H(), a.dj(), a.di(), a.fL(), a.fe(), a.eG(), a.fg(), a.c5(), a.v(), a.dN(), a.fd(), af.peek, (ag).__subscribeToBinding, ad.LocalPlayer
                 local ay, az, aA, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM = ap.HITBOX_PARTS, ap.PART_TO_HITBOX, 0.12, 0.07, 14, 0.05, 0.5, 250, 0.25, 0.2, 4, 0.25, 30, 60
                 local aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6 = 4 / aM, 0.4, 0.08, 0.4, 0.12, 0.3, 0.25, 0.11, 0.55, 1, 6, 22, 0.6, 0.04, {
                     Subtle = {
@@ -87925,14 +88185,14 @@ do
             end)()
         end
 
-        function a.fL()
-            local aa = a.cache.fL
+        function a.fM()
+            local aa = a.cache.fM
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fL = aa
+                a.cache.fM = aa
             end
 
             return aa.c
@@ -88044,14 +88304,14 @@ do
             return ab
         end
 
-        function a.fM()
-            local aa = a.cache.fM
+        function a.fN()
+            local aa = a.cache.fN
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fM = aa
+                a.cache.fN = aa
             end
 
             return aa.c
@@ -88059,7 +88319,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak = {}, a.c3(), a.D(), a.fh(), a.c(), nil, nil, false, 100, nil, Vector3.new(0, 0, 0)
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak = {}, a.c3(), a.D(), a.fi(), a.c(), nil, nil, false, 100, nil, Vector3.new(0, 0, 0)
 
             local function getNewHits(al, am, an)
                 local ao, ap = {}, ab.GetWeaponProperties()
@@ -88140,14 +88400,14 @@ do
             return aa
         end
 
-        function a.fN()
-            local aa = a.cache.fN
+        function a.fO()
+            local aa = a.cache.fO
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fN = aa
+                a.cache.fO = aa
             end
 
             return aa.c
@@ -88159,7 +88419,7 @@ do
 
             a.cy()
 
-            local ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.F(), a.l(), a.c3(), a.C(), a.cB(), a.cK(), a.c7(), a.fL(), a.fi(), a.fg(), a.fM(), a.I(), a.eG(), a.fl(), a.fN(), a.e_(), aa.peek, aa.subscribe, 0.65
+            local ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.F(), a.l(), a.c3(), a.C(), a.cB(), a.cK(), a.c7(), a.fM(), a.fj(), a.fh(), a.fN(), a.I(), a.eH(), a.fm(), a.fO(), a.e0(), aa.peek, aa.subscribe, 0.65
 
             local function isLocalInAir()
                 local av = ac.GetCharacterObject()
@@ -88344,14 +88604,14 @@ do
             return aw
         end
 
-        function a.fO()
-            local aa = a.cache.fO
+        function a.fP()
+            local aa = a.cache.fP
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fO = aa
+                a.cache.fP = aa
             end
 
             return aa.c
@@ -88477,14 +88737,14 @@ do
             return ah
         end
 
-        function a.fP()
-            local aa = a.cache.fP
+        function a.fQ()
+            local aa = a.cache.fQ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fP = aa
+                a.cache.fQ = aa
             end
 
             return aa.c
@@ -88496,7 +88756,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al, am = a.B(), a.dj(), a.fP(), ab.peek, Color3.fromRGB(0, 255, 195), Color3.fromRGB(255, 150, 152), Color3.fromRGB(207, 152, 255), 26, {}
+            local ae, af, ag, ah, ai, aj, ak, al, am = a.B(), a.dj(), a.fQ(), ab.peek, Color3.fromRGB(0, 255, 195), Color3.fromRGB(255, 150, 152), Color3.fromRGB(207, 152, 255), 26, {}
 
             am.__index = am
 
@@ -88651,14 +88911,14 @@ do
             return am
         end
 
-        function a.fQ()
-            local aa = a.cache.fQ
+        function a.fR()
+            local aa = a.cache.fR
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fQ = aa
+                a.cache.fR = aa
             end
 
             return aa.c
@@ -89264,14 +89524,14 @@ do
             return ax
         end
 
-        function a.fR()
-            local aa = a.cache.fR
+        function a.fS()
+            local aa = a.cache.fS
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fR = aa
+                a.cache.fS = aa
             end
 
             return aa.c
@@ -89667,14 +89927,14 @@ do
             return ai
         end
 
-        function a.fS()
-            local aa = a.cache.fS
+        function a.fT()
+            local aa = a.cache.fT
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fS = aa
+                a.cache.fT = aa
             end
 
             return aa.c
@@ -89682,7 +89942,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = (cloneref(game.GetService(game, 'Workspace'))), a.fS()
+            local aa, ab = (cloneref(game.GetService(game, 'Workspace'))), a.fT()
 
             a.cy()
 
@@ -89744,14 +90004,14 @@ do
             return ae
         end
 
-        function a.fT()
-            local aa = a.cache.fT
+        function a.fU()
+            local aa = a.cache.fU
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fT = aa
+                a.cache.fU = aa
             end
 
             return aa.c
@@ -89864,14 +90124,14 @@ do
             end
         end
 
-        function a.fU()
-            local aa = a.cache.fU
+        function a.fV()
+            local aa = a.cache.fV
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fU = aa
+                a.cache.fV = aa
             end
 
             return aa.c
@@ -89879,7 +90139,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'RunService'))), a.i(), a.K(), a.M(), a.J(), a.e(), a.C(), a.l(), a.fg(), a.fU()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'RunService'))), a.i(), a.K(), a.M(), a.J(), a.e(), a.C(), a.l(), a.fh(), a.fV()
 
             a.cy()
 
@@ -90442,14 +90702,14 @@ do
             return ax
         end
 
-        function a.fV()
-            local aa = a.cache.fV
+        function a.fW()
+            local aa = a.cache.fW
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fV = aa
+                a.cache.fW = aa
             end
 
             return aa.c
@@ -90531,14 +90791,14 @@ do
             return ae
         end
 
-        function a.fW()
-            local aa = a.cache.fW
+        function a.fX()
+            local aa = a.cache.fX
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fW = aa
+                a.cache.fX = aa
             end
 
             return aa.c
@@ -90749,14 +91009,14 @@ do
             return ak
         end
 
-        function a.fX()
-            local aa = a.cache.fX
+        function a.fY()
+            local aa = a.cache.fY
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fX = aa
+                a.cache.fY = aa
             end
 
             return aa.c
@@ -90764,7 +91024,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai = a.cC(), a.cD(), a.fW(), a.fX(), a.l(), a.k(), a.h(), a.i(), a.J()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai = a.cC(), a.cD(), a.fX(), a.fY(), a.l(), a.k(), a.h(), a.i(), a.J()
 
             a.cy()
 
@@ -91161,14 +91421,14 @@ do
             return as
         end
 
-        function a.fY()
-            local aa = a.cache.fY
+        function a.fZ()
+            local aa = a.cache.fZ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fY = aa
+                a.cache.fZ = aa
             end
 
             return aa.c
@@ -91352,14 +91612,14 @@ do
             return al
         end
 
-        function a.fZ()
-            local aa = a.cache.fZ
+        function a.f_()
+            local aa = a.cache.f_
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.fZ = aa
+                a.cache.f_ = aa
             end
 
             return aa.c
@@ -91540,14 +91800,14 @@ do
             return aa
         end
 
-        function a.f_()
-            local aa = a.cache.f_
+        function a.f0()
+            local aa = a.cache.f0
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f_ = aa
+                a.cache.f0 = aa
             end
 
             return aa.c
@@ -91685,14 +91945,14 @@ do
             return am
         end
 
-        function a.f0()
-            local aa = a.cache.f0
+        function a.f1()
+            local aa = a.cache.f1
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f0 = aa
+                a.cache.f1 = aa
             end
 
             return aa.c
@@ -91706,7 +91966,7 @@ do
 
             a.cy()
 
-            local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.ag(), a.L(), a.f_(), a.f0(), a.c(), a.h(), a.i(), (cloneref(game.GetService(game, 'ReplicatedStorage'))), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace')))
+            local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.ag(), a.L(), a.f0(), a.f1(), a.c(), a.h(), a.i(), (cloneref(game.GetService(game, 'ReplicatedStorage'))), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace')))
             local av, aw, ax = at.LocalPlayer, workspace.CurrentCamera, nil
             local ay, az, aA, aC, aE, aF, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW = LPH_NO_VIRTUALIZE(function(
             )
@@ -92759,14 +93019,14 @@ do
             return aW
         end
 
-        function a.f1()
-            local aa = a.cache.f1
+        function a.f2()
+            local aa = a.cache.f2
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f1 = aa
+                a.cache.f2 = aa
             end
 
             return aa.c
@@ -92876,14 +93136,14 @@ do
             return ah
         end
 
-        function a.f2()
-            local aa = a.cache.f2
+        function a.f3()
+            local aa = a.cache.f3
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f2 = aa
+                a.cache.f3 = aa
             end
 
             return aa.c
@@ -92891,7 +93151,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace'))), a.fh(), a.C(), a.l(), a.ag(), a.L(), a.h(), a.J()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace'))), a.fi(), a.C(), a.l(), a.ag(), a.L(), a.h(), a.J()
 
             a.cy()
 
@@ -93106,14 +93366,14 @@ do
             return ar
         end
 
-        function a.f3()
-            local aa = a.cache.f3
+        function a.f4()
+            local aa = a.cache.f4
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f3 = aa
+                a.cache.f4 = aa
             end
 
             return aa.c
@@ -93391,14 +93651,14 @@ do
             return ak
         end
 
-        function a.f4()
-            local aa = a.cache.f4
+        function a.f5()
+            local aa = a.cache.f5
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f4 = aa
+                a.cache.f5 = aa
             end
 
             return aa.c
@@ -93982,14 +94242,14 @@ do
             return ax
         end
 
-        function a.f5()
-            local aa = a.cache.f5
+        function a.f6()
+            local aa = a.cache.f6
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f5 = aa
+                a.cache.f6 = aa
             end
 
             return aa.c
@@ -94059,14 +94319,14 @@ do
             return ac
         end
 
-        function a.f6()
-            local aa = a.cache.f6
+        function a.f7()
+            local aa = a.cache.f7
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f6 = aa
+                a.cache.f7 = aa
             end
 
             return aa.c
@@ -94074,7 +94334,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'UserInputService'))), a.K(), a.i(), a.N(), a.ah(), a.ag(), a.ai(), a.b6(), a.W(), a.v(), a.as(), a.at(), a.b4(), a.di(), a.cE(), a.f6()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'UserInputService'))), a.K(), a.i(), a.N(), a.ah(), a.ag(), a.ai(), a.b6(), a.W(), a.v(), a.as(), a.at(), a.b4(), a.di(), a.cE(), a.f7()
             local as, at, au, av, aw, ax, ay, az, aA, aC, aD, aE, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX = ad.createElement, ad.createBinding, ad.useBinding, ad.useRef, ad.useEffect, ad.useCallback, af.useAtom, ag.useSpring, ae.peek, math.random, math.sin, math.max, 15, 17, 4, 7, 4, 2, 30, 2.4, 3.8, 6, 40, 120, 0.22, 0.5, 0.3, 0.35, 0.8, 0.18
             local aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, b, ba = aH, 12, 2, 5, 8, 0.65, 6, 0.3, 12, {0, 0.5, 1}, 2, 0.7, UDim2.new(0.5, 0, 0.5, 0), Color3.new(0, 0, 0), Color3.new(1, 1, 1)
 
@@ -94885,14 +95145,14 @@ do
             end
         end
 
-        function a.f7()
-            local aa = a.cache.f7
+        function a.f8()
+            local aa = a.cache.f8
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f7 = aa
+                a.cache.f8 = aa
             end
 
             return aa.c
@@ -94904,7 +95164,7 @@ do
 
             a.cy()
 
-            local af, ag, ah, ai, aj, ak, al, am = a.f7(), ab.atom, aa.createElement, ColorSequence.new(Color3.fromRGB(0, 255, 119)), ColorSequence.new(Color3.fromRGB(255, 255, 255)), ColorSequence.new(Color3.fromRGB(0, 255, 119)), UDim2.new(0.5, 0, 0.5, 0), {}
+            local af, ag, ah, ai, aj, ak, al, am = a.f8(), ab.atom, aa.createElement, ColorSequence.new(Color3.fromRGB(0, 255, 119)), ColorSequence.new(Color3.fromRGB(255, 255, 255)), ColorSequence.new(Color3.fromRGB(0, 255, 119)), UDim2.new(0.5, 0, 0.5, 0), {}
 
             am.__index = am
 
@@ -95015,14 +95275,14 @@ do
             return am
         end
 
-        function a.f8()
-            local aa = a.cache.f8
+        function a.f9()
+            local aa = a.cache.f9
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f8 = aa
+                a.cache.f9 = aa
             end
 
             return aa.c
@@ -95183,14 +95443,14 @@ do
             return ah
         end
 
-        function a.f9()
-            local aa = a.cache.f9
+        function a.ga()
+            local aa = a.cache.ga
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.f9 = aa
+                a.cache.ga = aa
             end
 
             return aa.c
@@ -95533,14 +95793,14 @@ do
             return an
         end
 
-        function a.ga()
-            local aa = a.cache.ga
+        function a.gb()
+            local aa = a.cache.gb
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ga = aa
+                a.cache.gb = aa
             end
 
             return aa.c
@@ -95920,14 +96180,14 @@ do
             return az
         end
 
-        function a.gb()
-            local aa = a.cache.gb
+        function a.gc()
+            local aa = a.cache.gc
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gb = aa
+                a.cache.gc = aa
             end
 
             return aa.c
@@ -96275,14 +96535,14 @@ do
             return ak
         end
 
-        function a.gc()
-            local aa = a.cache.gc
+        function a.gd()
+            local aa = a.cache.gd
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gc = aa
+                a.cache.gd = aa
             end
 
             return aa.c
@@ -97079,14 +97339,14 @@ do
             end
         end
 
-        function a.gd()
-            local aa = a.cache.gd
+        function a.ge()
+            local aa = a.cache.ge
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gd = aa
+                a.cache.ge = aa
             end
 
             return aa.c
@@ -97098,7 +97358,7 @@ do
 
             a.cy()
 
-            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as = a.ac(), a.f9(), a.ga(), a.gb(), a.gc(), a.gd(), ab.atom, ab.peek, aa.createElement, {
+            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as = a.ac(), a.ga(), a.gb(), a.gc(), a.gd(), a.ge(), ab.atom, ab.peek, aa.createElement, {
                 folder = 'music',
                 maxFiles = 50,
             }, Color3.fromRGB(70, 220, 176), UDim2.new(0.5, 0, 0.12, 0), 1.5
@@ -97540,14 +97800,14 @@ do
             return au
         end
 
-        function a.ge()
-            local aa = a.cache.ge
+        function a.gf()
+            local aa = a.cache.gf
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.ge = aa
+                a.cache.gf = aa
             end
 
             return aa.c
@@ -97645,14 +97905,14 @@ do
             return ad
         end
 
-        function a.gf()
-            local aa = a.cache.gf
+        function a.gg()
+            local aa = a.cache.gg
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gf = aa
+                a.cache.gg = aa
             end
 
             return aa.c
@@ -97818,14 +98078,14 @@ do
             return ae
         end
 
-        function a.gg()
-            local aa = a.cache.gg
+        function a.gh()
+            local aa = a.cache.gh
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gg = aa
+                a.cache.gh = aa
             end
 
             return aa.c
@@ -97837,7 +98097,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai = a.d7(), 'limerence_aspectRatio', Enum.RenderPriority.Camera.Value + 1, {
+            local ae, af, ag, ah, ai = a.d8(), 'limerence_aspectRatio', Enum.RenderPriority.Camera.Value + 1, {
                 tension = 450,
                 friction = 32,
                 start = true,
@@ -97968,14 +98228,14 @@ do
             return ak
         end
 
-        function a.gh()
-            local aa = a.cache.gh
+        function a.gi()
+            local aa = a.cache.gi
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gh = aa
+                a.cache.gi = aa
             end
 
             return aa.c
@@ -97995,14 +98255,14 @@ do
             return ac
         end
 
-        function a.gi()
-            local aa = a.cache.gi
+        function a.gj()
+            local aa = a.cache.gj
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gi = aa
+                a.cache.gj = aa
             end
 
             return aa.c
@@ -98010,7 +98270,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.e(), a.fk(), {}, nil, false, 'rbxassetid://93849480884386'
+            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.e(), a.fl(), {}, nil, false, 'rbxassetid://93849480884386'
 
             local function getWeaponProperties(ah)
                 local ai = ad[ah]
@@ -98176,14 +98436,14 @@ do
             }
         end
 
-        function a.gj()
-            local aa = a.cache.gj
+        function a.gk()
+            local aa = a.cache.gk
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gj = aa
+                a.cache.gk = aa
             end
 
             return aa.c
@@ -98191,7 +98451,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae = a.gj(), {
+            local aa, ab, ac, ad, ae = a.gk(), {
                 Weapon = 'weapons',
                 Melee = 'knives',
                 Glove = 'skins',
@@ -98314,14 +98574,14 @@ do
             }
         end
 
-        function a.gk()
-            local aa = a.cache.gk
+        function a.gl()
+            local aa = a.cache.gl
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gk = aa
+                a.cache.gl = aa
             end
 
             return aa.c
@@ -98367,14 +98627,14 @@ do
             return ac
         end
 
-        function a.gl()
-            local aa = a.cache.gl
+        function a.gm()
+            local aa = a.cache.gm
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gl = aa
+                a.cache.gm = aa
             end
 
             return aa.c
@@ -98434,14 +98694,14 @@ do
             return ah
         end
 
-        function a.gm()
-            local aa = a.cache.gm
+        function a.gn()
+            local aa = a.cache.gn
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gm = aa
+                a.cache.gn = aa
             end
 
             return aa.c
@@ -98449,7 +98709,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al = a.i(), a.K(), a.ah(), a.N(), a.ag(), a.W(), a.aw(), a.gi(), a.gl(), a.ai(), a.T(), {
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al = a.i(), a.K(), a.ah(), a.N(), a.ag(), a.W(), a.aw(), a.gj(), a.gm(), a.ai(), a.T(), {
                 {
                     id = 'all',
                     label = 'All',
@@ -98471,7 +98731,7 @@ do
                     label = 'Misc',
                 },
             }
-            local am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay = ab.useState, ab.useEffect, ab.useMemo, ab.useCallback, ab.useRef, ac.useSpring, ad.useAtom, ab.createElement, af.colors.inventory, af.colors.window.element, af.colors.window, a.gm(), 32
+            local am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay = ab.useState, ab.useEffect, ab.useMemo, ab.useCallback, ab.useRef, ac.useSpring, ad.useAtom, ab.createElement, af.colors.inventory, af.colors.window.element, af.colors.window, a.gn(), 32
             local az, aA, aC = ax.PADDING_X, 12, 2
 
             local function TabButton(aD)
@@ -98780,14 +99040,14 @@ do
             end
         end
 
-        function a.gn()
-            local aa = a.cache.gn
+        function a.go()
+            local aa = a.cache.go
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gn = aa
+                a.cache.go = aa
             end
 
             return aa.c
@@ -98797,7 +99057,7 @@ do
         local function __modImpl()
             local aa, ab, ac, ad, ae, af, ag = a.i(), a.K(), a.ah(), a.N(), a.ag(), a.W(), a.aw()
 
-            a.gk()
+            a.gl()
 
             local ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, aA, aC, aD, aE, aG = a.bi(), a.at(), a.ai(), ab.useState, ab.useEffect, ab.useMemo, ab.useCallback, ac.useSpring, ad.useAtom, ab.memo, ab.createElement, af.colors.inventory, af.colors.window, af.colors.window.element, 178, 104, 6, 12, 16, 3, 1.06, {
                 common = 'Consumer',
@@ -99129,14 +99389,14 @@ do
             return aH
         end
 
-        function a.go()
-            local aa = a.cache.go
+        function a.gp()
+            local aa = a.cache.gp
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.go = aa
+                a.cache.gp = aa
             end
 
             return aa.c
@@ -99144,11 +99404,11 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = a.K(), a.N(), a.W(), a.go()
+            local aa, ab, ac, ad = a.K(), a.N(), a.W(), a.gp()
 
-            a.gk()
+            a.gl()
 
-            local af, ag, ah, ai, aj, ak, al, am, an, ao = aa.useState, aa.useEffect, aa.useMemo, aa.useRef, ab.useAtom, aa.createElement, ac.colors.window.element, a.gm(), a.i(), a.T()
+            local af, ag, ah, ai, aj, ak, al, am, an, ao = aa.useState, aa.useEffect, aa.useMemo, aa.useRef, ab.useAtom, aa.createElement, ac.colors.window.element, a.gn(), a.i(), a.T()
 
             local function localSize(ap)
                 local aq = an.peek(ao.scale)
@@ -99252,14 +99512,14 @@ do
             end
         end
 
-        function a.gp()
-            local aa = a.cache.gp
+        function a.gq()
+            local aa = a.cache.gq
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gp = aa
+                a.cache.gq = aa
             end
 
             return aa.c
@@ -99267,7 +99527,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai = a.i(), a.K(), a.ah(), a.N(), a.ag(), a.W(), a.aw(), a.gi(), a.ai()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai = a.i(), a.K(), a.ah(), a.N(), a.ag(), a.W(), a.aw(), a.gj(), a.ai()
             local aj, ak, al, am, an, ao, ap, aq, ar = ab.useState, ab.useEffect, ab.useMemo, ab.useCallback, ac.useSpring, ad.useAtom, ab.createElement, af.colors.window.element, 24
 
             local function PageButton(as)
@@ -99466,14 +99726,14 @@ do
             end
         end
 
-        function a.gq()
-            local aa = a.cache.gq
+        function a.gr()
+            local aa = a.cache.gr
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gq = aa
+                a.cache.gr = aa
             end
 
             return aa.c
@@ -99481,7 +99741,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.e(), a.fk(), a.gj(), {
+            local aa, ab, ac, ad, ae, af, ag = (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.e(), a.fl(), a.gk(), {
                 Stock = 'common',
                 Blue = 'uncommon',
                 Purple = 'restricted',
@@ -99859,14 +100119,14 @@ do
             }
         end
 
-        function a.gr()
-            local aa = a.cache.gr
+        function a.gs()
+            local aa = a.cache.gs
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gr = aa
+                a.cache.gs = aa
             end
 
             return aa.c
@@ -99875,7 +100135,7 @@ do
     do
         local function __modImpl()
             local aa, ab, ac, ad, ae, af = a.i(), a.K(), a.N(), a.ag(), a.W(), a.aw()
-            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq = ab.useState, ab.useEffect, ab.useMemo, ab.useCallback, ac.useAtom, ab.createElement, ae.colors.window, ae.colors.window.element, a.gm(), 32, 23
+            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq = ab.useState, ab.useEffect, ab.useMemo, ab.useCallback, ac.useAtom, ab.createElement, ae.colors.window, ae.colors.window.element, a.gn(), 32, 23
             local ar = ao.PADDING_X
 
             local function BackButton(as)
@@ -99960,14 +100220,14 @@ do
             end
         end
 
-        function a.gs()
-            local aa = a.cache.gs
+        function a.gt()
+            local aa = a.cache.gt
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gs = aa
+                a.cache.gt = aa
             end
 
             return aa.c
@@ -100175,14 +100435,14 @@ do
             return az
         end
 
-        function a.gt()
-            local aa = a.cache.gt
+        function a.gu()
+            local aa = a.cache.gu
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gt = aa
+                a.cache.gu = aa
             end
 
             return aa.c
@@ -100190,8 +100450,8 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = a.K(), a.N(), a.W(), a.aP(), a.gr(), a.gl(), a.gt()
-            local ah, ai, aj, ak, al, am, an, ao, ap, aq, ar = aa.useState, aa.useEffect, aa.useMemo, aa.useRef, aa.useCallback, ab.useAtom, aa.createElement, ac.colors.window.element, a.gm(), a.i(), a.T()
+            local aa, ab, ac, ad, ae, af, ag = a.K(), a.N(), a.W(), a.aP(), a.gs(), a.gm(), a.gu()
+            local ah, ai, aj, ak, al, am, an, ao, ap, aq, ar = aa.useState, aa.useEffect, aa.useMemo, aa.useRef, aa.useCallback, ab.useAtom, aa.createElement, ac.colors.window.element, a.gn(), a.i(), a.T()
 
             local function localSize(as)
                 local at = aq.peek(ar.scale)
@@ -100315,14 +100575,14 @@ do
             end
         end
 
-        function a.gu()
-            local aa = a.cache.gu
+        function a.gv()
+            local aa = a.cache.gv
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gu = aa
+                a.cache.gv = aa
             end
 
             return aa.c
@@ -100621,14 +100881,14 @@ do
             return aC
         end
 
-        function a.gv()
-            local aa = a.cache.gv
+        function a.gw()
+            local aa = a.cache.gw
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gv = aa
+                a.cache.gw = aa
             end
 
             return aa.c
@@ -100636,8 +100896,8 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag = a.K(), a.N(), a.W(), a.aP(), a.gr(), a.gl(), a.gv()
-            local ah, ai, aj, ak, al, am, an, ao, ap, aq, ar = aa.useState, aa.useEffect, aa.useMemo, aa.useRef, aa.useCallback, ab.useAtom, aa.createElement, ac.colors.window.element, a.gm(), a.i(), a.T()
+            local aa, ab, ac, ad, ae, af, ag = a.K(), a.N(), a.W(), a.aP(), a.gs(), a.gm(), a.gw()
+            local ah, ai, aj, ak, al, am, an, ao, ap, aq, ar = aa.useState, aa.useEffect, aa.useMemo, aa.useRef, aa.useCallback, ab.useAtom, aa.createElement, ac.colors.window.element, a.gn(), a.i(), a.T()
 
             local function localSize(as)
                 local at = aq.peek(ar.scale)
@@ -100775,14 +101035,14 @@ do
             end
         end
 
-        function a.gw()
-            local aa = a.cache.gw
+        function a.gx()
+            local aa = a.cache.gx
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gw = aa
+                a.cache.gx = aa
             end
 
             return aa.c
@@ -100790,8 +101050,8 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = a.K(), a.N(), a.ah(), a.ag(), a.W(), a.aP(), a.gi(), a.gk(), a.c1(), a.cX(), a.gn(), a.gp(), a.gq(), a.gl(), a.gr(), a.gs(), a.gu(), a.gw(), a.bi(), a.ai()
-            local au, av, aw, ax, ay, az, aA, aC, aD, aE, aG, aH, aI, aJ, aK, aL = aa.useEffect, aa.useLayoutEffect, aa.useMemo, aa.useCallback, aa.useState, aa.useRef, ac.useSpring, ab.useAtom, aa.createElement, ae.colors.window, ae.colors.window.element, a.gm(), 32, 30, 31, 8
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at = a.K(), a.N(), a.ah(), a.ag(), a.W(), a.aP(), a.gj(), a.gl(), a.c1(), a.cX(), a.go(), a.gq(), a.gr(), a.gm(), a.gs(), a.gt(), a.gv(), a.gx(), a.bi(), a.ai()
+            local au, av, aw, ax, ay, az, aA, aC, aD, aE, aG, aH, aI, aJ, aK, aL = aa.useEffect, aa.useLayoutEffect, aa.useMemo, aa.useCallback, aa.useState, aa.useRef, ac.useSpring, ab.useAtom, aa.createElement, ae.colors.window, ae.colors.window.element, a.gn(), 32, 30, 31, 8
             local aM, aN, aO = aH.PADDING_X, {
                 ['Counter-Terrorists'] = 'CT',
                 Terrorists = 'T',
@@ -101248,14 +101508,14 @@ do
             end
         end
 
-        function a.gx()
-            local aa = a.cache.gx
+        function a.gy()
+            local aa = a.cache.gy
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gx = aa
+                a.cache.gy = aa
             end
 
             return aa.c
@@ -101263,7 +101523,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.K(), a.gx()
+            local aa, ab = a.K(), a.gy()
             local ac, ad = aa.createElement, {}
 
             function ad.Attach(ae)
@@ -101279,14 +101539,14 @@ do
             return ad
         end
 
-        function a.gy()
-            local aa = a.cache.gy
+        function a.gz()
+            local aa = a.cache.gz
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gy = aa
+                a.cache.gz = aa
             end
 
             return aa.c
@@ -101421,14 +101681,14 @@ do
             return ai
         end
 
-        function a.gz()
-            local aa = a.cache.gz
+        function a.gA()
+            local aa = a.cache.gA
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gz = aa
+                a.cache.gA = aa
             end
 
             return aa.c
@@ -101829,14 +102089,14 @@ do
             return ab
         end
 
-        function a.gA()
-            local aa = a.cache.gA
+        function a.gB()
+            local aa = a.cache.gB
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gA = aa
+                a.cache.gB = aa
             end
 
             return aa.c
@@ -101848,7 +102108,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap = a.cC(), a.cD(), a.gA(), ab.peek, ab.subscribe, {
+            local ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap = a.cC(), a.cD(), a.gB(), ab.peek, ab.subscribe, {
                 'ForceField',
                 'Neon',
                 'Glass',
@@ -102357,14 +102617,14 @@ do
             return aq
         end
 
-        function a.gB()
-            local aa = a.cache.gB
+        function a.gC()
+            local aa = a.cache.gC
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gB = aa
+                a.cache.gC = aa
             end
 
             return aa.c
@@ -103088,14 +103348,14 @@ do
             return ar
         end
 
-        function a.gC()
-            local aa = a.cache.gC
+        function a.gD()
+            local aa = a.cache.gD
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gC = aa
+                a.cache.gD = aa
             end
 
             return aa.c
@@ -103103,7 +103363,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab = a.i(), a.gC()
+            local aa, ab = a.i(), a.gD()
 
             a.cy()
 
@@ -103144,14 +103404,14 @@ do
             return ai
         end
 
-        function a.gD()
-            local aa = a.cache.gD
+        function a.gE()
+            local aa = a.cache.gE
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gD = aa
+                a.cache.gE = aa
             end
 
             return aa.c
@@ -103163,7 +103423,7 @@ do
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj, ak, al, am, an = a.l(), a.gD(), a.gA(), ab.peek, ab.subscribe, {
+            local ae, af, ag, ah, ai, aj, ak, al, am, an = a.l(), a.gE(), a.gB(), ab.peek, ab.subscribe, {
                 'ForceField',
                 'Neon',
             }, Color3.fromRGB(145, 190, 215), 'Neon', {
@@ -103520,14 +103780,14 @@ do
             return ao
         end
 
-        function a.gE()
-            local aa = a.cache.gE
+        function a.gF()
+            local aa = a.cache.gF
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gE = aa
+                a.cache.gF = aa
             end
 
             return aa.c
@@ -103987,14 +104247,14 @@ do
             return ax
         end
 
-        function a.gF()
-            local aa = a.cache.gF
+        function a.gG()
+            local aa = a.cache.gG
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gF = aa
+                a.cache.gG = aa
             end
 
             return aa.c
@@ -104002,7 +104262,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac = a.gF(), a.l(), a.i()
+            local aa, ab, ac = a.gG(), a.l(), a.i()
 
             a.cy()
 
@@ -104025,14 +104285,14 @@ do
             return af
         end
 
-        function a.gG()
-            local aa = a.cache.gG
+        function a.gH()
+            local aa = a.cache.gH
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gG = aa
+                a.cache.gH = aa
             end
 
             return aa.c
@@ -104044,7 +104304,7 @@ do
 
             a.cy()
 
-            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq = a.l(), a.C(), a.gA(), ad.peek, ad.subscribe, aa.LocalPlayer, {
+            local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq = a.l(), a.C(), a.gB(), ad.peek, ad.subscribe, aa.LocalPlayer, {
                 'ForceField',
                 'Neon',
             }, Color3.fromRGB(168, 168, 168), 'Neon', {
@@ -104386,24 +104646,6 @@ do
             return ar
         end
 
-        function a.gH()
-            local aa = a.cache.gH
-
-            if not aa then
-                aa = {
-                    c = __modImpl(),
-                }
-                a.cache.gH = aa
-            end
-
-            return aa.c
-        end
-    end
-    do
-        local function __modImpl()
-            return a.g().get'Charm'
-        end
-
         function a.gI()
             local aa = a.cache.gI
 
@@ -104419,7 +104661,7 @@ do
     end
     do
         local function __modImpl()
-            return a.g().get'Janitor'
+            return a.g().get'Charm'
         end
 
         function a.gJ()
@@ -104437,11 +104679,29 @@ do
     end
     do
         local function __modImpl()
+            return a.g().get'Janitor'
+        end
+
+        function a.gK()
+            local aa = a.cache.gK
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.gK = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
             local aa, ab, ac = (cloneref(game.GetService(game, 'Players'))), a.e(), a.J()
 
             a.cy()
 
-            local ae, af, ag, ah, ai, aj = a.l(), a.gI(), a.gJ(), (cloneref(game.GetService(game, 'RunService'))), Random.new(), aa.LocalPlayer
+            local ae, af, ag, ah, ai, aj = a.l(), a.gJ(), a.gK(), (cloneref(game.GetService(game, 'RunService'))), Random.new(), aa.LocalPlayer
             local ak, al, am, an = af.peek, af.subscribe, 1, {}
 
             an.__index = an
@@ -104718,14 +104978,14 @@ do
             return an
         end
 
-        function a.gK()
-            local aa = a.cache.gK
+        function a.gL()
+            local aa = a.cache.gL
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gK = aa
+                a.cache.gL = aa
             end
 
             return aa.c
@@ -104949,14 +105209,14 @@ do
             return aj
         end
 
-        function a.gL()
-            local aa = a.cache.gL
+        function a.gM()
+            local aa = a.cache.gM
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gL = aa
+                a.cache.gM = aa
             end
 
             return aa.c
@@ -105082,14 +105342,14 @@ do
             return ag
         end
 
-        function a.gM()
-            local aa = a.cache.gM
+        function a.gN()
+            local aa = a.cache.gN
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gM = aa
+                a.cache.gN = aa
             end
 
             return aa.c
@@ -105161,14 +105421,14 @@ do
             return af
         end
 
-        function a.gN()
-            local aa = a.cache.gN
+        function a.gO()
+            local aa = a.cache.gO
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gN = aa
+                a.cache.gO = aa
             end
 
             return aa.c
@@ -105254,14 +105514,14 @@ do
             return af
         end
 
-        function a.gO()
-            local aa = a.cache.gO
+        function a.gP()
+            local aa = a.cache.gP
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gO = aa
+                a.cache.gP = aa
             end
 
             return aa.c
@@ -105320,14 +105580,14 @@ do
             return ad
         end
 
-        function a.gP()
-            local aa = a.cache.gP
+        function a.gQ()
+            local aa = a.cache.gQ
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gP = aa
+                a.cache.gQ = aa
             end
 
             return aa.c
@@ -105856,14 +106116,14 @@ do
             return ay
         end
 
-        function a.gQ()
-            local aa = a.cache.gQ
+        function a.gR()
+            local aa = a.cache.gR
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gQ = aa
+                a.cache.gR = aa
             end
 
             return aa.c
@@ -105871,7 +106131,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'RunService'))), a.i(), a.H(), a.l(), a.ee(), a.J()
+            local aa, ab, ac, ad, ae, af = (cloneref(game.GetService(game, 'RunService'))), a.i(), a.H(), a.l(), a.ef(), a.J()
 
             a.cy()
 
@@ -106081,14 +106341,14 @@ do
             return am
         end
 
-        function a.gR()
-            local aa = a.cache.gR
+        function a.gS()
+            local aa = a.cache.gS
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gR = aa
+                a.cache.gS = aa
             end
 
             return aa.c
@@ -106455,14 +106715,14 @@ do
             return af
         end
 
-        function a.gS()
-            local aa = a.cache.gS
+        function a.gT()
+            local aa = a.cache.gT
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gS = aa
+                a.cache.gT = aa
             end
 
             return aa.c
@@ -106474,7 +106734,7 @@ do
 
             a.cy()
 
-            local ad, ae = a.gS(), aa.LocalPlayer
+            local ad, ae = a.gT(), aa.LocalPlayer
             local af, ag, ah, ai = ae.Name, ae.DisplayName, tostring(ae.UserId), {}
 
             ai.__index = ai
@@ -106661,14 +106921,14 @@ do
             return ai
         end
 
-        function a.gT()
-            local aa = a.cache.gT
+        function a.gU()
+            local aa = a.cache.gU
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gT = aa
+                a.cache.gU = aa
             end
 
             return aa.c
@@ -106680,7 +106940,7 @@ do
 
             a.cy()
 
-            local ad, ae, af, ag, ah = a.h(), a.gS(), aa.LocalPlayer, {
+            local ad, ae, af, ag, ah = a.h(), a.gT(), aa.LocalPlayer, {
                 'Shadow',
                 'Crimson',
                 'Frost',
@@ -106936,14 +107196,14 @@ do
             return ak
         end
 
-        function a.gU()
-            local aa = a.cache.gU
+        function a.gV()
+            local aa = a.cache.gV
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gU = aa
+                a.cache.gV = aa
             end
 
             return aa.c
@@ -106980,14 +107240,14 @@ do
             return ac
         end
 
-        function a.gV()
-            local aa = a.cache.gV
+        function a.gW()
+            local aa = a.cache.gW
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gV = aa
+                a.cache.gW = aa
             end
 
             return aa.c
@@ -107075,14 +107335,14 @@ do
             return ag
         end
 
-        function a.gW()
-            local aa = a.cache.gW
+        function a.gX()
+            local aa = a.cache.gX
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gW = aa
+                a.cache.gX = aa
             end
 
             return aa.c
@@ -107105,14 +107365,14 @@ do
             return ad
         end
 
-        function a.gX()
-            local aa = a.cache.gX
+        function a.gY()
+            local aa = a.cache.gY
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.gX = aa
+                a.cache.gY = aa
             end
 
             return aa.c
@@ -107394,211 +107654,6 @@ do
             return al
         end
 
-        function a.gY()
-            local aa = a.cache.gY
-
-            if not aa then
-                aa = {
-                    c = __modImpl(),
-                }
-                a.cache.gY = aa
-            end
-
-            return aa.c
-        end
-    end
-    do
-        local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aC, aD, aE, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, b, ba, bb, bc, bd, be, bf, bg, bh, bi, bj, bk, bl, bm, bn, bo, bp, bq, br, bu, bv, bw, bx, bA, bD, bE, bF, bG, bH, bI, bJ, bK, bL, bM = a.cy(), a.b(), a.H(), a.c4(), a.d6(), a.d8(), a.ea(), a.ed(), a.eg(), a.ei(), a.ek(), a.el(), a.en(), a.eq(), a.es(), a.eu(), a.ew(), a.ey(), a.ez(), a.eB(), a.eD(), a.eH(), a.eJ(), a.eK(), a.eL(), a.eO(), a.eP(), a.eQ(), a.eR(), a.eS(), a.eT(), a.eV(), a.eW(), a.eX(), a.eZ(), a.e_(), a.cz(), a.e0(), a.e1(), a.e2(), a.e3(), a.e4(), a.e5(), a.e9(), a.fa(), a.fn(), a.c7(), a.fm(), a.fo(), a.ft(), a.fv(), a.fB(), a.fC(), a.cb(), a.fF(), a.fH(), a.fJ(), a.fO(), a.fQ(), a.fR(), a.fT(), a.fV(), a.fY(), a.fZ(), a.f1(), a.f2(), a.f3(), a.f4(), a.f5(), a.f8(), a.ge(), a.gf(), a.gg(), a.gh(), a.gy(), a.gz(), a.gB(), a.gE(), a.gG(), a.gH(), a.gK(), a.gL(), a.gM(), a.gN(), a.gO(), a.gP(), a.gQ(), a.gR(), a.gD(), a.gT(), a.gU(), a.gV(), a.gW(), a.gX(), a.gY()
-
-            return function()
-                ac.SetPlayerClass(ad)
-                ac.new()
-                ab.addDestroyer(ac.Destroy)
-
-                local bN = aa.Group'ASSISTANCE'
-                local bO = aa.Tab(bN, 'Ragebot', 'aim')
-
-                bO.UseScope(bO, true)
-
-                local bP, bQ, bR, d, e = aa.ScopedSection(bO, 'AIMBOT', 1, 'aimbot'), aa.ScopedSection(bO, 'TARGETING', 1, 'aimbotTargeting'), aa.ScopedSection(bO, 'FILTERS', 1, 'aimbotFilters'), aa.ScopedSection(bO, 'PERFORMANCE', 1, 'aimbotPerformance'), aa.Section(bO, 'VISUALS', 1, 'aimbotVisuals')
-
-                aa.Mount(aX, bP, {
-                    targetingLink = bQ,
-                    filtersLink = bR,
-                    performanceLink = d,
-                    visualsLink = e,
-                })
-
-                local g = aa.Section(bO, 'ANTI AIM', 2, 'antiAim')
-
-                aa.Mount(bc, g)
-
-                local h = aa.Section(bO, 'WEAPON', 2, 'weaponr'):Scoped(true)
-
-                aa.Mount(aL, h)
-                aa.Mount(aR, h)
-                aa.Mount(aS, h)
-                aa.Mount(aP, h)
-                aa.Mount(aQ, h)
-                aa.Mount(aO, h)
-                aa.Mount(aM, h)
-                aa.Mount(bJ, h)
-
-                local i = aa.Section(bO, 'UTILITY', 2, 'utilityr')
-
-                aa.Mount(aV, i)
-                aa.Mount(aT, i)
-                aa.Mount(aU, i)
-
-                local j = aa.Tab(bN, 'Legitbot', 'rifle')
-                local k, l, m, n, o, p, q, r = aa.ScopedSection(j, 'MAIN', 1, 'legitbot'), aa.ScopedSection(j, 'TARGETTING', 1, 'targetting'), aa.ScopedSection(j, 'AIM', 1, 'aim'), aa.ScopedSection(j, 'BULLET REDIRECTION', 1, 'bulletRedirection'), aa.ScopedSection(j, 'TRIGGER', 2, 'trigger'), aa.ScopedSection(j, 'RECOIL CONTROL SYSTEM', 2, 'rcs'), aa.ScopedSection(j, 'VISUALS', 2, 'visuals'):Global(), aa.Section(j, 'EXTRAS', 2, 'extras')
-
-                j.UseScope(j, true)
-                aa.Mount(a7, q)
-                aa.Mount(a6, k, {
-                    targettingLink = l,
-                    aimLink = m,
-                    triggerLink = o,
-                    rcsLink = p,
-                    visualsLink = q,
-                    bulletRedirectionLink = n,
-                })
-                aa.Mount(aW, r)
-                aa.Mount(aY, r, {auraLink = i})
-
-                local s = aa.Group'VISUALS'
-                local t = aa.Tab(s, 'Visuals', 'terrain')
-                local u = aa.Subtab(t, 'Players', 'person')
-                local v = aa.Section(u, 'PLAYER ESP', 1, 'esp')
-
-                aa.Mount(ae, v, {previewLink = v})
-                aa.Mount(as, v.WithPrefix(v, 'other'))
-                aa.Mount(af, v)
-
-                local w = aa.Section(u, 'HIT FEEDBACK', 2, 'effects')
-
-                aa.Mount(aw, w)
-                aa.Mount(au, w)
-                aa.Mount(ar, w)
-                aa.Mount(ao, w)
-                aa.Mount(ap, w)
-                aa.Mount(an, w)
-                aa.Mount(aq, w)
-                aa.Mount(ag, w)
-                aa.Mount(at, w)
-                aa.Mount(av, w)
-
-                local x = aa.Section(u, 'SELF', 2, 'selfEsp')
-
-                aa.Mount(br, x)
-                aa.Mount(bo, x)
-                aa.Mount(bp, x)
-                aa.Mount(bG, x)
-                aa.Mount(bq, x)
-                aa.Mount(bn, x)
-
-                local y = aa.Subtab(t, 'World', 'globe')
-                local z = aa.Section(y, 'AMBIENCE', 1, 'modulations')
-
-                a2.mapSource = a1
-
-                aa.Mount(a0, z, {mapSource = a1})
-                aa.Mount(a9, z.WithPrefix(z, 'effects'))
-
-                local A = aa.Section(y, 'INDICATORS', 1, 'effects')
-
-                aa.Mount(ai, A)
-                aa.Mount(aj, A)
-                aa.Mount(ah, A)
-                aa.Mount(a5, A)
-                aa.Mount(a3, A)
-                aa.Mount(am, A)
-                aa.Mount(ak, A, {
-                    sources = {
-                        al.smoke,
-                        al.fire,
-                    },
-                })
-
-                local B = aa.Section(y, 'EFFECTS', 1, 'effects')
-
-                aa.Mount(aZ, B)
-                aa.Mount(a_, B)
-                aa.Mount(a8, B.WithPrefix(B, 'overlay'))
-
-                local C = aa.Section(y, 'VIEW', 2, 'overlay')
-
-                aa.Mount(b, C)
-                aa.Mount(ba, C)
-                aa.Mount(bb, C)
-                aa.Mount(bk, C)
-                aa.Mount(bl, C)
-
-                local D = aa.Section(y, 'HUD', 2, 'overlay')
-
-                aa.Mount(bw, D)
-                aa.Mount(bg, D)
-                aa.Mount(bd, D)
-                aa.Mount(be, D)
-                aa.Mount(bD, D)
-                aa.Mount(bi, aa.SettingsHudSection'hud')
-                aa.Mount(a4, D)
-                aa.Mount(bf, D)
-                aa.Mount(bj, D)
-                aa.Mount(bh, D)
-
-                local E = aa.Group'OTHER'
-                local F = aa.Tab(E, 'Inventory', 'karambit')
-
-                bm.Attach(F)
-
-                local G = aa.Tab(E, 'Misc', 'bolt')
-                local H = aa.Section(G, 'MOVEMENT', 1, 'movement')
-
-                aa.Mount(aE, H)
-                aa.Mount(ay, H)
-                aa.Mount(aH, H)
-                aa.Mount(aC, H)
-                aa.Mount(aA, H)
-                aa.Mount(aG, H)
-                aa.Mount(aJ, H)
-                aa.Mount(az, H)
-                aa.Mount(aI, H)
-
-                local I = aa.Section(G, 'MISC', 2, 'miscFeatures')
-
-                aa.Mount(bu, I)
-                aa.Mount(bv, I)
-                aa.Mount(aK, I)
-
-                local J = aa.Section(G, 'EXPLOITS', 2, 'exploits')
-
-                aa.Mount(aD, J)
-                aa.Mount(bx, J)
-                aa.Mount(bA, J)
-
-                local K = aa.Section(G, 'UTILITY', 2, 'utility')
-
-                aa.Mount(bF, K)
-                aa.Mount(ax, K)
-                aa.Mount(bE, K)
-                aa.Mount(bM, K)
-                aa.Mount(aN, K)
-                aa.Mount(bK, K, {
-                    body = 
-"Keeps you in the server while idle so you are never moved to spawn or disconnected for inactivity.",
-                    onEnable = bL.Enable,
-                    onDisable = bL.Disable,
-                })
-
-                local L = aa.Section(G, 'SPOOFING', 1, 'spoofing')
-
-                aa.Mount(bH, L)
-                aa.Mount(bI, L)
-            end
-        end
-
         function a.gZ()
             local aa = a.cache.gZ
 
@@ -107607,6 +107662,213 @@ do
                     c = __modImpl(),
                 }
                 a.cache.gZ = aa
+            end
+
+            return aa.c
+        end
+    end
+    do
+        local function __modImpl()
+            local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az, aA, aC, aD, aE, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW, aX, aY, aZ, a_, a0, a1, a2, a3, a4, a5, a6, a7, a8, a9, b, ba, bb, bc, bd, be, bf, bg, bh, bi, bj, bk, bl, bm, bn, bo, bp, bq, br, bu, bv, bw, bx, bA, bD, bE, bF, bG, bH, bI, bJ, bK, bL, bM, bN = a.cy(), a.b(), a.H(), a.c4(), a.dI(), a.d7(), a.d9(), a.eb(), a.ee(), a.eh(), a.ej(), a.el(), a.em(), a.eo(), a.er(), a.et(), a.ev(), a.ex(), a.ez(), a.eA(), a.eC(), a.eE(), a.eI(), a.eK(), a.eL(), a.eM(), a.eP(), a.eQ(), a.eR(), a.eS(), a.eT(), a.eU(), a.eW(), a.eX(), a.eY(), a.e_(), a.e0(), a.cz(), a.e1(), a.e2(), a.e3(), a.e4(), a.e5(), a.e6(), a.fa(), a.fb(), a.fo(), a.c7(), a.fn(), a.fp(), a.fu(), a.fw(), a.fC(), a.fD(), a.cb(), a.fG(), a.fI(), a.fK(), a.fP(), a.fR(), a.fS(), a.fU(), a.fW(), a.fZ(), a.f_(), a.f2(), a.f3(), a.f4(), a.f5(), a.f6(), a.f9(), a.gf(), a.gg(), a.gh(), a.gi(), a.gz(), a.gA(), a.gC(), a.gF(), a.gH(), a.gI(), a.gL(), a.gM(), a.gN(), a.gO(), a.gP(), a.gQ(), a.gR(), a.gS(), a.gE(), a.gU(), a.gV(), a.gW(), a.gX(), a.gY(), a.gZ()
+
+            return function()
+                ac.SetPlayerClass(ad)
+                ac.new()
+                ae.Start()
+                ab.addDestroyer(ae.Stop)
+                ab.addDestroyer(ac.Destroy)
+
+                local bO = aa.Group'ASSISTANCE'
+                local bP = aa.Tab(bO, 'Ragebot', 'aim')
+
+                bP.UseScope(bP, true)
+
+                local bQ, bR, d, e, g = aa.ScopedSection(bP, 'AIMBOT', 1, 'aimbot'), aa.ScopedSection(bP, 'TARGETING', 1, 'aimbotTargeting'), aa.ScopedSection(bP, 'FILTERS', 1, 'aimbotFilters'), aa.ScopedSection(bP, 'PERFORMANCE', 1, 'aimbotPerformance'), aa.Section(bP, 'VISUALS', 1, 'aimbotVisuals')
+
+                aa.Mount(aY, bQ, {
+                    targetingLink = bR,
+                    filtersLink = d,
+                    performanceLink = e,
+                    visualsLink = g,
+                })
+
+                local h = aa.Section(bP, 'ANTI AIM', 2, 'antiAim')
+
+                aa.Mount(bd, h)
+
+                local i = aa.Section(bP, 'WEAPON', 2, 'weaponr'):Scoped(true)
+
+                aa.Mount(aM, i)
+                aa.Mount(aS, i)
+                aa.Mount(aT, i)
+                aa.Mount(aQ, i)
+                aa.Mount(aR, i)
+                aa.Mount(aP, i)
+                aa.Mount(aN, i)
+                aa.Mount(bK, i)
+
+                local j = aa.Section(bP, 'UTILITY', 2, 'utilityr')
+
+                aa.Mount(aW, j)
+                aa.Mount(aU, j)
+                aa.Mount(aV, j)
+
+                local k = aa.Tab(bO, 'Legitbot', 'rifle')
+                local l, m, n, o, p, q, r, s = aa.ScopedSection(k, 'MAIN', 1, 'legitbot'), aa.ScopedSection(k, 'TARGETTING', 1, 'targetting'), aa.ScopedSection(k, 'AIM', 1, 'aim'), aa.ScopedSection(k, 'BULLET REDIRECTION', 1, 'bulletRedirection'), aa.ScopedSection(k, 'TRIGGER', 2, 'trigger'), aa.ScopedSection(k, 'RECOIL CONTROL SYSTEM', 2, 'rcs'), aa.ScopedSection(k, 'VISUALS', 2, 'visuals'):Global(), aa.Section(k, 'EXTRAS', 2, 'extras')
+
+                k.UseScope(k, true)
+                aa.Mount(a8, r)
+                aa.Mount(a7, l, {
+                    targettingLink = m,
+                    aimLink = n,
+                    triggerLink = p,
+                    rcsLink = q,
+                    visualsLink = r,
+                    bulletRedirectionLink = o,
+                })
+                aa.Mount(aX, s)
+                aa.Mount(aZ, s, {auraLink = j})
+
+                local t = aa.Group'VISUALS'
+                local u = aa.Tab(t, 'Visuals', 'terrain')
+                local v = aa.Subtab(u, 'Players', 'person')
+                local w = aa.Section(v, 'PLAYER ESP', 1, 'esp')
+
+                aa.Mount(af, w, {previewLink = w})
+                aa.Mount(at, w.WithPrefix(w, 'other'))
+                aa.Mount(ag, w)
+
+                local x = aa.Section(v, 'HIT FEEDBACK', 2, 'effects')
+
+                aa.Mount(ax, x)
+                aa.Mount(av, x)
+                aa.Mount(as, x)
+                aa.Mount(ap, x)
+                aa.Mount(aq, x)
+                aa.Mount(ao, x)
+                aa.Mount(ar, x)
+                aa.Mount(ah, x)
+                aa.Mount(au, x)
+                aa.Mount(aw, x)
+
+                local y = aa.Section(v, 'SELF', 2, 'selfEsp')
+
+                aa.Mount(bu, y)
+                aa.Mount(bp, y)
+                aa.Mount(bq, y)
+                aa.Mount(bH, y)
+                aa.Mount(br, y)
+                aa.Mount(bo, y)
+
+                local z = aa.Subtab(u, 'World', 'globe')
+                local A = aa.Section(z, 'AMBIENCE', 1, 'modulations')
+
+                a3.mapSource = a2
+
+                aa.Mount(a1, A, {mapSource = a2})
+                aa.Mount(b, A.WithPrefix(A, 'effects'))
+
+                local B = aa.Section(z, 'INDICATORS', 1, 'effects')
+
+                aa.Mount(aj, B)
+                aa.Mount(ak, B)
+                aa.Mount(ai, B)
+                aa.Mount(a6, B)
+                aa.Mount(a4, B)
+                aa.Mount(an, B)
+                aa.Mount(al, B, {
+                    sources = {
+                        am.smoke,
+                        am.fire,
+                    },
+                })
+
+                local C = aa.Section(z, 'EFFECTS', 1, 'effects')
+
+                aa.Mount(a_, C)
+                aa.Mount(a0, C)
+                aa.Mount(a9, C.WithPrefix(C, 'overlay'))
+
+                local D = aa.Section(z, 'VIEW', 2, 'overlay')
+
+                aa.Mount(ba, D)
+                aa.Mount(bb, D)
+                aa.Mount(bc, D)
+                aa.Mount(bl, D)
+                aa.Mount(bm, D)
+
+                local E = aa.Section(z, 'HUD', 2, 'overlay')
+
+                aa.Mount(bx, E)
+                aa.Mount(bh, E)
+                aa.Mount(be, E)
+                aa.Mount(bf, E)
+                aa.Mount(bE, E)
+                aa.Mount(bj, aa.SettingsHudSection'hud')
+                aa.Mount(a5, E)
+                aa.Mount(bg, E)
+                aa.Mount(bk, E)
+                aa.Mount(bi, E)
+
+                local F = aa.Group'OTHER'
+                local G = aa.Tab(F, 'Inventory', 'karambit')
+
+                bn.Attach(G)
+
+                local H = aa.Tab(F, 'Misc', 'bolt')
+                local I = aa.Section(H, 'MOVEMENT', 1, 'movement')
+
+                aa.Mount(aG, I)
+                aa.Mount(az, I)
+                aa.Mount(aI, I)
+                aa.Mount(aD, I)
+                aa.Mount(aC, I)
+                aa.Mount(aH, I)
+                aa.Mount(aK, I)
+                aa.Mount(aA, I)
+                aa.Mount(aJ, I)
+
+                local J = aa.Section(H, 'MISC', 2, 'miscFeatures')
+
+                aa.Mount(bv, J)
+                aa.Mount(bw, J)
+                aa.Mount(aL, J)
+
+                local K = aa.Section(H, 'EXPLOITS', 2, 'exploits')
+
+                aa.Mount(aE, K)
+                aa.Mount(bA, K)
+                aa.Mount(bD, K)
+
+                local L = aa.Section(H, 'UTILITY', 2, 'utility')
+
+                aa.Mount(bG, L)
+                aa.Mount(ay, L)
+                aa.Mount(bF, L)
+                aa.Mount(bN, L)
+                aa.Mount(aO, L)
+                aa.Mount(bL, L, {
+                    body = 
+"Keeps you in the server while idle so you are never moved to spawn or disconnected for inactivity.",
+                    onEnable = bM.Enable,
+                    onDisable = bM.Disable,
+                })
+
+                local M = aa.Section(H, 'SPOOFING', 1, 'spoofing')
+
+                aa.Mount(bI, M)
+                aa.Mount(bJ, M)
+            end
+        end
+
+        function a.g_()
+            local aa = a.cache.g_
+
+            if not aa then
+                aa = {
+                    c = __modImpl(),
+                }
+                a.cache.g_ = aa
             end
 
             return aa.c
@@ -107664,14 +107926,14 @@ do
             end)
         end
 
-        function a.g_()
-            local aa = a.cache.g_
+        function a.g0()
+            local aa = a.cache.g0
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g_ = aa
+                a.cache.g0 = aa
             end
 
             return aa.c
@@ -107771,14 +108033,14 @@ do
             return ai
         end
 
-        function a.g0()
-            local aa = a.cache.g0
+        function a.g1()
+            local aa = a.cache.g1
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g0 = aa
+                a.cache.g1 = aa
             end
 
             return aa.c
@@ -107850,14 +108112,14 @@ do
             return ai
         end
 
-        function a.g1()
-            local aa = a.cache.g1
+        function a.g2()
+            local aa = a.cache.g2
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g1 = aa
+                a.cache.g2 = aa
             end
 
             return aa.c
@@ -107914,14 +108176,14 @@ do
             return ag
         end
 
-        function a.g2()
-            local aa = a.cache.g2
+        function a.g3()
+            local aa = a.cache.g3
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g2 = aa
+                a.cache.g3 = aa
             end
 
             return aa.c
@@ -107992,14 +108254,14 @@ do
             return ag
         end
 
-        function a.g3()
-            local aa = a.cache.g3
+        function a.g4()
+            local aa = a.cache.g4
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g3 = aa
+                a.cache.g4 = aa
             end
 
             return aa.c
@@ -108056,14 +108318,14 @@ do
             return ag
         end
 
-        function a.g4()
-            local aa = a.cache.g4
+        function a.g5()
+            local aa = a.cache.g5
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g4 = aa
+                a.cache.g5 = aa
             end
 
             return aa.c
@@ -108107,14 +108369,14 @@ do
             return ag
         end
 
-        function a.g5()
-            local aa = a.cache.g5
+        function a.g6()
+            local aa = a.cache.g6
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g5 = aa
+                a.cache.g6 = aa
             end
 
             return aa.c
@@ -108122,7 +108384,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah = a.g0(), a.g1(), a.g2(), a.g3(), a.g4(), a.g5(), a.db(), {}
+            local aa, ab, ac, ad, ae, af, ag, ah = a.g1(), a.g2(), a.g3(), a.g4(), a.g5(), a.g6(), a.db(), {}
 
             ag.Register('game', function(ai)
                 local aj = ag.WrapSignal
@@ -108175,14 +108437,14 @@ do
             return ah
         end
 
-        function a.g6()
-            local aa = a.cache.g6
+        function a.g7()
+            local aa = a.cache.g7
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g6 = aa
+                a.cache.g7 = aa
             end
 
             return aa.c
@@ -108427,14 +108689,14 @@ do
             return af
         end
 
-        function a.g7()
-            local aa = a.cache.g7
+        function a.g8()
+            local aa = a.cache.g8
 
             if not aa then
                 aa = {
                     c = __modImpl(),
                 }
-                a.cache.g7 = aa
+                a.cache.g8 = aa
             end
 
             return aa.c
@@ -108442,7 +108704,7 @@ do
     end
 end
 
-local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax = a.d(), a.e(), a.F(), a.cB(), a.cF(), a.cG(), a.cH(), a.cK(), a.cP(), a.cR(), a.cU(), a.cW(), a.c1(), a.c2(), a.c3(), a.l(), a.c6(), a.c7(), a.dH(), a.cb(), a.b(), a.L(), a.gZ(), a.g_()
+local aa, ab, ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax = a.d(), a.e(), a.F(), a.cB(), a.cF(), a.cG(), a.cH(), a.cK(), a.cP(), a.cR(), a.cU(), a.cW(), a.c1(), a.c2(), a.c3(), a.l(), a.c6(), a.c7(), a.dH(), a.cb(), a.b(), a.L(), a.g_(), a.g0()
 
 at.name = 'bloxstrike'
 
@@ -108500,8 +108762,8 @@ as({
             return az
         end
 
-        a.g6()
-        a.g7().Install(a.fb())
+        a.g7()
+        a.g8().Install(a.fc())
     end,
     aw,
 }, {ax})
