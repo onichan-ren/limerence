@@ -82,21 +82,75 @@ local function fetch(url)
 	return body
 end
 
+local function setGlobal(key, value)
+	local env = if type(getgenv) == "function" then getgenv() else _G
+	env[key] = value
+end
+
+local function loadPf(source)
+	local env = if type(getgenv) == "function" then getgenv() else _G
+	local executor = string.lower(if type(identifyexecutor) == "function" then identifyexecutor() else "")
+	local threadSource = [[
+		for _, func in getgc(false) do
+			if type(func) == "function" and islclosure(func) and debug.getinfo(func).name == "require" and string.find(debug.getinfo(func).source, "ClientLoader") then
+				loadstring(]] .. string.format("%q", source) .. [[, "@limerence/pf")()
+				break
+			end
+		end
+	]]
+
+	local function runSource(runner, getAll)
+		if type(runner) ~= "function" or type(getAll) ~= "function" then
+			return false
+		end
+		for _, actor in getAll() do
+			runner(actor, threadSource)
+		end
+		return true
+	end
+
+	local ran = false
+	if not env.executed then
+		if string.find(executor, "choco") then
+			ran = runSource(run_on_actor, get_deleted_actors)
+		elseif string.find(executor, "nexomia") or string.find(executor, "volt") then
+			ran = runSource(run_on_actor, getactors)
+		elseif string.find(executor, "potassium") then
+			ran = runSource(run_on_thread, getactorthreads)
+		elseif string.find(executor, "nihon") or string.find(executor, "synapse z") or string.find(executor, "yubx") or string.find(executor, "cosmic") then
+			ran = runSource(run_on_actor, getdeletedactors)
+		elseif type(getfflag) == "function" and string.lower(tostring(getfflag("DebugRunParallelLuaOnMainThread"))) == "true" then
+			local fn, err = loadstring(source, "@limerence/pf")
+			if not fn then
+				error("[limerence] failed to compile pf: " .. tostring(err))
+			end
+			setGlobal("executed", true)
+			return fn()
+		elseif type(setfflag) == "function" then
+			setfflag("DebugRunParallelLuaOnMainThread", "True")
+			if type(queue_on_teleport) == "function" then
+				queue_on_teleport('loadstring(game:HttpGet("https://raw.githubusercontent.com/onichan-ren/limerence/main/loader.lua?t=" .. tostring(os.time())))()')
+			end
+			cloneref(game:GetService("TeleportService")):Teleport(game.PlaceId)
+			setGlobal("executed", true)
+			return
+		end
+	end
+
+	setGlobal("executed", true)
+	if ran then
+		return
+	end
+end
+
 local target = resolveTarget()
 local useDebug = getGlobal("LIMERENCE_DEBUG") == true and DEBUG_TARGETS[target]
 local fileName = target .. (if useDebug then ".debug.luau" else ".luau")
 
 local source = fetch(BASE_URL .. fileName .. "?t=" .. tostring(os.time()))
 
-if ACTOR_TARGETS[target] and type(getactors) == "function" and type(run_on_actor) == "function" then
-	local alreadyInActor = type(isactor) == "function" and isactor()
-	if not alreadyInActor then
-		local actors = getactors()
-		local actor = actors and actors[1]
-		if actor then
-			return run_on_actor(actor, source)
-		end
-	end
+if ACTOR_TARGETS[target] then
+	return loadPf(source)
 end
 
 local fn, err = loadstring(source, "@limerence/" .. target)
