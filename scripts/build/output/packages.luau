@@ -5560,6 +5560,9 @@ do
 		local function wrapPerformWorkWithCoroutine(q)
 			local r = coroutine.create(function()
 				while true do
+					if setthreadidentity then
+						setthreadidentity(8)
+					end
 					local r = coroutine.wrap(q)
 					local s, t = pcall(r)
 					coroutine.yield(s, t)
@@ -5585,6 +5588,9 @@ do
 		end
 		local function requestHostTimeout(q, r)
 			n = j(function()
+				if setthreadidentity then
+					setthreadidentity(8)
+				end
 				q(i())
 			end, r)
 		end

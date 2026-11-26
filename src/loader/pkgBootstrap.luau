@@ -9,7 +9,7 @@ local pkgBootstrap = {}
 local packages: { [string]: any }? = nil
 
 local function fetchSource(): string
-	local response = game:HttpGet(manifest.url)
+	local response = game:HttpGet(manifest.url .. "?t=" .. tostring(os.time()))
 
 	if not response or #response == 0 then
 		error(`pkgBootstrap: response body is empty)`)
