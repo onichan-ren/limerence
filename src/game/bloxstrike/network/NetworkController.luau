@@ -81,17 +81,42 @@ function NetworkController.SendPacket(packetType: string, packetName: string, pa
 	return true
 end
 
+local function findRemoteInClosure(fn: any, depth: number, visited: { [any]: boolean }): Instance?
+	if type(fn) ~= "function" or visited[fn] or depth > 3 then
+		return nil
+	end
+	visited[fn] = true
+
+	local upvalues = getupvalues(fn)
+	for _, value in next, upvalues do
+		if typeof(value) == "Instance" and (value:IsA("RemoteEvent") or value:IsA("UnreliableRemoteEvent") or value:IsA("RemoteFunction")) then
+			return value
+		end
+	end
+	for _, value in next, upvalues do
+		if type(value) == "function" then
+			local nested = findRemoteInClosure(value, depth + 1, visited)
+			if nested then
+				return nested
+			end
+		end
+	end
+	return nil
+end
+
 NetworkController.HookPacket = function(packetType: string, packetName: string, callback: (...any) -> boolean?)
 	local packets = NetworkController._packets[packetType]
 
 	if not packets then
 		logger:error("failed to find packets for packet type: " .. packetType)
+		return
 	end
 
 	local packet = packets[packetName]
 
 	if not packet then
 		logger:error("failed to find packet: " .. packetName)
+		return
 	end
 
 	local key = `{packetType}.{packetName}`
@@ -102,11 +127,18 @@ NetworkController.HookPacket = function(packetType: string, packetName: string, 
 	end
 
 	local sendFunc = rawget(packet, "Send") :: any
-	hook.addInstance(getupvalue(sendFunc, 5))
+	local remote = findRemoteInClosure(sendFunc, 0, {})
+	if not remote then
+		logger:warn("failed to resolve remote for packet: " .. key)
+		return
+	end
 
+	hook.addInstance(remote)
+
+	local method = if remote:IsA("RemoteFunction") then "InvokeServer" else "FireServer"
 	hook.overrideMethod(
-		getupvalue(sendFunc, 5),
-		"FireServer",
+		remote,
+		method,
 		LPH_NO_VIRTUALIZE(function(...: any)
 			local doContinue, data: any? = callback(...)
 
@@ -121,7 +153,7 @@ NetworkController.HookPacket = function(packetType: string, packetName: string, 
 		end)
 	)
 
-	NetworkController._hooks[key] = getupvalue(sendFunc, 5)
+	NetworkController._hooks[key] = remote
 end
 
 function NetworkController.UnhookPacket(packetType: string, packetName: string): ()

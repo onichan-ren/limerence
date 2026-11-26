@@ -421,13 +421,20 @@ do
             end
 
             d.addInstance = function(h)
-                if f[h] then
+                if not h or f[h] then
+                    return
+                end
+
+                local i = (getrawmetatable(h))
+
+                if not i then
+                    c.warn(c, 'missing metatable for instance:', h)
+
                     return
                 end
 
                 c.debug(c, 'hooking instance:', h)
 
-                local i = (getrawmetatable(h))
                 local j, k, l, m, n, o, p = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}
                 local q = {
                     originalProperties = n,
@@ -765,17 +772,48 @@ do
                 return true
             end
 
+            local function findRemoteInClosure(e, f, g)
+                if type(e) ~= 'function' or g[e] or f > 3 then
+                    return nil
+                end
+
+                g[e] = true
+
+                local h = getupvalues(e)
+
+                for i, j in next, h do
+                    if typeof(j) == 'Instance' and (j.IsA(j, 'RemoteEvent') or j.IsA(j, 'UnreliableRemoteEvent') or j.IsA(j, 'RemoteFunction')) then
+                        return j
+                    end
+                end
+                for i, j in next, h do
+                    if type(j) == 'function' then
+                        local k = findRemoteInClosure(j, f + 1, g)
+
+                        if k then
+                            return k
+                        end
+                    end
+                end
+
+                return nil
+            end
+
             d.HookPacket = function(e, f, g)
                 local h = d._packets[e]
 
                 if not h then
                     b.error(b, 'failed to find packets for packet type: ' .. e)
+
+                    return
                 end
 
                 local i = h[f]
 
                 if not i then
                     b.error(b, 'failed to find packet: ' .. f)
+
+                    return
                 end
 
                 local j = string.format('%s.%s', tostring(e), tostring(f))
@@ -787,16 +825,24 @@ do
                 end
 
                 local k = (rawget(i, 'Send'))
+                local l = findRemoteInClosure(k, 0, {})
 
-                c.addInstance(getupvalue(k, 5))
-                c.overrideMethod(getupvalue(k, 5), 'FireServer', LPH_NO_VIRTUALIZE(function(
-                    ...
-                )
-                    local l, m = g(...)
+                if not l then
+                    b.warn(b, 'failed to resolve remote for packet: ' .. j)
 
-                    if l == false then
-                        if m then
-                            return m
+                    return
+                end
+
+                c.addInstance(l)
+
+                local m = l.IsA(l, 'RemoteFunction') and 'InvokeServer' or 'FireServer'
+
+                c.overrideMethod(l, m, LPH_NO_VIRTUALIZE(function(...)
+                    local n, o = g(...)
+
+                    if n == false then
+                        if o then
+                            return o
                         end
 
                         return
@@ -805,7 +851,7 @@ do
                     return ...
                 end))
 
-                d._hooks[j] = getupvalue(k, 5)
+                d._hooks[j] = l
             end
 
             function d.UnhookPacket(e, f)

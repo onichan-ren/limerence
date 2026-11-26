@@ -104,13 +104,17 @@ function hook.restoreInstance(target: any): ()
 end
 
 hook.addInstance = function(target: Instance)
-	if instanceHooks[target] then
+	if not target or instanceHooks[target] then
+		return
+	end
+
+	local originalMetamethod = getrawmetatable(target) :: any
+	if not originalMetamethod then
+		logger:warn("missing metatable for instance:", target)
 		return
 	end
 
 	logger:debug("hooking instance:", target)
-
-	local originalMetamethod = getrawmetatable(target) :: any
 	local originalNamecall = originalMetamethod.__namecall
 	local originalNewindex = originalMetamethod.__newindex
 	local originalIndex = originalMetamethod.__index
