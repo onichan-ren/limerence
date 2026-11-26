@@ -70,7 +70,7 @@ local PICKER_CONFIG = {
 		end,
 	},
 	bundle = {
-		urlPrefix = "https://limerence.biz/get/",
+		urlPrefix = "https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/beams/",
 		title = "Downloading Beams",
 		icon = "download",
 		files = {

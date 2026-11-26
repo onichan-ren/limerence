@@ -36,7 +36,7 @@ local PICKER_CONFIG = {
 		},
 	},
 	bundle = {
-		urlPrefix = "https://limerence.biz/get/",
+		urlPrefix = "https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hitsounds/",
 		title = "Downloading hitsounds",
 		icon = "download",
 		files = {

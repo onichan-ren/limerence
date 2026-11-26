@@ -1,4 +1,4 @@
 return {
 	version = "2",
-	url = "https://limerence.biz/get-package/packages-v2.luau",
+	url = "https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/packages.luau",
 }

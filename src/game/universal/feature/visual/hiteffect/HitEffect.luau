@@ -265,7 +265,7 @@ function HitEffect.new(link: gameUi.Linker, opts: HitEffectOpts): HitEffect
 			},
 		},
 		bundle = {
-			urlPrefix = "https://limerence.biz/get/",
+			urlPrefix = "https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hiteffects/",
 			title = "Downloading hit effects",
 			icon = "download",
 			files = {
