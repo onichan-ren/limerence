@@ -161,7 +161,8 @@ do
         local function __modImpl()
             return {
                 version = '2',
-                url = 'https://limerence.biz/get-package/packages-v2.luau',
+                url = 
+"https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/packages.luau",
             }
         end
 
@@ -3729,88 +3730,92 @@ do
     do
         local function __modImpl()
             local b = {
-                url = 'https://limerence.biz/get/',
+                url = 
+"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/",
+                revisions = {
+                    ['limerence.biz/assets/fonts/semi_bold.ttf'] = 2,
+                },
                 dir = {
                     ['limerence.biz'] = {
                         assets = {
                             fonts = {
-                                ['light.ttf'] = 'light.ttf',
-                                ['bold.ttf'] = 'bold.ttf',
-                                ['semi_bold.ttf'] = 'semi_bold.ttf',
-                                ['pixel.ttf'] = 'pixel.ttf',
-                                ['pixel2.ttf'] = 'pixel2.ttf',
-                                ['pixel3.ttf'] = 'pixel3.ttf',
+                                ['light.ttf'] = 'fonts/light.ttf',
+                                ['bold.ttf'] = 'fonts/bold.ttf',
+                                ['semi_bold.ttf'] = 'fonts/semi_bold.ttf',
+                                ['pixel.ttf'] = 'fonts/pixel.ttf',
+                                ['pixel2.ttf'] = 'fonts/pixel2.ttf',
+                                ['pixel3.ttf'] = 'fonts/pixel3.ttf',
                             },
                             images = {
-                                ['keybinds.png'] = 'keybinds.png',
-                                ['draw.png'] = 'draw.png',
-                                ['down_arrow.png'] = 'down_arrow.png',
-                                ['latency.png'] = 'latency.png',
-                                ['computer.png'] = 'computer.png',
-                                ['double_right_arrow.png'] = 'double_right_arrow.png',
-                                ['terrain.png'] = 'terrain.png',
-                                ['rifle.png'] = 'rifle.png',
-                                ['search.png'] = 'search.png',
-                                ['paintbrush.png'] = 'paintbrush.png',
-                                ['cog.png'] = 'cog.png',
-                                ['transparency.png'] = 'transparency.png',
-                                ['color.png'] = 'color.png',
-                                ['drop.png'] = 'drop.png',
-                                ['trash.png'] = 'trash.png',
-                                ['point.png'] = 'point.png',
-                                ['options.png'] = 'options.png',
-                                ['checkmark.png'] = 'checkmark.png',
-                                ['filter.png'] = 'filter.png',
-                                ['write.png'] = 'write.png',
-                                ['disk.png'] = 'disk.png',
-                                ['load.png'] = 'load.png',
-                                ['curved_right_arrow.png'] = 'curved_right_arrow.png',
-                                ['pencil.png'] = 'pencil.png',
-                                ['shadow.png'] = 'shadow.png',
-                                ['aim.png'] = 'aim.png',
-                                ['person.png'] = 'person.png',
-                                ['file.png'] = 'file.png',
-                                ['refresh.png'] = 'refresh.png',
-                                ['unload.png'] = 'unload.png',
-                                ['loaded_config.png'] = 'loaded_config.png',
-                                ['saved_config.png'] = 'saved_config.png',
-                                ['bolt.png'] = 'bolt.png',
-                                ['download.png'] = 'download.png',
-                                ['skull_small.png'] = 'skull_small.png',
-                                ['scope_small.png'] = 'scope_small.png',
-                                ['grave_small.png'] = 'grave_small.png',
-                                ['beam.png'] = 'beam.png',
-                                ['hitmarker.png'] = 'hitmarker.png',
-                                ['karambit.png'] = 'karambit.png',
-                                ['circle_shadow.png'] = 'circle_shadow.png',
-                                ['server.png'] = 'server.png',
-                                ['tag.png'] = 'tag.png',
-                                ['join.png'] = 'join.png',
-                                ['delete.png'] = 'delete.png',
-                                ['copy_link.png'] = 'copy_link.png',
-                                ['set_state.png'] = 'set_state.png',
-                                ['flame.png'] = 'flame.png',
-                                ['he_grenade.png'] = 'he_grenade.png',
-                                ['molotov.png'] = 'molotov.png',
-                                ['incendiary.png'] = 'incendiary.png',
-                                ['clear.png'] = 'clear.png',
-                                ['c4.png'] = 'c4.png',
-                                ['clock.png'] = 'clock.png',
-                                ['rain.png'] = 'rain.png',
-                                ['snow.png'] = 'snow.png',
-                                ['beam2.png'] = 'beam2.png',
-                                ['screen_overlay.png'] = 'screen_overlay.png',
-                                ['glow_arrow.png'] = 'glow_arrow.png',
-                                ['globe.png'] = 'globe.png',
-                                ['light.png'] = 'light.png',
-                                ['x.png'] = 'x.png',
-                                ['undo.png'] = 'undo.png',
-                                ['logov2.png'] = 'logov2.png',
-                                ['logo_small.png'] = 'logo_small.png',
-                                ['beam3.png'] = 'beam3.png',
+                                ['keybinds.png'] = 'images/keybinds.png',
+                                ['draw.png'] = 'images/draw.png',
+                                ['down_arrow.png'] = 'images/down_arrow.png',
+                                ['latency.png'] = 'images/latency.png',
+                                ['computer.png'] = 'images/computer.png',
+                                ['double_right_arrow.png'] = 'images/double_right_arrow.png',
+                                ['terrain.png'] = 'images/terrain.png',
+                                ['rifle.png'] = 'images/rifle.png',
+                                ['search.png'] = 'images/search.png',
+                                ['paintbrush.png'] = 'images/paintbrush.png',
+                                ['cog.png'] = 'images/cog.png',
+                                ['transparency.png'] = 'images/transparency.png',
+                                ['color.png'] = 'images/color.png',
+                                ['drop.png'] = 'images/drop.png',
+                                ['trash.png'] = 'images/trash.png',
+                                ['point.png'] = 'images/point.png',
+                                ['options.png'] = 'images/options.png',
+                                ['checkmark.png'] = 'images/checkmark.png',
+                                ['filter.png'] = 'images/filter.png',
+                                ['write.png'] = 'images/write.png',
+                                ['disk.png'] = 'images/disk.png',
+                                ['load.png'] = 'images/load.png',
+                                ['curved_right_arrow.png'] = 'images/curved_right_arrow.png',
+                                ['pencil.png'] = 'images/pencil.png',
+                                ['shadow.png'] = 'images/shadow.png',
+                                ['aim.png'] = 'images/aim.png',
+                                ['person.png'] = 'images/person.png',
+                                ['file.png'] = 'images/file.png',
+                                ['refresh.png'] = 'images/refresh.png',
+                                ['unload.png'] = 'images/unload.png',
+                                ['loaded_config.png'] = 'images/loaded_config.png',
+                                ['saved_config.png'] = 'images/saved_config.png',
+                                ['bolt.png'] = 'images/bolt.png',
+                                ['download.png'] = 'images/download.png',
+                                ['skull_small.png'] = 'images/skull_small.png',
+                                ['scope_small.png'] = 'images/scope_small.png',
+                                ['grave_small.png'] = 'images/grave_small.png',
+                                ['beam.png'] = 'images/beam.png',
+                                ['hitmarker.png'] = 'images/hitmarker.png',
+                                ['karambit.png'] = 'images/karambit.png',
+                                ['circle_shadow.png'] = 'images/circle_shadow.png',
+                                ['server.png'] = 'images/server.png',
+                                ['tag.png'] = 'images/tag.png',
+                                ['join.png'] = 'images/join.png',
+                                ['delete.png'] = 'images/delete.png',
+                                ['copy_link.png'] = 'images/copy_link.png',
+                                ['set_state.png'] = 'images/set_state.png',
+                                ['flame.png'] = 'images/flame.png',
+                                ['he_grenade.png'] = 'images/he_grenade.png',
+                                ['molotov.png'] = 'images/molotov.png',
+                                ['incendiary.png'] = 'images/incendiary.png',
+                                ['clear.png'] = 'images/clear.png',
+                                ['c4.png'] = 'images/c4.png',
+                                ['clock.png'] = 'images/clock.png',
+                                ['rain.png'] = 'images/rain.png',
+                                ['snow.png'] = 'images/snow.png',
+                                ['beam2.png'] = 'images/beam2.png',
+                                ['screen_overlay.png'] = 'images/screen_overlay.png',
+                                ['glow_arrow.png'] = 'images/glow_arrow.png',
+                                ['globe.png'] = 'images/globe.png',
+                                ['light.png'] = 'images/light.png',
+                                ['x.png'] = 'images/x.png',
+                                ['undo.png'] = 'images/undo.png',
+                                ['logov2.png'] = 'images/logo.png',
+                                ['logo_small.png'] = 'images/logo_small.png',
+                                ['beam3.png'] = 'images/beam3.png',
                             },
                             mesh = {
-                                ['ring.mesh'] = 'ring.mesh',
+                                ['ring.mesh'] = 'mesh/ring.mesh',
                             },
                         },
                         cache = {mounts = {}},
@@ -3865,25 +3870,25 @@ do
 
             a.J()
 
-            local i, j, k, l, m, n = a.O(), a.R(), a.g(), a.m().new'FileController', {}, LPH_NO_VIRTUALIZE(function(
+            local i, j, k, l, m, n, o, p = a.O(), a.R(), a.g(), a.m().new'FileController', game.GetService(game, 'HttpService'), {}, 'limerence.biz/cache/revisions.json', LPH_NO_VIRTUALIZE(function(
             )
-                local n = {}
+                local p = {}
 
-                local function walk(o, p)
-                    for q, r in next, p do
-                        local s, t = o and (o .. '/' .. q) or q, type(r)
+                local function walk(q, r)
+                    for s, t in next, r do
+                        local u, v = q and (q .. '/' .. s) or s, type(t)
 
-                        if t == 'table' then
-                            if not isfolder(s) then
-                                makefolder(s)
+                        if v == 'table' then
+                            if not isfolder(u) then
+                                makefolder(u)
                             end
 
-                            walk(s, r)
-                        elseif t == 'string' then
-                            n[#n + 1] = {
-                                path = s,
-                                url = f.url .. r,
-                                missing = not isfile(s),
+                            walk(u, t)
+                        elseif v == 'string' then
+                            p[#p + 1] = {
+                                path = u,
+                                url = f.url .. t,
+                                missing = not isfile(u),
                             }
                         end
                     end
@@ -3891,238 +3896,270 @@ do
 
                 walk(nil, f.dir)
 
-                return n
+                return p
             end)
+            local q = LPH_NO_VIRTUALIZE(function(q)
+                local r = {}
 
-            function m.new()
-                local o, p = n(), 0
+                if isfile(o) then
+                    r = m.JSONDecode(m, readfile(o))
+                end
 
-                for q, r in next, o do
-                    if r.missing then
-                        p += 1
+                local s = false
+
+                for t, u in next, q do
+                    local v = f.revisions[u.path]
+
+                    if v and (r[u.path] or 0) < v then
+                        if not u.missing then
+                            delfile(u.path)
+
+                            u.missing = true
+                        end
+
+                        r[u.path] = v
+                        s = true
                     end
                 end
 
-                local q
+                if s then
+                    writefile(o, m.JSONEncode(m, r))
+                end
+            end)
 
-                if p > 0 then
-                    q = i.Push{
+            function n.new()
+                local r = p()
+
+                q(r)
+
+                local s = 0
+
+                for t, u in next, r do
+                    if u.missing then
+                        s += 1
+                    end
+                end
+
+                local t
+
+                if s > 0 then
+                    t = i.Push{
                         title = 'Downloading assets',
-                        subtext = string.format('0 / %s', tostring(p)),
+                        subtext = string.format('0 / %s', tostring(s)),
                         showProgress = true,
                         progress = 0,
                     }
                 end
 
-                local r = 0
+                local u = 0
 
-                for s, t in next, o do
-                    local u = b.download(t.url, t.path)
-                    local v = m.Load(t.path, u)
+                for v, w in next, r do
+                    local x = b.download(w.url, w.path)
+                    local y = n.Load(w.path, x)
 
-                    if not v then
-                        l.warn(l, string.format('failed to load core file %s', tostring(t.path)))
+                    if not y then
+                        l.warn(l, string.format('failed to load core file %s', tostring(w.path)))
                     end
-                    if q and t.missing then
-                        r += 1
+                    if t and w.missing then
+                        u += 1
 
-                        i.Update(q, {
-                            progress = r / p,
-                            subtext = string.format('%s / %s', tostring(r), tostring(p)),
+                        i.Update(t, {
+                            progress = u / s,
+                            subtext = string.format('%s / %s', tostring(u), tostring(s)),
                         })
                     end
                 end
 
-                if q then
-                    i.Update(q, {
+                if t then
+                    i.Update(t, {
                         title = 'Assets downloaded',
-                        subtext = string.format('%s / %s', tostring(p), tostring(p)),
+                        subtext = string.format('%s / %s', tostring(s), tostring(s)),
                         progress = 1,
                     })
 
-                    local s = q
+                    local v = t
 
                     task.delay(1.5, function()
-                        i.Dismiss(s)
+                        i.Dismiss(v)
                     end)
                 end
 
-                return m
+                return n
             end
-            function m.Load(o, p)
-                local q, r = d.load(p or readfile(o), o)
+            function n.Load(r, s)
+                local t, u = d.load(s or readfile(r), r)
 
-                if not r then
-                    l.log(l, string.format('no data found for file %s', tostring(o)))
+                if not u then
+                    l.log(l, string.format('no data found for file %s', tostring(r)))
 
                     return false
                 end
 
-                local s = c.getNameFromPath(o)
+                local v = c.getNameFromPath(r)
 
-                if not s then
+                if not v then
                     return false
                 end
 
-                local t = g[q]
+                local w = g[t]
 
-                t[s] = r
+                w[v] = u
 
                 j(k.peek(j) + 1)
-                l.log(l, string.format('loaded file %s as %s', tostring(o), tostring(q)))
+                l.log(l, string.format('loaded file %s as %s', tostring(r), tostring(t)))
 
                 return true
             end
-            function m.Get(o, p)
-                local q = g[o]
+            function n.Get(r, s)
+                local t = g[r]
 
-                if not q then
+                if not t then
                     return nil
                 end
 
-                return q[p]
+                return t[s]
             end
 
-            local o = 'limerence.biz/cache'
+            local r = 'limerence.biz/cache'
 
-            local function hashString(p)
-                local q = 5381
+            local function hashString(s)
+                local t = 5381
 
-                for r = 1, #p do
-                    q = bit32.band(q * 33 + string.byte(p, r), 0xffffffff)
+                for u = 1, #s do
+                    t = bit32.band(t * 33 + string.byte(s, u), 0xffffffff)
                 end
 
-                return string.format('%08x', q)
+                return string.format('%08x', t)
             end
-            local function urlExtension(p)
-                local q = string.match(p, '^[^?#]+')
-                local r = q and string.match(q, '%.([%w]+)$')
+            local function urlExtension(s)
+                local t = string.match(s, '^[^?#]+')
+                local u = t and string.match(t, '%.([%w]+)$')
 
-                if r and c[string.lower(r)] == 'image' then
-                    return string.lower(r)
+                if u and c[string.lower(u)] == 'image' then
+                    return string.lower(u)
                 end
 
                 return 'png'
             end
-            local function touchCacheEntry(p, q, r)
-                local s, t = string.format('%s/.index', tostring(p)), {}
+            local function touchCacheEntry(s, t, u)
+                local v, w = string.format('%s/.index', tostring(s)), {}
 
-                if isfile(s) then
-                    for u in string.gmatch(readfile(s), '[^\n]+')do
-                        if u ~= q then
-                            t[#t + 1] = u
+                if isfile(v) then
+                    for x in string.gmatch(readfile(v), '[^\n]+')do
+                        if x ~= t then
+                            w[#w + 1] = x
                         end
                     end
                 end
 
-                t[#t + 1] = q
+                w[#w + 1] = t
 
-                while#t > r do
-                    local u = (table.remove(t, 1))
-                    local v = string.format('%s/%s', tostring(p), tostring(u))
+                while#w > u do
+                    local x = (table.remove(w, 1))
+                    local y = string.format('%s/%s', tostring(s), tostring(x))
 
-                    if isfile(v) then
-                        delfile(v)
+                    if isfile(y) then
+                        delfile(y)
                     end
                 end
 
-                writefile(s, table.concat(t, '\n'))
+                writefile(v, table.concat(w, '\n'))
             end
 
-            function m.ResolveUrl(p, q)
-                local r = string.format('url_%s', tostring(hashString(p)))
-                local s = m.Get('image', r)
+            function n.ResolveUrl(s, t)
+                local u = string.format('url_%s', tostring(hashString(s)))
+                local v = n.Get('image', u)
 
-                if s then
-                    return s
+                if v then
+                    return v
                 end
-                if isfolder and makefolder and not isfolder(o) then
-                    makefolder(o)
+                if isfolder and makefolder and not isfolder(r) then
+                    makefolder(r)
                 end
 
-                local t = o
+                local w = r
 
-                if q and q.folder then
-                    t = string.format('%s/%s', tostring(o), tostring(q.folder))
+                if t and t.folder then
+                    w = string.format('%s/%s', tostring(r), tostring(t.folder))
 
-                    if not isfolder(t) then
-                        makefolder(t)
+                    if not isfolder(w) then
+                        makefolder(w)
                     end
                 end
 
-                local u = string.format('%s.%s', tostring(r), tostring(urlExtension(p)))
-                local v = string.format('%s/%s', tostring(t), tostring(u))
-                local w, x = pcall(b.download, p, v)
+                local x = string.format('%s.%s', tostring(u), tostring(urlExtension(s)))
+                local y = string.format('%s/%s', tostring(w), tostring(x))
+                local z, A = pcall(b.download, s, y)
 
-                if not w or x == nil then
-                    l.warn(l, string.format('failed to resolve image url %s', tostring(p)))
+                if not z or A == nil then
+                    l.warn(l, string.format('failed to resolve image url %s', tostring(s)))
 
                     return nil
                 end
-                if m.Load(v, x) then
-                    if q and q.maxFiles then
-                        touchCacheEntry(t, u, q.maxFiles)
+                if n.Load(y, A) then
+                    if t and t.maxFiles then
+                        touchCacheEntry(w, x, t.maxFiles)
                     end
 
-                    return m.Get('image', r)
+                    return n.Get('image', u)
                 end
 
                 return nil
             end
-            function m.ResolveFile(p)
-                local q = c.getNameFromPath(p)
+            function n.ResolveFile(s)
+                local t = c.getNameFromPath(s)
 
-                if q then
-                    local r = m.Get('image', q)
+                if t then
+                    local u = n.Get('image', t)
 
-                    if r then
-                        return r
+                    if u then
+                        return u
                     end
                 end
-                if not (isfile and isfile(p)) then
+                if not (isfile and isfile(s)) then
                     return nil
                 end
-                if m.Load(p) and q then
-                    local r = m.Get('image', q)
+                if n.Load(s) and t then
+                    local u = n.Get('image', t)
 
-                    if r then
-                        return r
+                    if u then
+                        return u
                     end
                 end
                 if getcustomasset then
-                    local r, s = pcall(getcustomasset, p)
+                    local u, v = pcall(getcustomasset, s)
 
-                    if r and type(s) == 'string' then
-                        return s
+                    if u and type(v) == 'string' then
+                        return v
                     end
                 end
 
                 return nil
             end
-            function m.ResolveImage(p, q)
-                if type(p) ~= 'string' or p == '' then
+            function n.ResolveImage(s, t)
+                if type(s) ~= 'string' or s == '' then
                     return nil
                 end
-                if string.find(p, '^rbx') then
-                    return p
+                if string.find(s, '^rbx') then
+                    return s
                 end
-                if string.find(p, '^%d+$') then
-                    return string.format('rbxassetid://%s', tostring(p))
+                if string.find(s, '^%d+$') then
+                    return string.format('rbxassetid://%s', tostring(s))
                 end
-                if string.find(p, '^https?://') then
-                    return m.ResolveUrl(p, q)
+                if string.find(s, '^https?://') then
+                    return n.ResolveUrl(s, t)
                 end
 
-                return m.ResolveFile(p)
+                return n.ResolveFile(s)
             end
-            function m.QueueDownload(p)
-                e.queue(p)
+            function n.QueueDownload(s)
+                e.queue(s)
             end
-            function m.Destroy()
+            function n.Destroy()
                 return
             end
 
-            return m
+            return n
         end
 
         function a.S()
@@ -60464,7 +60501,8 @@ do
                     end,
                 },
                 bundle = {
-                    urlPrefix = 'https://limerence.biz/get/',
+                    urlPrefix = 
+"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/skies/",
                     title = 'Downloading Skies',
                     icon = 'download',
                     files = {
@@ -61953,7 +61991,8 @@ do
                     end,
                 },
                 bundle = {
-                    urlPrefix = 'https://limerence.biz/get/',
+                    urlPrefix = 
+"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/beams/",
                     title = 'Downloading Beams',
                     icon = 'download',
                     files = {
@@ -63452,7 +63491,8 @@ do
                         },
                     },
                     bundle = {
-                        urlPrefix = 'https://limerence.biz/get/',
+                        urlPrefix = 
+"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hiteffects/",
                         title = 'Downloading hit effects',
                         icon = 'download',
                         files = {
@@ -66015,7 +66055,8 @@ do
                     },
                 },
                 bundle = {
-                    urlPrefix = 'https://limerence.biz/get/',
+                    urlPrefix = 
+"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hitsounds/",
                     title = 'Downloading hitsounds',
                     icon = 'download',
                     files = {

@@ -37,6 +37,10 @@ local DEBUG_TARGETS = {
 	universal = true,
 }
 
+local ACTOR_TARGETS = {
+	pf = true,
+}
+
 local PLACE_TARGETS = {
 	[863266079] = "ar2",
 	[6872265039] = "bedwars",
@@ -83,6 +87,18 @@ local useDebug = getGlobal("LIMERENCE_DEBUG") == true and DEBUG_TARGETS[target]
 local fileName = target .. (if useDebug then ".debug.luau" else ".luau")
 
 local source = fetch(BASE_URL .. fileName)
+
+if ACTOR_TARGETS[target] and type(getactors) == "function" and type(run_on_actor) == "function" then
+	local alreadyInActor = type(isactor) == "function" and isactor()
+	if not alreadyInActor then
+		local actors = getactors()
+		local actor = actors and actors[1]
+		if actor then
+			return run_on_actor(actor, source)
+		end
+	end
+end
+
 local fn, err = loadstring(source, "@limerence/" .. target)
 if not fn then
 	error("[limerence] failed to compile " .. fileName .. ": " .. tostring(err))
