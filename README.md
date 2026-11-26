@@ -1,10 +1,10 @@
-to load
+# to load
 
 ```lua
   loadstring(game:HttpGet("https://raw.githubusercontent.com/onichan-ren/limerence/main/loader.lua"))()
 ```
 
-status of the things i mainly fixed
+#status of the things i mainly fixed
 
 pf: up
 
