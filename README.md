@@ -9,3 +9,5 @@
 pf: up
 
 bloxstrike: bad but up
+
+rivals: up
