@@ -11,6 +11,18 @@ return LPH_JIT_MAX(function()
 
 	local C4_USE_ANIM_ID = ReplicatedStorage.Assets.WeaponAnimations.C4.CharacterAnimations.Use.AnimationId
 	local FLASH_ANIM_ID = ReplicatedStorage.Assets.CharacterAnimations.Actions.Blinded.AnimationId
+	local CULLED_FOLDER_NAME = "_PVS_CulledCharacters"
+
+	local function isCharacterCulled(character: Instance?): boolean
+		if not character then
+			return false
+		end
+		local parent = character.Parent
+		if not parent or parent.Name == CULLED_FOLDER_NAME or parent == ReplicatedStorage then
+			return true
+		end
+		return not character:IsDescendantOf(workspace)
+	end
 
 	type Character = Model & {
 		HumanoidRootPart: BasePart,
@@ -62,6 +74,7 @@ return LPH_JIT_MAX(function()
 		self.isReloading = at(false)
 		self.isBlind = at(false)
 		self.isScoped = at(false)
+		self.culled = at(false)
 
 		self._reloadActiveCount = 0
 		self._blindActiveCount = 0
@@ -202,15 +215,15 @@ return LPH_JIT_MAX(function()
 		self._characterJanitor:Cleanup()
 
 		local hrp = character:WaitForChild("HumanoidRootPart", 5) :: BasePart?
-		local humanoid = character:FindFirstChildOfClass("Humanoid") :: Humanoid?
-
-		if not hrp or not humanoid then
+		if not hrp then
 			return
 		end
 
 		if self._player.Character ~= character then
 			return
 		end
+
+		local humanoid = character:FindFirstChildOfClass("Humanoid") :: Humanoid?
 
 		local parts = {}
 		for _, part in next, character:GetChildren() do
@@ -222,10 +235,12 @@ return LPH_JIT_MAX(function()
 		self.character(character)
 		self.hrp(hrp)
 		self.humanoid(humanoid)
-		self.health(humanoid.Health)
-		self.maxHealth(humanoid.MaxHealth)
-		self.alive(humanoid.Health > 0)
+		self.culled(isCharacterCulled(character))
 		self.invincible(character:GetAttribute("Invincible") == true)
+
+		self._characterJanitor:Add(character:GetPropertyChangedSignal("Parent"):Connect(function(): ()
+			self.culled(isCharacterCulled(character))
+		end))
 
 		self._characterJanitor:Add(character.ChildAdded:Connect(LPH_NO_VIRTUALIZE(function(part: Instance): ()
 			self:_onPartAdded(part)
@@ -235,29 +250,61 @@ return LPH_JIT_MAX(function()
 			self:_onPartRemoved(part)
 		end)))
 
-		self._characterJanitor:Add(humanoid.HealthChanged:Connect(function(health: number): ()
-			self.health(health)
-			self.alive(health > 0)
-		end))
-
 		self._characterJanitor:Add(character:GetAttributeChangedSignal("Invincible"):Connect(function(): ()
 			self.invincible(character:GetAttribute("Invincible") == true)
 		end))
 
-		self._characterJanitor:Add(humanoid:GetPropertyChangedSignal("MaxHealth"):Connect(function(): ()
+		if humanoid then
+			self.health(humanoid.Health)
 			self.maxHealth(humanoid.MaxHealth)
-		end))
+			self.alive(humanoid.Health > 0)
 
-		self._characterJanitor:Add(humanoid.Died:Connect(function(): ()
-			self.alive(false)
-		end))
+			self._characterJanitor:Add(humanoid.HealthChanged:Connect(function(health: number): ()
+				self.health(health)
+				self.alive(health > 0)
+			end))
 
-		self:_watchCharacterAnimations(humanoid)
+			self._characterJanitor:Add(humanoid:GetPropertyChangedSignal("MaxHealth"):Connect(function(): ()
+				self.maxHealth(humanoid.MaxHealth)
+			end))
+
+			self._characterJanitor:Add(humanoid.Died:Connect(function(): ()
+				self.alive(false)
+			end))
+		else
+			local function syncAttributes(): ()
+				local maxHp = tonumber(character:GetAttribute("MaxHealth")) or tonumber(self._player:GetAttribute("MaxHealth")) or 100
+				local hp = tonumber(character:GetAttribute("Health"))
+				if hp == nil then
+					hp = tonumber(self._player:GetAttribute("Health"))
+				end
+				if hp == nil then
+					hp = maxHp
+				end
+				local dead = character:GetAttribute("Dead") == true or self._player:GetAttribute("Dead") == true
+				self.maxHealth(maxHp)
+				self.health(hp :: number)
+				self.alive(not dead and (hp :: number) > 0)
+			end
+
+			syncAttributes()
+			self._characterJanitor:Add(character:GetAttributeChangedSignal("Health"):Connect(syncAttributes))
+			self._characterJanitor:Add(character:GetAttributeChangedSignal("MaxHealth"):Connect(syncAttributes))
+			self._characterJanitor:Add(character:GetAttributeChangedSignal("Dead"):Connect(syncAttributes))
+			self._characterJanitor:Add(self._player:GetAttributeChangedSignal("Health"):Connect(syncAttributes))
+			self._characterJanitor:Add(self._player:GetAttributeChangedSignal("MaxHealth"):Connect(syncAttributes))
+			self._characterJanitor:Add(self._player:GetAttributeChangedSignal("Dead"):Connect(syncAttributes))
+		end
+
+		self:_watchCharacterAnimations(character, humanoid)
 	end
 
-	function BloxstrikePlayer._watchCharacterAnimations(self: BloxstrikePlayer, humanoid: Humanoid): ()
-		local animator = humanoid:FindFirstChildOfClass("Animator") :: Animator?
+	function BloxstrikePlayer._watchCharacterAnimations(self: BloxstrikePlayer, character: Character, humanoid: Humanoid?): ()
+		local animator: Animator? = if humanoid then humanoid:FindFirstChildOfClass("Animator") :: Animator? else nil
 		if not animator then
+			animator = character:FindFirstChild("Animator", true) :: Animator?
+		end
+		if not animator and humanoid then
 			animator = humanoid:WaitForChild("Animator", 3) :: Animator?
 		end
 		if not animator then
@@ -353,6 +400,7 @@ return LPH_JIT_MAX(function()
 		self._blindActiveCount = 0
 		self.isReloading(false)
 		self.isBlind(false)
+		self.culled(false)
 	end
 
 	function BloxstrikePlayer.IsAlive(self: BloxstrikePlayer): boolean

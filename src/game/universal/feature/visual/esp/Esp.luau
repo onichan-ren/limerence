@@ -937,8 +937,8 @@ function Esp._startRenderLoop(self: Esp): RBXScriptConnection
 			local fadeAlpha = (fadeData and fadeData.alpha or 0)
 
 			local alive = peek(basePlayer.alive)
-			local excluded = false
-			if filter and (filterBots or not (basePlayer :: any).isBot) then
+			local excluded = (basePlayer :: any).culled ~= nil and peek((basePlayer :: any).culled) == true
+			if not excluded and filter and (filterBots or not (basePlayer :: any).isBot) then
 				excluded = filter(basePlayer) == true
 			end
 

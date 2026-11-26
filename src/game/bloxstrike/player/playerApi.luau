@@ -45,6 +45,7 @@ export type PlayerHandle = {
 	getMoney: () -> number,
 	hasDefuseKit: () -> boolean,
 	isInvincible: () -> boolean,
+	isCulled: () -> boolean,
 	getState: () -> string?,
 }
 
@@ -186,6 +187,9 @@ local function buildHandle(basePlayer: any): PlayerHandle
 		end,
 		isInvincible = function(): boolean
 			return peek(basePlayer.invincible)
+		end,
+		isCulled = function(): boolean
+			return peek(basePlayer.culled)
 		end,
 		getState = function(): string?
 			return playerState.GetState(player.UserId)

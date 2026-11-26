@@ -166,7 +166,7 @@ Knifebot._resolveEnemy = LPH_NO_VIRTUALIZE(function(self: Knifebot, instance: In
 	local localTeam = ClientController.GetTeam()
 	for _, playerData in next, PlayerController.GetAll() do
 		local character = peek(playerData.character)
-		if not character then
+		if not character or peek(playerData.culled) then
 			continue
 		end
 		if character ~= parent and not instance:IsDescendantOf(character) then
@@ -292,7 +292,7 @@ Knifebot._rageTick = LPH_NO_VIRTUALIZE(function(self: Knifebot, weapon: any): ()
 			continue
 		end
 		local character = peek(playerData.character)
-		if not character then
+		if not character or peek(playerData.culled) then
 			continue
 		end
 		local hrp = peek(playerData.hrp) :: BasePart?

@@ -1,71 +1,3 @@
-if not LPH_OBFUSCATED then
-	local fenv = getfenv()
-	fenv.LPH_ENCFUNC = function(func, ...)
-		return func
-	end
-	fenv.LPH_JIT_MAX = function(...)
-		return ...
-	end
-	fenv.LPH_JIT = function(...)
-		return ...
-	end
-	fenv.LPH_NO_VIRTUALIZE = function(...)
-		return ...
-	end
-	fenv.LPH_NO_UPVALUES = function(...)
-		return ...
-	end
-	fenv.LPH_ENCSTR = function(...)
-		return ...
-	end
-	fenv.LPH_CRASH = function()
-		warn(debug.traceback("LPH_CRASH", 2))
-	end
-	fenv.LP_INIT = function(callback)
-		callback()
-	end
-	local lpStorePath = "limerence.biz/lpstore.json"
-	local function lpReadStore()
-		local ok, data = pcall(function()
-			return game:GetService("HttpService"):JSONDecode(readfile(lpStorePath))
-		end)
-		if ok and type(data) == "table" then
-			return data
-		end
-		return {}
-	end
-	local function lpWriteStore(store)
-		pcall(function()
-			if not isfolder("limerence.biz") then
-				makefolder("limerence.biz")
-			end
-			writefile(lpStorePath, game:GetService("HttpService"):JSONEncode(store))
-		end)
-	end
-	fenv.LP_SAVE_VALUE = function(id, value, overwrite)
-		local store = lpReadStore()
-		if store[id] ~= nil and overwrite ~= true then
-			return false, "Storage entry already exists."
-		end
-		store[id] = value
-		lpWriteStore(store)
-		return true
-	end
-	fenv.LP_GET_VALUE = function(id)
-		local value = lpReadStore()[id]
-		if value == nil then
-			return false, "Value not found."
-		end
-		return true, value
-	end
-	fenv.LP_DELETE_VALUE = function(id)
-		local store = lpReadStore()
-		store[id] = nil
-		lpWriteStore(store)
-		return true
-	end
-end
-
 local a = {cache = {}}
 
 do
@@ -84,7 +16,9 @@ do
                 if g then
                     if LPH_OBFUSCATED then
                         game.GetService(game, 'Players').LocalPlayer:Kick
-"[limerence.biz]\n\nYou are not allowed to execute the script multiple times."
+[[[limerence.biz]
+
+You are not allowed to execute the script multiple times.]]
 
                         while true do
                             task.wait()
@@ -160,9 +94,9 @@ do
     do
         local function __modImpl()
             return {
-                version = '2',
+                version = '3',
                 url = 
-"https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/packages.luau",
+[[https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/packages.luau]],
             }
         end
 
@@ -185,7 +119,7 @@ do
             local d, e, f, g = string.format('%s/packages-v%s.luau', tostring(c), tostring(b.version)), '@limerence_pkgs', {}, nil
 
             local function fetchSource()
-                local h = game.HttpGet(game, b.url)
+                local h = game.HttpGet(game, b.url .. '?t=' .. tostring(os.time()))
 
                 if not h or #h == 0 then
                     error('pkgBootstrap: response body is empty)')
@@ -397,7 +331,7 @@ do
         local function __modImpl()
             local b = Random.new()
             local c, d, e, f = b.NextInteger, utf8.char, {}, 
-"abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
+[[abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789]]
 
             e.random = LPH_NO_VIRTUALIZE(function(g)
                 local h = ''
@@ -917,13 +851,20 @@ do
             end
 
             d.addInstance = function(h)
-                if f[h] then
+                if not h or f[h] then
+                    return
+                end
+
+                local i = (getrawmetatable(h))
+
+                if not i then
+                    c.warn(c, 'missing metatable for instance:', h)
+
                     return
                 end
 
                 c.debug(c, 'hooking instance:', h)
 
-                local i = (getrawmetatable(h))
                 local j, k, l, m, n, o, p = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}
                 local q = {
                     originalProperties = n,
@@ -3731,7 +3672,7 @@ do
         local function __modImpl()
             local b = {
                 url = 
-"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/",
+[[https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/]],
                 revisions = {
                     ['limerence.biz/assets/fonts/semi_bold.ttf'] = 2,
                 },
@@ -20794,7 +20735,7 @@ do
 
                 if ax == '' then
                     av._setError(av, 
-"This character needs a name. Set one in the picker before opening the editor.")
+[[This character needs a name. Set one in the picker before opening the editor.]])
 
                     return
                 end
@@ -37586,7 +37527,7 @@ do
                 aY.SetTip(aY, {
                     title = 'DPI Scale',
                     body = 
-"Scales the entire menu, HUD, and subwindows. 100% matches the default size.",
+[[Scales the entire menu, HUD, and subwindows. 100% matches the default size.]],
                 })
                 at(aY._state, function(aZ)
                     ad.SetDpiScale(an.scaleFor(aZ))
@@ -37622,7 +37563,7 @@ do
                 a0.SetTip(a0, {
                     title = 'Menu Toggle',
                     body = 
-"Key used to open and close the menu. Saved in user preferences.",
+[[Key used to open and close the menu. Saved in user preferences.]],
                 })
 
                 local a1 = aD.AddSection(aD, 'HUD', 2)
@@ -37658,7 +37599,7 @@ do
                 a3.SetTip(a3, {
                     title = 'Custom Username',
                     body = 
-"Shown in the watermark when Username Display is set to Custom.",
+[[Shown in the watermark when Username Display is set to Custom.]],
                 })
 
                 local function syncCustomUsernameVisible()
@@ -37685,7 +37626,7 @@ do
                 a4.SetTip(a4, {
                     title = 'Show Watermark',
                     body = 
-"Overlay with your session info. Right-click it to choose what shows.",
+[[Overlay with your session info. Right-click it to choose what shows.]],
                 })
                 ay.Link('hud.showWatermark', a4)
                 at(a4._state, function(a5)
@@ -37773,7 +37714,7 @@ do
                 a8.SetTip(a8, {
                     title = 'Show Bind List',
                     body = 
-"Lists your active keybinds. Right-click it to sort the list.",
+[[Lists your active keybinds. Right-click it to sort the list.]],
                 })
                 ay.Link('hud.showBindList', a8)
                 at(a8._state, function(a9)
@@ -41318,7 +41259,7 @@ do
                 ar.SetTip(ar, {
                     title = 'Developer Mode',
                     body = 
-"Enables extra features for debugging and Luau development. Right-click any element to copy its ID.",
+[[Enables extra features for debugging and Luau development. Right-click any element to copy its ID.]],
                 })
                 ag(ar._state, function(as)
                     ad.SetDeveloperMode(as)
@@ -42220,7 +42161,7 @@ do
                     loadArchive = function(aN, aO)
                         if type(aN) ~= 'string' and typeof(aN) ~= 'buffer' then
                             error
-"api.utility.loadArchive: archive must be a string or a buffer"
+[[api.utility.loadArchive: archive must be a string or a buffer]]
                         end
 
                         local aP
@@ -42248,7 +42189,7 @@ do
                         else
                             if type(aN) ~= 'string' then
                                 error
-"api.utility.loadArchive: archive must be a string path when loading a folder"
+[[api.utility.loadArchive: archive must be a string path when loading a folder]]
                             end
                             if not isfolder(aN) then
                                 error(string.format('api.utility.loadArchive: folder not found: %s', tostring(aN)))
@@ -42891,7 +42832,8 @@ do
 
                             if aw then
                                 aw.Kick(aw, LPH_ENCSTR
-"[limerence.biz]\nHooking the game's metamethods is not allowed and can get you banned.")
+[[[limerence.biz]
+Hooking the game's metamethods is not allowed and can get you banned.]])
                             end
                         end
 
@@ -44941,7 +44883,7 @@ do
             local aa = {
                 ['apocalypse rising 2'] = {},
                 bedwars = {},
-                bloxstrike = {[114234929420007] = 9894},
+                bloxstrike = {[114234929420007] = 9965},
                 ['da hood'] = {},
                 ['murderers vs sheriffs duels'] = {},
                 ['operation one'] = {},
@@ -45093,7 +45035,7 @@ do
                     BackgroundTransparency = 1,
                     FontFace = ai,
                     Text = string.format(
-"This game updated to version %s, but version %s is the latest supported one. Some features may not work correctly until support for the new version is confirmed.", tostring(ap), tostring(ao)),
+[[This game updated to version %s, but version %s is the latest supported one. Some features may not work correctly until support for the new version is confirmed.]], tostring(ap), tostring(ao)),
                     TextColor3 = az,
                     TextSize = 14,
                     TextWrapped = true,
@@ -45215,7 +45157,9 @@ do
             local function preloadFailed(af)
                 if LPH_OBFUSCATED then
                     ae.Kick(ae, 
-"[limerence.biz]\n\nAn error occurred and the script could not be loaded.")
+[[[limerence.biz]
+
+An error occurred and the script could not be loaded.]])
                 end
                 if af then
                     warn(debug.traceback(af, 2))
@@ -45932,7 +45876,7 @@ do
                 an.Toggle(an, 'targetIndicator', 'Target Indicator', false):SetTip{
                     title = 'Target Indicator',
                     body = 
-"Draws a circle on the hitbox each legitbot subsystem is currently targeting.",
+[[Draws a circle on the hitbox each legitbot subsystem is currently targeting.]],
                 }
 
                 local ap = an.OnKey(an, 'targetIndicator')
@@ -46475,7 +46419,7 @@ do
                 al.Toggle(al, 'shootOriginIndicator', 'Shoot Origin Indicator', false):SetTip{
                     title = 'Shoot Origin Indicator',
                     body = 
-"Draws a circle where your shots actually start from, not the muzzle.",
+[[Draws a circle where your shots actually start from, not the muzzle.]],
                 }
 
                 local an = al.OnKey(al, 'shootOriginIndicator')
@@ -48275,7 +48219,7 @@ do
                     aP.Slider(aP, 'length', 'Length', 25, 0, 50, 1, nil, '%'):SetTip{
                         title = 'Length',
                         body = 
-"Corner length as a share of the box. Stays this share at any distance.",
+[[Corner length as a share of the box. Stays this share at any distance.]],
                     }
                 end
 
@@ -50071,7 +50015,7 @@ do
                 as.Toggle(as, 'adornChams', 'Glow Chams', false):SetTip{
                     title = 'Glow Chams',
                     body = 
-"Glowing boxes drawn over enemy bodies, visible through walls.",
+[[Glowing boxes drawn over enemy bodies, visible through walls.]],
                 }
 
                 local au = as.OnKey(as, 'adornChams')
@@ -50741,7 +50685,7 @@ do
                 ay.Toggle(ay, 'healthText', 'Health Text', false):SetTip{
                     title = 'Health Text',
                     body = 
-"Numeric HP next to the player. Can track the health bar position.",
+[[Numeric HP next to the player. Can track the health bar position.]],
                 }
 
                 local az = ay.OnKey(ay, 'healthText')
@@ -50760,12 +50704,12 @@ do
                 aA.Toggle(aA, 'followBar', 'Follow Health Bar', true):SetTip{
                     title = 'Follow Health Bar',
                     body = 
-"Places the text beside the health bar instead of a fixed offset.",
+[[Places the text beside the health bar instead of a fixed offset.]],
                 }
                 aA.Slider(aA, 'hideAbove', 'Hide Above', 100, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Hide Above',
                     body = 
-"Hides health text when HP is above this percentage. 100% shows text at all health levels.",
+[[Hides health text when HP is above this percentage. 100% shows text at all health levels.]],
                 }
                 aA.Toggle(aA, 'outline', 'Outline', true)
 
@@ -50961,7 +50905,7 @@ do
                 aT.Toggle(aT, 'offscreenArrow', 'Offscreen Arrows', false):SetTip{
                     title = 'Offscreen Arrows',
                     body = 
-"Arrows around your crosshair pointing toward players who are off screen.",
+[[Arrows around your crosshair pointing toward players who are off screen.]],
                 }
 
                 local aW = aT.OnKey(aT, 'offscreenArrow')
@@ -50988,7 +50932,7 @@ do
                 aX.Slider(aX, 'maxDistance', 'Max Distance', 0, 0, 2000, 50, nil, 'st'):SetTip{
                     title = 'Max Distance',
                     body = 
-"Hides arrows for players farther than this. Zero means no limit.",
+[[Hides arrows for players farther than this. Zero means no limit.]],
                 }:SetValueTextOverrides{
                     [0] = 'Off',
                 }
@@ -51090,14 +51034,14 @@ do
                     healthColor = aV and aT.Get(aT, 'offscreenArrow.opts.health.healthColor') or nil,
                     healthOutline = (not aV) and a6 or aT.Get(aT, 'offscreenArrow.opts.health.healthOpts.healthOutline'),
                     healthOutlineColor = aV and aT.Get(aT, 
-"offscreenArrow.opts.health.healthOpts.healthOutline.healthOutlineColor") or nil,
+[[offscreenArrow.opts.health.healthOpts.healthOutline.healthOutlineColor]]) or nil,
                     healthBackground = aV and aT.Get(aT, 'offscreenArrow.opts.health.healthOpts.healthBackground') or nil,
                     healthThickness = a4,
                     name = aT.Get(aT, 'offscreenArrow.opts.name'),
                     nameColor = aT.Get(aT, 'offscreenArrow.opts.name.nameColor'),
                     nameOutline = aT.Get(aT, 'offscreenArrow.opts.name.nameOpts.nameOutline'),
                     nameOutlineColor = aT.Get(aT, 
-"offscreenArrow.opts.name.nameOpts.nameOutline.nameOutlineColor"),
+[[offscreenArrow.opts.name.nameOpts.nameOutline.nameOutlineColor]]),
                     nameSize = aT.Get(aT, 'offscreenArrow.opts.name.nameOpts.nameSize'),
                     distanceEnabled = aT.Get(aT, 'offscreenArrow.opts.distance'),
                     distanceColor = aT.Get(aT, 'offscreenArrow.opts.distance.distanceColor'),
@@ -52523,7 +52467,7 @@ do
                 local a9 = a_.Toggle(a_, 'enabled', 'Enabled', false):SetTip{
                     title = 'Enabled',
                     body = 
-"Shows information on other players. Turn on individual elements in the sections below.",
+[[Shows information on other players. Turn on individual elements in the sections below.]],
                 }
 
                 local function syncEnabledVisibility()
@@ -52551,24 +52495,24 @@ do
                 ba.Slider(ba, 'updateRate', 'Update Rate', 0, 0, 240, 1, nil, 'hz'):SetTip{
                     title = 'Update Rate',
                     body = 
-"Caps how many times per second the ESP refreshes. Zero is unlimited.",
+[[Caps how many times per second the ESP refreshes. Zero is unlimited.]],
                 }:SetValueTextOverrides{
                     [0] = 'Off',
                 }
                 ba.Toggle(ba, 'elementAnimations', 'Element Animations', true):SetTip{
                     title = 'Element Animations',
                     body = 
-"Fades ESP elements in and out when players appear or leave view.",
+[[Fades ESP elements in and out when players appear or leave view.]],
                 }
                 ba.Toggle(ba, 'deathAnimations', 'Death Animations', true):SetTip{
                     title = 'Death Animations',
                     body = 
-"Fades ESP out when a player dies instead of removing it instantly.",
+[[Fades ESP out when a player dies instead of removing it instantly.]],
                 }
                 ba.Toggle(ba, 'bounding', 'Bounding Box', false):SetTip{
                     title = 'Bounding Box',
                     body = 
-"Sizes the ESP box from limb positions so it fits the pose more closely.",
+[[Sizes the ESP box from limb positions so it fits the pose more closely.]],
                 }
 
                 a1._link = a_
@@ -53348,7 +53292,7 @@ do
                 aC.Toggle(aC, 'flags', 'Flags', false):SetTip{
                     title = 'Flags',
                     body = 
-"Text labels for player status and info, stacked beside the ESP box.",
+[[Text labels for player status and info, stacked beside the ESP box.]],
                 }
 
                 local aE = aC.OnKey(aC, 'flags')
@@ -53386,7 +53330,7 @@ do
                 aF.Toggle(aF, 'state', 'Player State', false):SetTip{
                     title = 'Player State',
                     body = 
-"Shows the state you assigned the player in the record menu (Friendly, Priority, etc.).",
+[[Shows the state you assigned the player in the record menu (Friendly, Priority, etc.).]],
                 }
                 aF.OnKey(aF, 'state'):Colorpicker('color', 'Color', ay, 0)
 
@@ -55218,14 +55162,14 @@ do
                             aD.Slider(aD, 'blindThreshold', 'Blind Limit', 50, 0, 100, 1, nil, '%'):SetTip{
                                 title = 'Blind Limit',
                                 body = 
-"Maximum flashbang visibility (lower = stricter). Targets above this are ignored when While Blind is enabled.",
+[[Maximum flashbang visibility (lower = stricter). Targets above this are ignored when While Blind is enabled.]],
                             }
                         end
                         if at and aA then
                             aD.Slider(aD, 'smokeThreshold', 'Smoke Limit', 50, 0, 100, 1, nil, '%'):SetTip{
                                 title = 'Smoke Limit',
                                 body = 
-"Maximum smoke visibility (lower = stricter). Targets above this are ignored when Through Smokes is enabled.",
+[[Maximum smoke visibility (lower = stricter). Targets above this are ignored when Through Smokes is enabled.]],
                             }
                         end
                     end
@@ -55242,7 +55186,7 @@ do
                 az.Slider(az, 'reactionTime', 'Reaction Time', 130, 0, 500, 1, nil, 'ms'):SetTip{
                     title = 'Reaction Time',
                     body = 
-"How long a target must stay inside your aim FOV before the aimbot starts helping.",
+[[How long a target must stay inside your aim FOV before the aimbot starts helping.]],
                 }
 
                 local aA = az.Slider(az, 'switchDelay', 'Switch Delay', 90, 0, 500, 1, nil, 'ms'):SetTip{
@@ -55253,7 +55197,7 @@ do
                 az.Toggle(az, 'stickyTarget', 'Sticky Target', false):SetTip{
                     title = 'Sticky Target',
                     body = 
-"Keeps the same target until it dies or you turn this off, instead of switching to closer enemies.",
+[[Keeps the same target until it dies or you turn this off, instead of switching to closer enemies.]],
                 }
 
                 local function updateStickyDisabled(aB)
@@ -55281,21 +55225,21 @@ do
                         }:SetTip{
                             title = 'First Bullet Delay',
                             body = 
-"Holds the Triggerbot until you manually fire a shot at the target first, then waits this delay before taking over the rest of the burst. Set to Off to disable.",
+[[Holds the Triggerbot until you manually fire a shot at the target first, then waits this delay before taking over the rest of the burst. Set to Off to disable.]],
                         }
                     end
 
                     aB.Slider(aB, 'shotDelay', 'Shot Delay', 130, 0, 500, 1, nil, 'ms'):SetTip{
                         title = 'Shot Delay',
                         body = 
-"How long a target must stay inside trigger FOV before a shot is fired.",
+[[How long a target must stay inside trigger FOV before a shot is fired.]],
                     }
                     aB.Slider(aB, 'resetDelay', 'Reset Delay', 95, 0, 500, 1, nil, 'ms'):SetValueTextOverrides{
                         [0] = 'Off',
                     }:SetTip{
                         title = 'Reset Delay',
                         body = 
-"After an engagement ends (target leaves FOV or bullet limit is reached), wait this long before the Triggerbot may start a new engagement.",
+[[After an engagement ends (target leaves FOV or bullet limit is reached), wait this long before the Triggerbot may start a new engagement.]],
                     }
 
                     if al.showTriggerBullets ~= false then
@@ -55304,7 +55248,7 @@ do
                         }:SetTip{
                             title = 'Bullets',
                             body = 
-"The number of bullets the Triggerbot fires per engagement before stopping. Set to Off to keep firing while on target.",
+[[The number of bullets the Triggerbot fires per engagement before stopping. Set to Off to keep firing while on target.]],
                         }
                     end
 
@@ -55319,7 +55263,7 @@ do
                     aC.Slider(aC, 'fov', 'Field of View', 2, 0, 30, 1, nil, '\u{b0}'):SetTip{
                         title = 'Field of View',
                         body = 
-"Size of the area around your crosshair where triggerbot can shoot.",
+[[Size of the area around your crosshair where triggerbot can shoot.]],
                     }
                     aC.Dropdown(aC, 'mode', 'Mode', {
                         'FOV',
@@ -55327,7 +55271,7 @@ do
                     }, 'FOV'):SetTip{
                         title = 'Mode',
                         body = 
-"FOV shoots any valid enemy inside the circle. On Hitbox only shoots when your crosshair is on their body.",
+[[FOV shoots any valid enemy inside the circle. On Hitbox only shoots when your crosshair is on their body.]],
                     }
                     ag.Options(ag, 'filters', 'Filters')
 
@@ -55355,21 +55299,21 @@ do
                         aD.Slider(aD, 'minDamage', 'Minimum Damage', 0, 0, 110, 1, nil, 'hp'):SetValueTextOverrides(aE):SetTip{
                             title = 'Minimum Damage',
                             body = 
-"For direct shots (no wallbang). Estimates the damage the next bullet will deal. Values above 100 require lethal: 101 = target HP + 1, 110 = target HP + 10. Set to Off to disable.",
+[[For direct shots (no wallbang). Estimates the damage the next bullet will deal. Values above 100 require lethal: 101 = target HP + 1, 110 = target HP + 10. Set to Off to disable.]],
                         }
                     end
                     if al.showTriggerAvoidDeflecting then
                         aD.Toggle(aD, 'avoidDeflecting', 'Avoid Deflecting', false):SetTip{
                             title = 'Avoid Deflecting',
                             body = 
-"Holds fire while the target is deflecting toward you, so shots are not reflected back.",
+[[Holds fire while the target is deflecting toward you, so shots are not reflected back.]],
                         }
                     end
                     if al.showTriggerWaitForCharge then
                         aD.Toggle(aD, 'waitForCharge', 'Wait For Charge', true):SetTip{
                             title = 'Wait For Charge',
                             body = 
-"For charge weapons (bow, crossbow): hold the draw and only release once it reaches the set charge.",
+[[For charge weapons (bow, crossbow): hold the draw and only release once it reaches the set charge.]],
                         }
 
                         local aF = aD.OnKey(aD, 'waitForCharge')
@@ -55378,14 +55322,14 @@ do
                         aF.OnKey(aF, 'opts'):Slider('charge', 'Charge', 100, 1, 100, 1, nil, '%'):SetTip{
                             title = 'Charge',
                             body = 
-"Minimum charge before the shot is released. 100% waits for a full draw.",
+[[Minimum charge before the shot is released. 100% waits for a full draw.]],
                         }
                     end
                     if al.showTriggerWaitForScope then
                         aD.Toggle(aD, 'waitForScope', 'Wait For Scope', true):SetTip{
                             title = 'Wait For Scope',
                             body = 
-"Only let the triggerbot fire while you are scoped in with a scoped weapon (e.g. sniper).",
+[[Only let the triggerbot fire while you are scoped in with a scoped weapon (e.g. sniper).]],
                         }
 
                         if al.showTriggerWaitForScopeIgnoreCrossbow then
@@ -55395,7 +55339,7 @@ do
                             aF.OnKey(aF, 'opts'):Toggle('ignoreCrossbow', 'Ignore Crossbow', false):SetTip{
                                 title = 'Ignore Crossbow',
                                 body = 
-"Skip the scope wait while holding a crossbow, so it fires without scoping.",
+[[Skip the scope wait while holding a crossbow, so it fires without scoping.]],
                             }
                         end
                     end
@@ -55403,7 +55347,7 @@ do
                         aD.Toggle(aD, 'waitForAim', 'Wait For Aim', false):SetTip{
                             title = 'Wait For Aim',
                             body = 
-"Only let the triggerbot fire while you are aiming down sights.",
+[[Only let the triggerbot fire while you are aiming down sights.]],
                         }
                     end
                     if ar then
@@ -55421,14 +55365,14 @@ do
                         aG.Slider(aG, 'minDamage', 'Minimum Damage', 0, 0, 110, 1, nil, 'hp'):SetValueTextOverrides(aE):SetTip{
                             title = 'Minimum Damage',
                             body = 
-"For autowall shots only. Same scaling as Minimum Damage. Set to Off to skip the damage check on wallbangs.",
+[[For autowall shots only. Same scaling as Minimum Damage. Set to Off to skip the damage check on wallbangs.]],
                         }
                     end
 
                     ag.Toggle(ag, 'magnet', 'Magnet', false):SetTip{
                         title = 'Magnet',
                         body = 
-"Moves your crosshair toward the target while they stay inside trigger FOV. Strength scales with how centered they are (Pull Strength curve).",
+[[Moves your crosshair toward the target while they stay inside trigger FOV. Strength scales with how centered they are (Pull Strength curve).]],
                     }
 
                     local aF = ag.OnKey(ag, 'magnet')
@@ -55453,12 +55397,12 @@ do
                     }):SetTip{
                         title = 'Pull Strength',
                         body = 
-"How hard the magnet pulls at each alignment inside trigger FOV. X is alignment (edge to center); Y is pull strength.",
+[[How hard the magnet pulls at each alignment inside trigger FOV. X is alignment (edge to center); Y is pull strength.]],
                     }
                     aG.Slider(aG, 'reactionTime', 'Reaction Time', 130, 0, 500, 1, nil, 'ms'):SetTip{
                         title = 'Reaction Time',
                         body = 
-"Time in milliseconds a target must stay inside the trigger FOV before the magnet may pull.",
+[[Time in milliseconds a target must stay inside the trigger FOV before the magnet may pull.]],
                     }
 
                     if al.extraTrigger then
@@ -55477,7 +55421,7 @@ do
                 aB.Toggle(aB, 'overshoot', 'Overshoot', false):SetTip{
                     title = 'Overshoot',
                     body = 
-"Slips slightly past a target when you flick onto it, then settles back, so snaps look less machine-perfect.",
+[[Slips slightly past a target when you flick onto it, then settles back, so snaps look less machine-perfect.]],
                 }
 
                 local aC = aB.OnKey(aB, 'overshoot')
@@ -55494,25 +55438,25 @@ do
                 }, 'Subtle'):SetTip{
                     title = 'Feel',
                     body = 
-"Preset overshoot style. Subtle barely slips; Heavy slips far and settles slower. Custom reveals the manual sliders.",
+[[Preset overshoot style. Subtle barely slips; Heavy slips far and settles slower. Custom reveals the manual sliders.]],
                 }
 
                 local aE, aF, aG, aH = aD.Slider(aD, 'chance', 'Chance', 50, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Chance',
                     body = 
-"How often a fast flick slips past the target instead of landing clean.",
+[[How often a fast flick slips past the target instead of landing clean.]],
                 }, aD.Slider(aD, 'amount', 'Amount', 50, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Amount',
                     body = 
-"How far past the target it slips. Also scales with how hard you flick.",
+[[How far past the target it slips. Also scales with how hard you flick.]],
                 }, aD.Slider(aD, 'recovery', 'Recovery', 50, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Recovery',
                     body = 
-"How quickly it settles back onto the target after slipping past. Higher corrects faster.",
+[[How quickly it settles back onto the target after slipping past. Higher corrects faster.]],
                 }, aD.Slider(aD, 'trigger', 'Trigger', 50, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Trigger',
                     body = 
-"How easily it triggers. Higher fires on gentler flicks; lower needs a hard flick.",
+[[How easily it triggers. Higher fires on gentler flicks; lower needs a hard flick.]],
                 }
 
                 local function updateOvershootFeelVisibility(aI)
@@ -55529,7 +55473,7 @@ do
                 aB.Toggle(aB, 'tracking', 'Tracking', false):SetTip{
                     title = 'Tracking',
                     body = 
-"Adds reaction lag and a small aim deadzone so tracking reacts and settles like a real hand instead of following perfectly.",
+[[Adds reaction lag and a small aim deadzone so tracking reacts and settles like a real hand instead of following perfectly.]],
                 }
 
                 local aI = aB.OnKey(aB, 'tracking')
@@ -55541,12 +55485,12 @@ do
                 aJ.Slider(aJ, 'reaction', 'Reaction', 50, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Reaction',
                     body = 
-"Delay before aim responds to a target changing direction. Steady movement stays smooth; higher reacts slower to sudden changes.",
+[[Delay before aim responds to a target changing direction. Steady movement stays smooth; higher reacts slower to sudden changes.]],
                 }
                 aJ.Slider(aJ, 'deadzone', 'Deadzone', 100, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Deadzone',
                     body = 
-"Ignores tiny aim errors near the target instead of constantly correcting them. Higher tolerates more before adjusting.",
+[[Ignores tiny aim errors near the target instead of constantly correcting them. Higher tolerates more before adjusting.]],
                 }
                 af.Options(af, 'engagement', 'Engagement')
 
@@ -55558,7 +55502,7 @@ do
                 }, 'Always On'):SetTip{
                     title = 'Activation',
                     body = 
-"Assisted only pulls after you recently moved the mouse. Always On pulls whenever a target is in FOV, without needing movement.",
+[[Assisted only pulls after you recently moved the mouse. Always On pulls whenever a target is in FOV, without needing movement.]],
                 }
 
                 if au then
@@ -55567,14 +55511,14 @@ do
                     }:SetTip{
                         title = 'First Bullet Delay',
                         body = 
-"Holds aim assist until you manually fire a shot at the target first, then waits this delay before pulling. Set to Off to disable.",
+[[Holds aim assist until you manually fire a shot at the target first, then waits this delay before pulling. Set to Off to disable.]],
                     }
                 end
                 if al.showPrediction then
                     aK.Toggle(aK, 'prediction', 'Prediction', true):SetTip{
                         title = 'Prediction',
                         body = 
-"Leads moving targets and accounts for bullet travel so your aim lands where the shot will connect.",
+[[Leads moving targets and accounts for bullet travel so your aim lands where the shot will connect.]],
                     }
 
                     local aL = aK.OnKey(aK, 'prediction')
@@ -55600,7 +55544,7 @@ do
                 aL.Slider(aL, 'sensitivity', 'Sensitivity', 70, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Sensitivity',
                     body = 
-"Overall strength of aim assist. Works together with the Smoothing curve.",
+[[Overall strength of aim assist. Works together with the Smoothing curve.]],
                 }
                 aL.CurveEditor(aL, 'smoothingCurve', 'Smoothing', 1, 100, {
                     {
@@ -55642,12 +55586,12 @@ do
                 aM.Slider(aM, 'fov', 'Field of View', 20, 0, 180, 1, nil, '\u{b0}'):SetTip{
                     title = 'Field of View',
                     body = 
-"How wide the aim assist search area is. Triggerbot has its own FOV setting.",
+[[How wide the aim assist search area is. Triggerbot has its own FOV setting.]],
                 }
                 aM.Toggle(aM, 'closestPoint', 'Closest Point', true):SetTip{
                     title = 'Closest Point',
                     body = 
-"Holds aim at the nearest edge of the target instead of the center, so you can move freely across them.",
+[[Holds aim at the nearest edge of the target instead of the center, so you can move freely across them.]],
                 }
 
                 if al.extraAim then
@@ -55657,7 +55601,7 @@ do
                     ah.Toggle(ah, 'enabled', 'Enable', false):SetTip{
                         title = 'Enable',
                         body = 
-"Pulls your aim down while shooting to counter weapon recoil.",
+[[Pulls your aim down while shooting to counter weapon recoil.]],
                     }
                     ah.Toggle(ah, 'verticalOnly', 'Vertical Only', false):SetTip{
                         title = 'Vertical Only',
@@ -55666,7 +55610,7 @@ do
                     ah.Slider(ah, 'strength', 'Strength', 100, 0, 150, 1, nil, '%'):SetTip{
                         title = 'Strength',
                         body = 
-"How strongly the Recoil Control System counters weapon recoil while shooting.",
+[[How strongly the Recoil Control System counters weapon recoil while shooting.]],
                     }
 
                     if al.extraRcs then
@@ -55685,14 +55629,14 @@ do
                     aj.Slider(aj, 'chance', 'Redirect Chance', 100, 0, 100, 1, nil, '%'):SetTip{
                         title = 'Redirect Chance',
                         body = 
-"Percent of your shots that get redirected to the target. Lower values let some bullets fly where you actually aimed.",
+[[Percent of your shots that get redirected to the target. Lower values let some bullets fly where you actually aimed.]],
                     }
 
                     if ar then
                         aj.Toggle(aj, 'autowall', 'Autowall', false):SetTip{
                             title = 'Autowall',
                             body = 
-"Allows bullet redirection to lock targets through penetrable walls.",
+[[Allows bullet redirection to lock targets through penetrable walls.]],
                         }
                     end
 
@@ -55705,7 +55649,7 @@ do
                         aj.Toggle(aj, 'manipulation', 'Manipulation', false):SetTip{
                             title = 'Manipulation',
                             body = 
-"Experimental: shifts where shots start from to clear walls or floors, keeping your aim point.",
+[[Experimental: shifts where shots start from to clear walls or floors, keeping your aim point.]],
                         }
                     end
                 end
@@ -55713,7 +55657,7 @@ do
                 ai.Toggle(ai, 'fieldOfView', 'Field of View', false):SetTip{
                     title = 'Field of View',
                     body = 
-"Draws circles on screen showing aim and trigger range. Does not change how targeting works.",
+[[Draws circles on screen showing aim and trigger range. Does not change how targeting works.]],
                 }
 
                 local aN = ai.OnKey(ai, 'fieldOfView')
@@ -55725,7 +55669,7 @@ do
                 aO.Toggle(aO, 'aim', 'Aim Assist', true):SetTip{
                     title = 'Aim Assist',
                     body = 
-"Shows the aimbot FOV circle while Field of View visuals are enabled.",
+[[Shows the aimbot FOV circle while Field of View visuals are enabled.]],
                 }
 
                 local aP = aO.OnKey(aO, 'aim')
@@ -55753,7 +55697,7 @@ do
                     aO.Toggle(aO, 'triggerbot', 'Triggerbot', true):SetTip{
                         title = 'Triggerbot',
                         body = 
-"Shows the triggerbot FOV circle. Uses the separate trigger FOV slider, not aim FOV.",
+[[Shows the triggerbot FOV circle. Uses the separate trigger FOV slider, not aim FOV.]],
                     }
 
                     local aR = aO.OnKey(aO, 'triggerbot')
@@ -55775,7 +55719,7 @@ do
                     aO.Toggle(aO, 'bulletRedirection', 'Bullet Redirection', true):SetTip{
                         title = 'Bullet Redirection',
                         body = 
-"Shows the bullet redirection FOV circle. Uses the separate bullet redirection FOV slider, not aim FOV.",
+[[Shows the bullet redirection FOV circle. Uses the separate bullet redirection FOV slider, not aim FOV.]],
                     }
 
                     local aR = aO.OnKey(aO, 'bulletRedirection')
@@ -56305,7 +56249,7 @@ do
                         m.targettingLink:Toggle('targetBacktrack', 'Target Backtrack', false):SetTip{
                             title = 'Target Backtrack',
                             body = 
-"Aims at where enemies were when backtrack is enabled, not only where they are now.",
+[[Aims at where enemies were when backtrack is enabled, not only where they are now.]],
                         }
                         n.Track(n, m.targettingLink:Get'targetBacktrack':OnChange(function(
                             p
@@ -59511,7 +59455,7 @@ do
                 ao.Toggle(ao, 'autoPeek', 'Auto Peek', false):SetTip{
                     title = 'Auto Peek',
                     body = 
-"Saves your starting position and returns you there after you shoot.",
+[[Saves your starting position and returns you there after you shoot.]],
                 }
 
                 local ar = ao.OnKey(ao, 'autoPeek')
@@ -59527,14 +59471,14 @@ do
                     }, 'Teleport'):SetTip{
                         title = 'Retreat Method',
                         body = 
-"Choose whether auto peek returns by teleporting or by walking.",
+[[Choose whether auto peek returns by teleporting or by walking.]],
                     }
                 end
 
                 as.Slider(as, 'maxDistance', 'Max Distance', 80, 10, 150, 1, nil, 'st'):SetTip{
                     title = 'Max Distance',
                     body = 
-"Skip the return if you have moved further than this from the saved spot.",
+[[Skip the return if you have moved further than this from the saved spot.]],
                 }
                 as.Toggle(as, 'onRelease', 'On Release', false):SetTip{
                     title = 'On Release',
@@ -60249,7 +60193,7 @@ do
                 aM.Toggle(aM, 'rotationPeek', 'Rotation Peek', false):SetTip{
                     title = 'Rotation Peek',
                     body = 
-"Turns you back first around cover, picking the side that opens up a shot.",
+[[Turns you back first around cover, picking the side that opens up a shot.]],
                 }
 
                 local aO = aM.OnKey(aM, 'rotationPeek')
@@ -60261,7 +60205,7 @@ do
                 aP.Dropdown(aP, 'mode', 'Mode', al, ap):SetTip{
                     title = 'Mode',
                     body = 
-"Legit turns your view so your body follows. Rage turns your body only and leaves your view alone.",
+[[Legit turns your view so your body follows. Rage turns your body only and leaves your view alone.]],
                 }
                 aP.Slider(aP, 'maxAngle', 'Max Angle', aq, 20, 180, 5, nil, ' deg'):SetTip{
                     title = 'Max Angle',
@@ -61023,7 +60967,7 @@ do
                 bl.Toggle(bl, 'autoPeekRotation', 'Auto Peek Rotation', false):SetTip{
                     title = 'Auto Peek Rotation',
                     body = 
-"Turns you around cover so your shots come out past the edge while your body stays covered.",
+[[Turns you around cover so your shots come out past the edge while your body stays covered.]],
                 }
 
                 local bn = bl.OnKey(bl, 'autoPeekRotation')
@@ -61039,12 +60983,12 @@ do
                 bo.Dropdown(bo, 'mode', 'Mode', ak, aU):SetTip{
                     title = 'Mode',
                     body = 
-"Legit steers your view into the angle. Rage turns your body straight to it.",
+[[Legit steers your view into the angle. Rage turns your body straight to it.]],
                 }
                 bo.Toggle(bo, 'onlyAiming', 'Only While Holding Aim', false):SetTip{
                     title = 'Only While Holding Aim',
                     body = 
-"Only turns you while you hold the aim button. Legit always waits for it.",
+[[Only turns you while you hold the aim button. Legit always waits for it.]],
                 }
                 bo.Toggle(bo, 'requireShiftLock', 'Require Shift Lock', false):SetTip{
                     title = 'Require Shift Lock',
@@ -61053,12 +60997,12 @@ do
                 bo.Toggle(bo, 'restoreView', 'Restore View', false):SetTip{
                     title = 'Restore View',
                     body = 
-"Swings your view back to where you were looking once the turn lands.",
+[[Swings your view back to where you were looking once the turn lands.]],
                 }
                 bo.Slider(bo, 'smoothness', 'Smoothness', aW, 0, 100, 1, nil, '%'):SetTip{
                     title = 'Smoothness',
                     body = 
-"How gradually you settle into the angle. Zero turns instantly in Rage.",
+[[How gradually you settle into the angle. Zero turns instantly in Rage.]],
                 }
 
                 bm._mode = aU
@@ -61473,14 +61417,14 @@ do
                 aF.Slider(aF, 'delay', 'Delay', 200, 0, 1000, 10, nil, 'ms'):SetTip{
                     title = 'Delay',
                     body = 
-"How far back in time enemy positions are saved. Set to 0 to match your ping automatically.",
+[[How far back in time enemy positions are saved. Set to 0 to match your ping automatically.]],
                 }:SetValueTextOverrides{
                     [0] = 'Auto',
                 }
                 aF.Toggle(aF, 'visual', 'Show Ghost', true):SetTip{
                     title = 'Show Ghost',
                     body = 
-"Shows a faded copy of the enemy at their backtracked position.",
+[[Shows a faded copy of the enemy at their backtracked position.]],
                 }
                 aF.Colorpicker(aF, 'color', 'Ghost Color', as, 0):SetTip{
                     title = 'Ghost Color',
@@ -62847,8 +62791,8 @@ do
                 tension = 950,
                 friction = 55,
             }, 0.9, 
-"Briefly highlights the body parts you hit with a colored box overlay.", 
-"Only show chams for your most recent hit instead of stacking every hit.", 'Fill color of the hit cham boxes.', {}
+[[Briefly highlights the body parts you hit with a colored box overlay.]], 
+[[Only show chams for your most recent hit instead of stacking every hit.]], 'Fill color of the hit cham boxes.', {}
 
             ar.__index = ar
 
@@ -63232,8 +63176,8 @@ do
                 tension = 950,
                 friction = 55,
             }, 
-"Briefly draws the skeleton of a player at the point where you hit them.", 
-"Only show the skeleton for your most recent hit instead of stacking every hit.", 'Color of the hit skeleton lines.', {}
+[[Briefly draws the skeleton of a player at the point where you hit them.]], 
+[[Only show the skeleton for your most recent hit instead of stacking every hit.]], 'Color of the hit skeleton lines.', {}
 
             ax.__index = ax
 
@@ -63620,7 +63564,7 @@ do
             local af, ag = {
                 title = 'New hit sound',
                 description = 
-"Import an audio file from a URL or an existing executor workspace path.",
+[[Import an audio file from a URL or an existing executor workspace path.]],
                 fields = {
                     {
                         key = 'source',
@@ -63677,7 +63621,7 @@ do
                 local ak, al = ah.Toggle(ah, 'hitSound', 'Hit Sound', false):SetTip{
                     title = 'Hit Sound',
                     body = ai.body or 
-"Plays custom sounds on hit, headshot, and kill. Assign files per slot in the picker.",
+[[Plays custom sounds on hit, headshot, and kill. Assign files per slot in the picker.]],
                 }, table.clone(ai.pickerConfig)
 
                 al.creator = af
@@ -63849,7 +63793,7 @@ do
                 },
                 bundle = {
                     urlPrefix = 
-"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hitsounds/",
+[[https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hitsounds/]],
                     title = 'Downloading hitsounds',
                     icon = 'download',
                     files = {
@@ -64196,7 +64140,7 @@ do
                     },
                     bundle = {
                         urlPrefix = 
-"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hiteffects/",
+[[https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/hiteffects/]],
                         title = 'Downloading hit effects',
                         icon = 'download',
                         files = {
@@ -64711,7 +64655,7 @@ do
                     tip = {
                         title = 'Hit Logs',
                         body = 
-"Shows a notification each time you hit an enemy, including the target, hitbox",
+[[Shows a notification each time you hit an enemy, including the target, hitbox]],
                     },
                     connect = function(ag)
                         local ah = (setmetatable({}, {
@@ -65129,7 +65073,7 @@ do
                 creator = {
                     title = 'New beam style',
                     description = 
-"Create a reusable tracer style. Texture accepts an asset ID, URL, or existing file path.",
+[[Create a reusable tracer style. Texture accepts an asset ID, URL, or existing file path.]],
                     fields = {
                         {
                             key = 'texture',
@@ -65191,7 +65135,7 @@ do
                 },
                 bundle = {
                     urlPrefix = 
-"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/beams/",
+[[https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/beams/]],
                     title = 'Downloading Beams',
                     icon = 'download',
                     files = {
@@ -66630,7 +66574,7 @@ do
                 ao.Toggle(ao, 'flashes', 'Flash Effect', false):SetTip{
                     title = 'Flash Effect',
                     body = 
-"Shortens or removes vision-blocking blindness. Use Time Reduction to scale duration.",
+[[Shortens or removes vision-blocking blindness. Use Time Reduction to scale duration.]],
                 }
 
                 local ap = ao.OnKey(ao, 'flashes')
@@ -66642,7 +66586,7 @@ do
                 aq.Slider(aq, 'timeReduction', 'Time Reduction', 100, 1, 100, 1, nil, '%'):SetTip{
                     title = 'Time Reduction',
                     body = 
-"Percent of blind duration to remove. 100% removes the effect entirely.",
+[[Percent of blind duration to remove. 100% removes the effect entirely.]],
                 }
                 ao.Toggle(ao, 'shroudFog', 'Blind Fog', false):SetTip{
                     title = 'Blind Fog',
@@ -66969,7 +66913,7 @@ do
                 local as = ar.Toggle(ar, 'colorCorrectionEnabled', 'Color Correction', false):SetTip{
                     title = 'Color Correction',
                     body = 
-"Changes post-processing color, brightness, and contrast for you.",
+[[Changes post-processing color, brightness, and contrast for you.]],
                 }
 
                 ar.Extra(ar, as, 'colorCorrectionOptions', 'Submenu', 'Color Correction Options')
@@ -67931,7 +67875,7 @@ do
                 },
                 bundle = {
                     urlPrefix = 
-"https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/skies/",
+[[https://raw.githubusercontent.com/onichan-ren/limerence/main/assets/skies/]],
                     title = 'Downloading Skies',
                     icon = 'download',
                     files = {
@@ -69423,7 +69367,7 @@ do
                 aD.PriorityList(aD, 'priority', 'Origin Priority', an, an):SetTip{
                     title = 'Origin Priority',
                     body = 
-"Where the crosshair sits. Top available source wins, the rest fall back down the list.",
+[[Where the crosshair sits. Top available source wins, the rest fall back down the list.]],
                 }
 
                 if aB._setGameHidden then
@@ -69477,7 +69421,7 @@ do
                 aG.Textbox(aG, 'imageId', 'Image ID', ''):SetTip{
                     title = 'Image ID',
                     body = 
-"Asset id or link for image mode. Leave blank to use the logo.",
+[[Asset id or link for image mode. Leave blank to use the logo.]],
                 }
                 aG.Slider(aG, 'imageSize', 'Image Size', 36, 8, 160, 1, nil, 'px'):SetTip{
                     title = 'Image Size',
@@ -69494,7 +69438,7 @@ do
                 }, 'None'):SetTip{
                     title = 'Spin',
                     body = 
-"Rotates the crosshair. Linear holds a constant speed, Smooth eases each turn.",
+[[Rotates the crosshair. Linear holds a constant speed, Smooth eases each turn.]],
                 }
                 aH.Dropdown(aH, 'effect', 'Effect', {
                     'None',
@@ -70408,7 +70352,7 @@ do
                 am.Toggle(am, 'radar', 'Radar', false):SetTip{
                     title = 'Radar',
                     body = 
-"Top-down radar showing where other players are around you. While the menu is open, drag it to move it and right-click it to reset its position.",
+[[Top-down radar showing where other players are around you. While the menu is open, drag it to move it and right-click it to reset its position.]],
                 }
 
                 local ap = am.OnKey(am, 'radar')
@@ -70425,13 +70369,13 @@ do
                     at = aq.Slider(aq, 'mapScale', 'Map Scale', 100, 25, 200, 5, nil, '%'):SetTip{
                         title = 'Map Scale',
                         body = 
-"Zoom applied on top of the map size. Lower spreads players further apart.",
+[[Zoom applied on top of the map size. Lower spreads players further apart.]],
                     }
                 else
                     as = aq.Slider(aq, 'range', 'Range', 120, 25, 300, 5, nil, 'studs'):SetTip{
                         title = 'Range',
                         body = 
-"Distance from you to the radar edge. Players further away are pinned to the edge.",
+[[Distance from you to the radar edge. Players further away are pinned to the edge.]],
                     }
                 end
 
@@ -70884,7 +70828,7 @@ do
                 creator = {
                     title = 'New character',
                     description = 
-"Import an avatar from a user id or username, or build a custom character.",
+[[Import an avatar from a user id or username, or build a custom character.]],
                     fields = buildCreatorFields(),
                     create = characterCreate,
                 },
@@ -72633,7 +72577,7 @@ do
                 an.Toggle(an, 'hud', 'HUD', false):SetTip{
                     title = 'HUD',
                     body = 
-"Shows a logo and title on screen. While the menu is open, drag the HUD to move it and snap it to the screen edges or center. Right-click it to reset its position.",
+[[Shows a logo and title on screen. While the menu is open, drag the HUD to move it and snap it to the screen edges or center. Right-click it to reset its position.]],
                 }
 
                 local ap = an.OnKey(an, 'hud')
@@ -72671,11 +72615,11 @@ do
                 local aw, ax, ay = av.Toggle(av, 'showInfo', 'Info Text', true):SetTip{
                     title = 'Info Text',
                     body = 
-"Shows a line of live details under the title while combat features are active, like your current target and charge progress.",
+[[Shows a line of live details under the title while combat features are active, like your current target and charge progress.]],
                 }, av.Toggle(av, 'animations', 'Animations', true):SetTip{
                     title = 'Animations',
                     body = 
-"Fades info entries in and out and pulses them when they update.",
+[[Fades info entries in and out and pulses them when they update.]],
                 }, ap.Value(ap, 'position', al)
 
                 ao._logoColor = as
@@ -73155,7 +73099,7 @@ do
                 end
 
                 return string.format(
-"%s/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s", tostring(ab), tostring(aa.UrlEncode(aa, ag)), tostring(aa.UrlEncode(aa, ae)), tostring(aa.UrlEncode(aa, ad)))
+[[%s/authorize?response_type=code&client_id=%s&scope=%s&redirect_uri=%s]], tostring(ab), tostring(aa.UrlEncode(aa, ag)), tostring(aa.UrlEncode(aa, ae)), tostring(aa.UrlEncode(aa, ad)))
             end
             function an.GetRedirectUri()
                 return ad
@@ -73965,7 +73909,7 @@ do
                 function ao.setSource(ap)
                     if ap ~= nil and (type(ap) ~= 'table' or type(ap.poll) ~= 'function') then
                         error(
-"api.feature.musichud.setSource: spec.poll must be a function", 2)
+[[api.feature.musichud.setSource: spec.poll must be a function]], 2)
                     end
 
                     setSourceInternal(ap, al)
@@ -74853,7 +74797,7 @@ do
                 ax.SetTip(ax, {
                     title = 'Music HUD',
                     body = 
-"Shows the song you are playing in YouTube Music or Spotify with its cover art, playback progress and live synced lyrics. YouTube Music requires the desktop app with its API server enabled, Spotify requires linking your account in the options. While the menu is open, drag it to move it and right-click it to reset its position.",
+[[Shows the song you are playing in YouTube Music or Spotify with its cover art, playback progress and live synced lyrics. YouTube Music requires the desktop app with its API server enabled, Spotify requires linking your account in the options. While the menu is open, drag it to move it and right-click it to reset its position.]],
                 })
 
                 local ay = av.OnKey(av, 'musicHud')
@@ -74884,7 +74828,7 @@ do
                 local aC = aA.Toggle(aA, 'showLyrics', 'Show Lyrics', true):SetTip{
                     title = 'Show Lyrics',
                     body = 
-"Shows the current lyric line under the song card when synced lyrics are available for the track.",
+[[Shows the current lyric line under the song card when synced lyrics are available for the track.]],
                 }
 
                 aC.SetBindable(aC, false)
@@ -74943,7 +74887,7 @@ do
                         {
                             title = 'Create a Spotify app',
                             body = 
-"Open the Spotify developer dashboard in your browser, log in and create a new app.",
+[[Open the Spotify developer dashboard in your browser, log in and create a new app.]],
                             doneAt = 1,
                             action = {
                                 label = 'Copy Dashboard Link',
@@ -74962,7 +74906,7 @@ do
                         {
                             title = 'Fill in the app details',
                             body = 
-"In the app's settings, add the copied address as a redirect URI, then paste its Client ID and Client Secret into the boxes below.",
+[[In the app's settings, add the copied address as a redirect URI, then paste its Client ID and Client Secret into the boxes below.]],
                             doneAt = 1,
                             action = {
                                 label = 'Copy Redirect URI',
@@ -74981,7 +74925,7 @@ do
                         {
                             title = 'Approve access',
                             body = 
-"Copy the login link, open it in your browser and allow access to your account.",
+[[Copy the login link, open it in your browser and allow access to your account.]],
                             doneAt = 2,
                             action = {
                                 label = 'Copy Login Link',
@@ -74992,7 +74936,7 @@ do
                         {
                             title = 'Paste the response',
                             body = 
-"Your browser ends on a page that fails to load. Copy that page's full address and paste it into the Login Response box below.",
+[[Your browser ends on a page that fails to load. Copy that page's full address and paste it into the Login Response box below.]],
                             doneAt = 2,
                         },
                     },
@@ -75001,18 +74945,18 @@ do
                 aE = aD.Textbox(aD, 'clientId', 'Client ID', '', 'Client ID'):SetTip{
                     title = 'Client ID',
                     body = 
-"Client ID of your Spotify app, shown in its dashboard settings.",
+[[Client ID of your Spotify app, shown in its dashboard settings.]],
                 }
                 aF = aD.Textbox(aD, 'clientSecret', 'Client Secret', '', 'Client Secret'):SetTip{
                     title = 'Client Secret',
                     body = 
-"Client secret of your Spotify app, shown in its dashboard settings.",
+[[Client secret of your Spotify app, shown in its dashboard settings.]],
                 }
 
                 local aH = aD.Textbox(aD, 'loginResponse', 'Login Response', '', 'Paste the redirected url'):SetTip{
                     title = 'Login Response',
                     body = 
-"After approving access, your browser lands on an unreachable 127.0.0.1 page. Copy that page's full url from the address bar and paste it here to finish linking.",
+[[After approving access, your browser lands on an unreachable 127.0.0.1 page. Copy that page's full url from the address bar and paste it here to finish linking.]],
                 }
 
                 aw.Track(aw, aE.OnChange(aE, updateSpotifyStage))
@@ -75611,7 +75555,7 @@ do
                 aq.Toggle(aq, 'flashEsp', 'Flash ESP', false):SetTip{
                     title = 'Flash ESP',
                     body = 
-"On-screen markers tracking shroud projectiles and how long until they fade.",
+[[On-screen markers tracking shroud projectiles and how long until they fade.]],
                 }
 
                 local as = aq.OnKey(aq, 'flashEsp')
@@ -76237,7 +76181,7 @@ do
                 ak.Toggle(ak, 'accountSpoofer', 'Account Spoofer', false):SetTip{
                     title = 'Account Spoofer',
                     body = 
-"Replaces your username, display name, and id everywhere the game shows them.",
+[[Replaces your username, display name, and id everywhere the game shows them.]],
                 }
 
                 local am = ak.OnKey(ak, 'accountSpoofer')
@@ -76249,7 +76193,7 @@ do
                 an.Textbox(an, 'displayName', 'Display Name', 'limerence.biz', 'Display name'):SetTip{
                     title = 'Display Name',
                     body = 
-"The display name that will replace your actual display name.",
+[[The display name that will replace your actual display name.]],
                 }
                 an.Textbox(an, 'username', 'Username', 'limerence.biz', 'Username'):SetTip{
                     title = 'Username',
@@ -76563,7 +76507,7 @@ do
                 ao.Textbox(ao, 'name', 'Player Name', '', 'Random'):SetTip{
                     title = 'Player Name',
                     body = 
-"Name to show for every other player. Leave empty for random names.",
+[[Name to show for every other player. Leave empty for random names.]],
                 }
 
                 am._binder = ae.new()
@@ -76704,7 +76648,7 @@ do
                 ah.Toggle(ah, 'antiAfk', 'Anti AFK', false):SetTip{
                     title = 'Anti AFK',
                     body = ai and ai.body or 
-"Keeps you in the server while idle instead of being moved away or disconnected.",
+[[Keeps you in the server while idle instead of being moved away or disconnected.]],
                 }
                 aj.Track(aj, ah.Get(ah, 'antiAfk'):OnChange(function(ak)
                     if ak then
@@ -76793,7 +76737,7 @@ do
                     min = 0,
                     max = 999,
                     tip = 
-"Replace your displayed season pass level and its reward track progress.",
+[[Replace your displayed season pass level and its reward track progress.]],
                 },
                 spoofBestWinStreak = {
                     key = 'spoofBestWinStreak',
@@ -76869,7 +76813,7 @@ do
                         'OwnsBattlePass',
                     },
                     tip = 
-"Shows the premium season pass as owned and unlocks its reward track display.",
+[[Shows the premium season pass as owned and unlocks its reward track display.]],
                 },
                 spoofVip = {
                     key = 'spoofVip',
@@ -76895,7 +76839,7 @@ do
                 as.Toggle(as, 'statsSpoofer', 'Stats Spoofer', false):SetTip{
                     title = 'Stats Spoofer',
                     body = 
-"Replaces your wins, streaks, and kills everywhere the game shows them.",
+[[Replaces your wins, streaks, and kills everywhere the game shows them.]],
                 }
 
                 local au = as.OnKey(as, 'statsSpoofer')
@@ -77635,7 +77579,7 @@ do
                 an.Toggle(an, 'autoQueue', 'Auto Queue', false):SetTip{
                     title = 'Auto Queue',
                     body = 
-"Joins the selected matchmaking queue and re-queues after each match.",
+[[Joins the selected matchmaking queue and re-queues after each match.]],
                 }
 
                 local ap = an.OnKey(an, 'autoQueue')
@@ -77923,7 +77867,7 @@ do
                 al.Toggle(al, 'autoVoteMap', 'Auto Vote Map', false):SetTip{
                     title = 'Auto Vote Map',
                     body = 
-"Votes for a map during the round's map pick. Uses your preferred map if it's available, otherwise the fallback.",
+[[Votes for a map during the round's map pick. Uses your preferred map if it's available, otherwise the fallback.]],
                 }
 
                 local an = al.OnKey(al, 'autoVoteMap')
@@ -78096,7 +78040,7 @@ do
                 aj.Toggle(aj, 'invisible', 'Invisible', false):SetTip{
                     title = 'Invisible',
                     body = 
-"Hides your character from everyone while you keep playing as normal.",
+[[Hides your character from everyone while you keep playing as normal.]],
                 }
 
                 ak._enabled = false
@@ -78313,7 +78257,7 @@ do
                 ap.Toggle(ap, 'matchLagger', 'Match Lagger', false):SetTip{
                     title = 'Match Lagger',
                     body = 
-"Lags every player in your server instantly, they will likely crash.",
+[[Lags every player in your server instantly, they will likely crash.]],
                 }
 
                 aq._janitor = ag.new()
@@ -78618,7 +78562,7 @@ do
                 as.Toggle(as, 'fakeLag', 'Fake Lag', false):SetTip{
                     title = 'Fake Lag',
                     body = 
-"Freezes your position for others in short bursts so you are harder to hit.",
+[[Freezes your position for others in short bursts so you are harder to hit.]],
                 }
 
                 local av = as.OnKey(as, 'fakeLag')
@@ -78633,7 +78577,7 @@ do
                     au._downElement:SetTip{
                         title = 'Down',
                         body = 
-"How many ticks each freeze holds. A random count is picked between the low and high values.",
+[[How many ticks each freeze holds. A random count is picked between the low and high values.]],
                     }
 
                     au._upElement = aw.RangeSlider(aw, 'up', 'Up', 1, 3, 1, 24, 1, nil, 't')
@@ -78641,7 +78585,7 @@ do
                     au._upElement:SetTip{
                         title = 'Up',
                         body = 
-"How many ticks you move normally between freezes. A random count is picked between the low and high values.",
+[[How many ticks you move normally between freezes. A random count is picked between the low and high values.]],
                     }
                 else
                     au._downElement = aw.RangeSlider(aw, 'down', 'Down Time', 80, 200, 0, 1000, 10, nil, 'ms')
@@ -78649,7 +78593,7 @@ do
                     au._downElement:SetTip{
                         title = 'Down Time',
                         body = 
-"How long each freeze lasts. A random time is picked between the low and high values.",
+[[How long each freeze lasts. A random time is picked between the low and high values.]],
                     }
 
                     au._upElement = aw.RangeSlider(aw, 'up', 'Up Time', 40, 100, 0, 1000, 10, nil, 'ms')
@@ -78657,7 +78601,7 @@ do
                     au._upElement:SetTip{
                         title = 'Up Time',
                         body = 
-"How long you move normally between freezes. A random time is picked between the low and high values.",
+[[How long you move normally between freezes. A random time is picked between the low and high values.]],
                     }
                 end
 
@@ -79675,7 +79619,7 @@ do
                 ao.Toggle(ao, 'spectatorList', 'Spectator List', false):SetTip{
                     title = 'Spectator List',
                     body = 
-"HUD widget showing how many players are currently spectating you.",
+[[HUD widget showing how many players are currently spectating you.]],
                 }
 
                 local aq = ao.OnKey(ao, 'spectatorList')
@@ -80062,7 +80006,7 @@ if LPH_OBFUSCATED then
 end
 
 aj ..= 
-"loadstring(game:HttpGet(\"https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/mvsd.luau\"))()"
+[[loadstring(game:HttpGet("https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/mvsd.luau"))()]]
 
 clear_teleport_queue()
 queue_on_teleport(aj)

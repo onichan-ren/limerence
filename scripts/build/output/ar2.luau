@@ -160,7 +160,7 @@ do
     do
         local function __modImpl()
             return {
-                version = '2',
+                version = '3',
                 url = 
 "https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/packages.luau",
             }
@@ -185,7 +185,7 @@ do
             local d, e, f, g = string.format('%s/packages-v%s.luau', tostring(c), tostring(b.version)), '@limerence_pkgs', {}, nil
 
             local function fetchSource()
-                local h = game.HttpGet(game, b.url)
+                local h = game.HttpGet(game, b.url .. '?t=' .. tostring(os.time()))
 
                 if not h or #h == 0 then
                     error('pkgBootstrap: response body is empty)')
@@ -917,13 +917,20 @@ do
             end
 
             d.addInstance = function(h)
-                if f[h] then
+                if not h or f[h] then
+                    return
+                end
+
+                local i = (getrawmetatable(h))
+
+                if not i then
+                    c.warn(c, 'missing metatable for instance:', h)
+
                     return
                 end
 
                 c.debug(c, 'hooking instance:', h)
 
-                local i = (getrawmetatable(h))
                 local j, k, l, m, n, o, p = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}
                 local q = {
                     originalProperties = n,
@@ -44941,7 +44948,7 @@ do
             local aa = {
                 ['apocalypse rising 2'] = {},
                 bedwars = {},
-                bloxstrike = {[114234929420007] = 9894},
+                bloxstrike = {[114234929420007] = 9965},
                 ['da hood'] = {},
                 ['murderers vs sheriffs duels'] = {},
                 ['operation one'] = {},

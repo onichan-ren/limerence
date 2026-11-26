@@ -1330,7 +1330,7 @@ return LPH_JIT_MAX(function()
 		end
 
 		local function processTarget(playerData: any): ()
-			if not peek(playerData.alive) then
+			if not peek(playerData.alive) or (playerData.culled and peek(playerData.culled)) then
 				return
 			end
 

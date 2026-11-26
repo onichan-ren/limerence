@@ -772,33 +772,6 @@ do
                 return true
             end
 
-            local function findRemoteInClosure(e, f, g)
-                if type(e) ~= 'function' or g[e] or f > 3 then
-                    return nil
-                end
-
-                g[e] = true
-
-                local h = getupvalues(e)
-
-                for i, j in next, h do
-                    if typeof(j) == 'Instance' and (j.IsA(j, 'RemoteEvent') or j.IsA(j, 'UnreliableRemoteEvent') or j.IsA(j, 'RemoteFunction')) then
-                        return j
-                    end
-                end
-                for i, j in next, h do
-                    if type(j) == 'function' then
-                        local k = findRemoteInClosure(j, f + 1, g)
-
-                        if k then
-                            return k
-                        end
-                    end
-                end
-
-                return nil
-            end
-
             d.HookPacket = function(e, f, g)
                 local h = d._packets[e]
 
@@ -825,33 +798,29 @@ do
                 end
 
                 local k = (rawget(i, 'Send'))
-                local l = findRemoteInClosure(k, 0, {})
 
-                if not l then
-                    b.warn(b, 'failed to resolve remote for packet: ' .. j)
+                if type(k) ~= 'function' then
+                    b.warn(b, 'missing Send function for packet: ' .. j)
 
                     return
                 end
 
-                c.addInstance(l)
+                local l
 
-                local m = l.IsA(l, 'RemoteFunction') and 'InvokeServer' or 'FireServer'
+                l = c.add(k, LPH_NO_VIRTUALIZE(function(...)
+                    local m, n = g(...)
 
-                c.overrideMethod(l, m, LPH_NO_VIRTUALIZE(function(...)
-                    local n, o = g(...)
-
-                    if n == false then
-                        if o then
-                            return o
+                    if m == false then
+                        if n ~= nil then
+                            return l(n)
                         end
 
                         return
                     end
 
-                    return ...
+                    return l(...)
                 end))
-
-                d._hooks[j] = l
+                d._hooks[j] = k
             end
 
             function d.UnhookPacket(e, f)
@@ -862,7 +831,7 @@ do
                     return
                 end
 
-                c.restoreInstance(h)
+                c.restore(h)
 
                 d._hooks[g] = nil
             end
@@ -46310,405 +46279,462 @@ do
         local function __modImpl()
             return LPH_JIT_MAX(function()
                 local aa, ab, ac, ad, ae, af = a.i(), a.h(), a.G(), a.j(), cloneref(game.GetService(game, 'HttpService')), (cloneref(game.GetService(game, 'ReplicatedStorage')))
-                local ag, ah, ai, aj, ak, al = aa.atom, aa.peek, af.Assets.WeaponAnimations.C4.CharacterAnimations.Use.AnimationId, af.Assets.CharacterAnimations.Actions.Blinded.AnimationId, {
+                local ag, ah, ai, aj, ak = aa.atom, aa.peek, af.Assets.WeaponAnimations.C4.CharacterAnimations.Use.AnimationId, af.Assets.CharacterAnimations.Actions.Blinded.AnimationId, '_PVS_CulledCharacters'
+
+                local function isCharacterCulled(al)
+                    if not al then
+                        return false
+                    end
+
+                    local am = al.Parent
+
+                    if not am or am.Name == ak or am == af then
+                        return true
+                    end
+
+                    return not al.IsDescendantOf(al, workspace)
+                end
+
+                local al, am = {
                     kevlar = false,
                     helmet = false,
                     health = 0,
                 }, {}
 
-                for am, an in next, af.Assets.WeaponAnimations:QueryDescendants'#Reload'do
-                    if an.ClassName == 'Animation' then
-                        al[an.AnimationId] = true
+                for an, ao in next, af.Assets.WeaponAnimations:QueryDescendants'#Reload'do
+                    if ao.ClassName == 'Animation' then
+                        am[ao.AnimationId] = true
                     end
                 end
 
-                local am = {}
+                local an = {}
 
-                am.__index = am
+                an.__index = an
 
-                setmetatable(am, {__index = ac})
+                setmetatable(an, {__index = ac})
 
-                function am.new(an)
-                    local ao = (ac.new(an))
+                function an.new(ao)
+                    local ap = (ac.new(ao))
 
-                    setmetatable(ao, am)
+                    setmetatable(ap, an)
 
-                    ao.character = ag(nil)
-                    ao.hrp = ag(nil)
-                    ao.humanoid = ag(nil)
-                    ao.alive = ag(false)
-                    ao.health = ag(0)
-                    ao.maxHealth = ag(100)
-                    ao.parts = ag{}
-                    ao.team = ag(an.GetAttribute(an, 'Team'))
-                    ao.currentEquipped = ag(nil)
-                    ao.isPlanting = ag(false)
-                    ao.isDefusing = ag(false)
-                    ao.isRescuing = ag(false)
-                    ao.isCarrying = ag(false)
-                    ao.hasC4 = ag(false)
-                    ao.hasDefuseKit = ag(false)
-                    ao.invincible = ag(false)
-                    ao.armor = ag(ak)
-                    ao.isReloading = ag(false)
-                    ao.isBlind = ag(false)
-                    ao.isScoped = ag(false)
-                    ao._reloadActiveCount = 0
-                    ao._blindActiveCount = 0
-                    ao._lastCurrentEquippedRaw = nil
-                    ao._lastSlot5Raw = nil
-                    ao._lastArmorRaw = nil
-                    ao._janitor = ab.new()
-                    ao._characterJanitor = ab.new()
+                    ap.character = ag(nil)
+                    ap.hrp = ag(nil)
+                    ap.humanoid = ag(nil)
+                    ap.alive = ag(false)
+                    ap.health = ag(0)
+                    ap.maxHealth = ag(100)
+                    ap.parts = ag{}
+                    ap.team = ag(ao.GetAttribute(ao, 'Team'))
+                    ap.currentEquipped = ag(nil)
+                    ap.isPlanting = ag(false)
+                    ap.isDefusing = ag(false)
+                    ap.isRescuing = ag(false)
+                    ap.isCarrying = ag(false)
+                    ap.hasC4 = ag(false)
+                    ap.hasDefuseKit = ag(false)
+                    ap.invincible = ag(false)
+                    ap.armor = ag(al)
+                    ap.isReloading = ag(false)
+                    ap.isBlind = ag(false)
+                    ap.isScoped = ag(false)
+                    ap.culled = ag(false)
+                    ap._reloadActiveCount = 0
+                    ap._blindActiveCount = 0
+                    ap._lastCurrentEquippedRaw = nil
+                    ap._lastSlot5Raw = nil
+                    ap._lastArmorRaw = nil
+                    ap._janitor = ab.new()
+                    ap._characterJanitor = ab.new()
 
-                    ao._janitor:Add(ao._characterJanitor, 'Destroy')
-                    ao._janitor:Add(an.CharacterAdded:Connect(function(ap)
-                        ao._onCharacterAdded(ao, ap)
+                    ap._janitor:Add(ap._characterJanitor, 'Destroy')
+                    ap._janitor:Add(ao.CharacterAdded:Connect(function(aq)
+                        ap._onCharacterAdded(ap, aq)
                     end))
-                    ao._janitor:Add(an.CharacterRemoving:Connect(function()
-                        ao._onCharacterRemoving(ao)
+                    ap._janitor:Add(ao.CharacterRemoving:Connect(function()
+                        ap._onCharacterRemoving(ap)
                     end))
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'Team'):Connect(function(
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'Team'):Connect(function(
                     )
-                        ao.team(an.GetAttribute(an, 'Team'))
+                        ap.team(ao.GetAttribute(ao, 'Team'))
                     end))
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'CurrentEquipped'):Connect(LPH_NO_VIRTUALIZE(function(
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'CurrentEquipped'):Connect(LPH_NO_VIRTUALIZE(function(
                     )
-                        local ap = (an.GetAttribute(an, 'CurrentEquipped'))
+                        local aq = (ao.GetAttribute(ao, 'CurrentEquipped'))
 
-                        if ap == ao._lastCurrentEquippedRaw then
+                        if aq == ap._lastCurrentEquippedRaw then
                             return
                         end
 
-                        ao._lastCurrentEquippedRaw = ap
+                        ap._lastCurrentEquippedRaw = aq
 
-                        if not ap then
-                            ao.currentEquipped(nil)
+                        if not aq then
+                            ap.currentEquipped(nil)
 
                             return
                         end
 
-                        local aq = ae.JSONDecode(ae, ap)
+                        local ar = ae.JSONDecode(ae, aq)
 
-                        ao.currentEquipped(aq)
+                        ap.currentEquipped(ar)
                     end)))
 
-                    local ap = (an.GetAttribute(an, 'CurrentEquipped'))
+                    local aq = (ao.GetAttribute(ao, 'CurrentEquipped'))
 
-                    if ap then
-                        ao._lastCurrentEquippedRaw = ap
+                    if aq then
+                        ap._lastCurrentEquippedRaw = aq
 
-                        ao.currentEquipped(ae.JSONDecode(ae, ap))
+                        ap.currentEquipped(ae.JSONDecode(ae, aq))
                     end
 
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'IsDefusingBomb'):Connect(function(
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'IsDefusingBomb'):Connect(function(
                     )
-                        ao.isDefusing(an.GetAttribute(an, 'IsDefusingBomb') == true)
+                        ap.isDefusing(ao.GetAttribute(ao, 'IsDefusingBomb') == true)
                     end))
-                    ao.isDefusing(an.GetAttribute(an, 'IsDefusingBomb') == true)
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'IsRescuingHostage'):Connect(function(
+                    ap.isDefusing(ao.GetAttribute(ao, 'IsDefusingBomb') == true)
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'IsRescuingHostage'):Connect(function(
                     )
-                        ao.isRescuing(an.GetAttribute(an, 'IsRescuingHostage') == true)
+                        ap.isRescuing(ao.GetAttribute(ao, 'IsRescuingHostage') == true)
                     end))
-                    ao.isRescuing(an.GetAttribute(an, 'IsRescuingHostage') == true)
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'IsCarryingHostage'):Connect(function(
+                    ap.isRescuing(ao.GetAttribute(ao, 'IsRescuingHostage') == true)
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'IsCarryingHostage'):Connect(function(
                     )
-                        ao.isCarrying(an.GetAttribute(an, 'IsCarryingHostage') == true)
+                        ap.isCarrying(ao.GetAttribute(ao, 'IsCarryingHostage') == true)
                     end))
-                    ao.isCarrying(an.GetAttribute(an, 'IsCarryingHostage') == true)
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'HasDefuseKit'):Connect(function(
+                    ap.isCarrying(ao.GetAttribute(ao, 'IsCarryingHostage') == true)
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'HasDefuseKit'):Connect(function(
                     )
-                        ao.hasDefuseKit(an.GetAttribute(an, 'HasDefuseKit') == true)
+                        ap.hasDefuseKit(ao.GetAttribute(ao, 'HasDefuseKit') == true)
                     end))
-                    ao.hasDefuseKit(an.GetAttribute(an, 'HasDefuseKit') == true)
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'ScopeIncrement'):Connect(function(
+                    ap.hasDefuseKit(ao.GetAttribute(ao, 'HasDefuseKit') == true)
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'ScopeIncrement'):Connect(function(
                     )
-                        ao.isScoped((an.GetAttribute(an, 'ScopeIncrement') or 0) > 0)
+                        ap.isScoped((ao.GetAttribute(ao, 'ScopeIncrement') or 0) > 0)
                     end))
-                    ao.isScoped((an.GetAttribute(an, 'ScopeIncrement') or 0) > 0)
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'Slot5'):Connect(function(
+                    ap.isScoped((ao.GetAttribute(ao, 'ScopeIncrement') or 0) > 0)
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'Slot5'):Connect(function(
                     )
-                        ao._syncSlot5(ao)
+                        ap._syncSlot5(ap)
                     end))
-                    ao._syncSlot5(ao)
-                    ao._janitor:Add(an.GetAttributeChangedSignal(an, 'Armor'):Connect(function(
+                    ap._syncSlot5(ap)
+                    ap._janitor:Add(ao.GetAttributeChangedSignal(ao, 'Armor'):Connect(function(
                     )
-                        ao._syncArmor(ao)
+                        ap._syncArmor(ap)
                     end))
-                    ao._syncArmor(ao)
+                    ap._syncArmor(ap)
 
-                    if an.Character then
+                    if ao.Character then
                         task.spawn(function()
-                            ao._onCharacterAdded(ao, an.Character)
+                            ap._onCharacterAdded(ap, ao.Character)
                         end)
                     end
 
-                    return ao
+                    return ap
                 end
-                function am._syncSlot5(an)
-                    local ao = an._player:GetAttribute'Slot5'
+                function an._syncSlot5(ao)
+                    local ap = ao._player:GetAttribute'Slot5'
 
-                    if ao == an._lastSlot5Raw then
+                    if ap == ao._lastSlot5Raw then
                         return
                     end
 
-                    an._lastSlot5Raw = ao
+                    ao._lastSlot5Raw = ap
 
-                    if type(ao) ~= 'string' or ao == '' then
-                        an.hasC4(false)
-
-                        return
-                    end
-
-                    local ap = ae.JSONDecode(ae, ao)
-
-                    if type(ap) ~= 'table' then
-                        an.hasC4(false)
+                    if type(ap) ~= 'string' or ap == '' then
+                        ao.hasC4(false)
 
                         return
                     end
 
-                    an.hasC4(ap.Weapon == 'C4')
+                    local aq = ae.JSONDecode(ae, ap)
+
+                    if type(aq) ~= 'table' then
+                        ao.hasC4(false)
+
+                        return
+                    end
+
+                    ao.hasC4(aq.Weapon == 'C4')
                 end
-                function am._syncArmor(an)
-                    local ao = an._player:GetAttribute'Armor'
+                function an._syncArmor(ao)
+                    local ap = ao._player:GetAttribute'Armor'
 
-                    if ao == an._lastArmorRaw then
+                    if ap == ao._lastArmorRaw then
                         return
                     end
 
-                    an._lastArmorRaw = ao
+                    ao._lastArmorRaw = ap
 
-                    if type(ao) ~= 'string' or ao == '' then
-                        an.armor(ak)
-
-                        return
-                    end
-
-                    local ap = ae.JSONDecode(ae, ao)
-
-                    if type(ap) ~= 'table' then
-                        an.armor(ak)
+                    if type(ap) ~= 'string' or ap == '' then
+                        ao.armor(al)
 
                         return
                     end
 
-                    local aq, ar = tostring(ap.Type or ''), tonumber(ap.Health) or 0
+                    local aq = ae.JSONDecode(ae, ap)
 
-                    if ar <= 0 then
-                        an.armor(ak)
-
-                        return
-                    end
-
-                    local as, at = aq == 'Kevlar' or aq == 'Kevlar + Helmet', aq == 'Kevlar + Helmet'
-
-                    if not as then
-                        an.armor(ak)
+                    if type(aq) ~= 'table' then
+                        ao.armor(al)
 
                         return
                     end
 
-                    an.armor{
-                        kevlar = as,
-                        helmet = at,
-                        health = ar,
+                    local ar, as = tostring(aq.Type or ''), tonumber(aq.Health) or 0
+
+                    if as <= 0 then
+                        ao.armor(al)
+
+                        return
+                    end
+
+                    local at, au = ar == 'Kevlar' or ar == 'Kevlar + Helmet', ar == 'Kevlar + Helmet'
+
+                    if not at then
+                        ao.armor(al)
+
+                        return
+                    end
+
+                    ao.armor{
+                        kevlar = at,
+                        helmet = au,
+                        health = as,
                     }
                 end
-                function am._onCharacterAdded(an, ao)
-                    an._characterJanitor:Cleanup()
+                function an._onCharacterAdded(ao, ap)
+                    ao._characterJanitor:Cleanup()
 
-                    local ap, aq = (ao.WaitForChild(ao, 'HumanoidRootPart', 5)), (ao.FindFirstChildOfClass(ao, 'Humanoid'))
+                    local aq = (ap.WaitForChild(ap, 'HumanoidRootPart', 5))
 
-                    if not ap or not aq then
+                    if not aq then
                         return
                     end
-                    if an._player.Character ~= ao then
+                    if ao._player.Character ~= ap then
                         return
                     end
 
-                    local ar = {}
+                    local ar, as = (ap.FindFirstChildOfClass(ap, 'Humanoid')), {}
 
-                    for as, at in next, ao.GetChildren(ao)do
-                        local au = at.Name
+                    for at, au in next, ap.GetChildren(ap)do
+                        local av = au.Name
 
-                        ar[au] = at
+                        as[av] = au
                     end
 
-                    an.parts(ar)
-                    an.character(ao)
-                    an.hrp(ap)
-                    an.humanoid(aq)
-                    an.health(aq.Health)
-                    an.maxHealth(aq.MaxHealth)
-                    an.alive(aq.Health > 0)
-                    an.invincible(ao.GetAttribute(ao, 'Invincible') == true)
-                    an._characterJanitor:Add(ao.ChildAdded:Connect(LPH_NO_VIRTUALIZE(function(
-                        as
+                    ao.parts(as)
+                    ao.character(ap)
+                    ao.hrp(aq)
+                    ao.humanoid(ar)
+                    ao.culled(isCharacterCulled(ap))
+                    ao.invincible(ap.GetAttribute(ap, 'Invincible') == true)
+                    ao._characterJanitor:Add(ap.GetPropertyChangedSignal(ap, 'Parent'):Connect(function(
                     )
-                        an._onPartAdded(an, as)
+                        ao.culled(isCharacterCulled(ap))
+                    end))
+                    ao._characterJanitor:Add(ap.ChildAdded:Connect(LPH_NO_VIRTUALIZE(function(
+                        at
+                    )
+                        ao._onPartAdded(ao, at)
                     end)))
-                    an._characterJanitor:Add(ao.ChildRemoved:Connect(LPH_NO_VIRTUALIZE(function(
-                        as
+                    ao._characterJanitor:Add(ap.ChildRemoved:Connect(LPH_NO_VIRTUALIZE(function(
+                        at
                     )
-                        an._onPartRemoved(an, as)
+                        ao._onPartRemoved(ao, at)
                     end)))
-                    an._characterJanitor:Add(aq.HealthChanged:Connect(function(
-                        as
+                    ao._characterJanitor:Add(ap.GetAttributeChangedSignal(ap, 'Invincible'):Connect(function(
                     )
-                        an.health(as)
-                        an.alive(as > 0)
+                        ao.invincible(ap.GetAttribute(ap, 'Invincible') == true)
                     end))
-                    an._characterJanitor:Add(ao.GetAttributeChangedSignal(ao, 'Invincible'):Connect(function(
-                    )
-                        an.invincible(ao.GetAttribute(ao, 'Invincible') == true)
-                    end))
-                    an._characterJanitor:Add(aq.GetPropertyChangedSignal(aq, 'MaxHealth'):Connect(function(
-                    )
-                        an.maxHealth(aq.MaxHealth)
-                    end))
-                    an._characterJanitor:Add(aq.Died:Connect(function()
-                        an.alive(false)
-                    end))
-                    an._watchCharacterAnimations(an, aq)
+
+                    if ar then
+                        ao.health(ar.Health)
+                        ao.maxHealth(ar.MaxHealth)
+                        ao.alive(ar.Health > 0)
+                        ao._characterJanitor:Add(ar.HealthChanged:Connect(function(
+                            at
+                        )
+                            ao.health(at)
+                            ao.alive(at > 0)
+                        end))
+                        ao._characterJanitor:Add(ar.GetPropertyChangedSignal(ar, 'MaxHealth'):Connect(function(
+                        )
+                            ao.maxHealth(ar.MaxHealth)
+                        end))
+                        ao._characterJanitor:Add(ar.Died:Connect(function()
+                            ao.alive(false)
+                        end))
+                    else
+                        local function syncAttributes()
+                            local at, au = tonumber(ap.GetAttribute(ap, 'MaxHealth')) or tonumber(ao._player:GetAttribute'MaxHealth') or 100, tonumber(ap.GetAttribute(ap, 'Health'))
+
+                            if au == nil then
+                                au = tonumber(ao._player:GetAttribute'Health')
+                            end
+                            if au == nil then
+                                au = at
+                            end
+
+                            local av = ap.GetAttribute(ap, 'Dead') == true or ao._player:GetAttribute'Dead' == true
+
+                            ao.maxHealth(at)
+                            ao.health(au)
+                            ao.alive(not av and (au) > 0)
+                        end
+
+                        syncAttributes()
+                        ao._characterJanitor:Add(ap.GetAttributeChangedSignal(ap, 'Health'):Connect(syncAttributes))
+                        ao._characterJanitor:Add(ap.GetAttributeChangedSignal(ap, 'MaxHealth'):Connect(syncAttributes))
+                        ao._characterJanitor:Add(ap.GetAttributeChangedSignal(ap, 'Dead'):Connect(syncAttributes))
+                        ao._characterJanitor:Add(ao._player:GetAttributeChangedSignal'Health':Connect(syncAttributes))
+                        ao._characterJanitor:Add(ao._player:GetAttributeChangedSignal'MaxHealth':Connect(syncAttributes))
+                        ao._characterJanitor:Add(ao._player:GetAttributeChangedSignal'Dead':Connect(syncAttributes))
+                    end
+
+                    ao._watchCharacterAnimations(ao, ap, ar)
                 end
-                function am._watchCharacterAnimations(an, ao)
-                    local ap = (ao.FindFirstChildOfClass(ao, 'Animator'))
+                function an._watchCharacterAnimations(ao, ap, aq)
+                    local ar = (aq and {
+                        (aq.FindFirstChildOfClass(aq, 'Animator')),
+                    } or {nil})[1]
 
-                    if not ap then
-                        ap = (ao.WaitForChild(ao, 'Animator', 3))
+                    if not ar then
+                        ar = (ap.FindFirstChild(ap, 'Animator', true))
                     end
-                    if not ap then
+                    if not ar and aq then
+                        ar = (aq.WaitForChild(aq, 'Animator', 3))
+                    end
+                    if not ar then
                         return
                     end
 
-                    local aq = ap
+                    local as = ar
 
-                    an._reloadActiveCount = 0
-                    an._blindActiveCount = 0
+                    ao._reloadActiveCount = 0
+                    ao._blindActiveCount = 0
 
-                    local ar = LPH_NO_VIRTUALIZE(function(ar)
-                        local as = ar.Animation
+                    local at = LPH_NO_VIRTUALIZE(function(at)
+                        local au = at.Animation
 
-                        if not as then
+                        if not au then
                             return
                         end
 
-                        local at = as.AnimationId
-                        local au, av, aw = at == ai, at == aj, al[at] == true
+                        local av = au.AnimationId
+                        local aw, ax, ay = av == ai, av == aj, am[av] == true
 
-                        if not au and not aw and not av then
+                        if not aw and not ay and not ax then
                             return
-                        end
-                        if au then
-                            an.isPlanting(true)
                         end
                         if aw then
-                            an._reloadActiveCount += 1
-
-                            an.isReloading(true)
+                            ao.isPlanting(true)
                         end
-                        if av then
-                            an._blindActiveCount += 1
+                        if ay then
+                            ao._reloadActiveCount += 1
 
-                            an.isBlind(true)
+                            ao.isReloading(true)
+                        end
+                        if ax then
+                            ao._blindActiveCount += 1
+
+                            ao.isBlind(true)
                         end
 
-                        local ax
+                        local az
 
-                        ax = ar.Stopped:Connect(function()
-                            if ax then
-                                ax.Disconnect(ax)
+                        az = at.Stopped:Connect(function()
+                            if az then
+                                az.Disconnect(az)
 
-                                ax = nil
-                            end
-                            if au then
-                                an.isPlanting(false)
+                                az = nil
                             end
                             if aw then
-                                an._reloadActiveCount = math.max(0, an._reloadActiveCount - 1)
+                                ao.isPlanting(false)
+                            end
+                            if ay then
+                                ao._reloadActiveCount = math.max(0, ao._reloadActiveCount - 1)
 
-                                if an._reloadActiveCount == 0 then
-                                    an.isReloading(false)
+                                if ao._reloadActiveCount == 0 then
+                                    ao.isReloading(false)
                                 end
                             end
-                            if av then
-                                an._blindActiveCount = math.max(0, an._blindActiveCount - 1)
+                            if ax then
+                                ao._blindActiveCount = math.max(0, ao._blindActiveCount - 1)
 
-                                if an._blindActiveCount == 0 then
-                                    an.isBlind(false)
+                                if ao._blindActiveCount == 0 then
+                                    ao.isBlind(false)
                                 end
                             end
                         end)
 
-                        an._characterJanitor:Add(function()
-                            if ax then
-                                ax.Disconnect(ax)
+                        ao._characterJanitor:Add(function()
+                            if az then
+                                az.Disconnect(az)
 
-                                ax = nil
+                                az = nil
                             end
                         end, true)
                     end)
 
-                    an._characterJanitor:Add(aq.AnimationPlayed:Connect(ar), 'Disconnect')
+                    ao._characterJanitor:Add(as.AnimationPlayed:Connect(at), 'Disconnect')
 
-                    for as, at in next, aq.GetPlayingAnimationTracks(aq)do
-                        ar(at)
+                    for au, av in next, as.GetPlayingAnimationTracks(as)do
+                        at(av)
                     end
                 end
 
-                am._onPartAdded = LPH_NO_VIRTUALIZE(function(an, ao)
-                    local ap = an.parts
+                an._onPartAdded = LPH_NO_VIRTUALIZE(function(ao, ap)
+                    local aq = ao.parts
 
-                    ap(ad.Dictionary.set(ah(ap), ao.Name, ao))
+                    aq(ad.Dictionary.set(ah(aq), ap.Name, ap))
                 end)
-                am._onPartRemoved = LPH_NO_VIRTUALIZE(function(an, ao)
-                    local ap = an.parts
+                an._onPartRemoved = LPH_NO_VIRTUALIZE(function(ao, ap)
+                    local aq = ao.parts
 
-                    ap(ad.Dictionary.removeKey(ah(ap), ao.Name))
+                    aq(ad.Dictionary.removeKey(ah(aq), ap.Name))
                 end)
 
-                function am._onCharacterRemoving(an)
-                    an._characterJanitor:Cleanup()
-                    an.character(nil)
-                    an.hrp(nil)
-                    an.humanoid(nil)
-                    an.alive(false)
-                    an.parts{}
-                    an.isPlanting(false)
+                function an._onCharacterRemoving(ao)
+                    ao._characterJanitor:Cleanup()
+                    ao.character(nil)
+                    ao.hrp(nil)
+                    ao.humanoid(nil)
+                    ao.alive(false)
+                    ao.parts{}
+                    ao.isPlanting(false)
 
-                    an._reloadActiveCount = 0
-                    an._blindActiveCount = 0
+                    ao._reloadActiveCount = 0
+                    ao._blindActiveCount = 0
 
-                    an.isReloading(false)
-                    an.isBlind(false)
+                    ao.isReloading(false)
+                    ao.isBlind(false)
+                    ao.culled(false)
                 end
-                function am.IsAlive(an)
-                    return ah(an.alive)
+                function an.IsAlive(ao)
+                    return ah(ao.alive)
                 end
-                function am.GetHealthFraction(an)
-                    local ao = ah(an.maxHealth)
+                function an.GetHealthFraction(ao)
+                    local ap = ah(ao.maxHealth)
 
-                    if ao <= 0 then
+                    if ap <= 0 then
                         return 0
                     end
 
-                    return math.clamp(ah(an.health) / ao, 0, 1)
+                    return math.clamp(ah(ao.health) / ap, 0, 1)
                 end
-                function am.GetTeam(an)
-                    return ah(an.team)
+                function an.GetTeam(ao)
+                    return ah(ao.team)
                 end
-                function am.GetCharacter(an)
-                    return ah(an.character)
+                function an.GetCharacter(ao)
+                    return ah(ao.character)
                 end
-                function am.GetParts(an)
-                    return ah(an.parts)
+                function an.GetParts(ao)
+                    return ah(ao.parts)
                 end
-                function am.Destroy(an)
-                    an._janitor:Destroy()
+                function an.Destroy(ao)
+                    ao._janitor:Destroy()
                 end
 
-                return am
+                return an
             end)()
         end
 
@@ -47040,6 +47066,9 @@ do
                     end,
                     isInvincible = function()
                         return ag(al.invincible)
+                    end,
+                    isCulled = function()
+                        return ag(al.culled)
                     end,
                     getState = function()
                         return af.GetState(am.UserId)
@@ -60763,9 +60792,9 @@ do
                         end
 
                         local H, I, J = a2[E] == true, a3[E] == true, a1[E]
-                        local K, L, M = (J and J.alpha or 0), aB(F.alive), false
+                        local K, L, M = (J and J.alpha or 0), aB(F.alive), (F).culled ~= nil and aB((F).culled) == true
 
-                        if a5 and (a6 or not (F).isBot) then
+                        if not M and a5 and (a6 or not (F).isBot) then
                             M = a5(F) == true
                         end
                         if K <= aN and not H and not I then
@@ -77386,7 +77415,7 @@ do
                     local bC, bD = bf._scorePool, 0
 
                     for bE, bF in next, ah.GetAll()do
-                        if not aK(bF.alive) then
+                        if not aK(bF.alive) or aK(bF.culled) then
                             continue
                         end
                         if aK(bF.invincible) then
@@ -77545,7 +77574,7 @@ do
                     local br, bs, bt, bu, bv, bw, bx, by, bz, bA, bB = bq.X * 0.5, bq.Y * 0.5, bq.X, bq.Y, aJ.make(bm, bq), aE.GetForcedTarget(), aE.HasTargetFilters(), ao.isDeathmatch(), tick(), bf._scorePool, 0
 
                     for bC, bD in next, ah.GetAll()do
-                        if not aK(bD.alive) then
+                        if not aK(bD.alive) or aK(bD.culled) then
                             continue
                         end
                         if aK(bD.invincible) then
@@ -78199,7 +78228,7 @@ do
                     end
 
                     for br, bu in next, ah.GetAll()do
-                        if not aK(bu.alive) or aK(bu.invincible) then
+                        if not aK(bu.alive) or aK(bu.culled) or aK(bu.invincible) then
                             continue
                         end
 
@@ -78748,7 +78777,7 @@ do
                 for aE, aF in next, af.GetAll()do
                     local aG = am(aF.character)
 
-                    if not aG then
+                    if not aG or am(aF.culled) then
                         continue
                     end
                     if aG ~= aA and not az.IsDescendantOf(az, aG) then
@@ -78873,7 +78902,7 @@ do
 
                     local aR = am(aQ.character)
 
-                    if not aR then
+                    if not aR or am(aQ.culled) then
                         continue
                     end
 
@@ -86231,7 +86260,7 @@ do
                     end
 
                     local function processTarget(J)
-                        if not av(J.alive) then
+                        if not av(J.alive) or (J.culled and av(J.culled)) then
                             return
                         end
 

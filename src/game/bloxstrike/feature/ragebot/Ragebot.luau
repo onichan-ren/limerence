@@ -1209,7 +1209,7 @@ return LPH_JIT_MAX(function()
 			local pool = self._scorePool
 			local count = 0
 			for _, playerData in next, PlayerController.GetAll() do
-				if not peek(playerData.alive) then
+				if not peek(playerData.alive) or peek(playerData.culled) then
 					continue
 				end
 
@@ -1369,7 +1369,7 @@ return LPH_JIT_MAX(function()
 			local pool = self._scorePool
 			local count = 0
 			for _, playerData in next, PlayerController.GetAll() do
-				if not peek(playerData.alive) then
+				if not peek(playerData.alive) or peek(playerData.culled) then
 					continue
 				end
 
@@ -2040,7 +2040,7 @@ return LPH_JIT_MAX(function()
 		end
 
 		for _, playerData in next, PlayerController.GetAll() do
-			if not peek(playerData.alive) or peek(playerData.invincible) then
+			if not peek(playerData.alive) or peek(playerData.culled) or peek(playerData.invincible) then
 				continue
 			end
 			local playerTeam = peek(playerData.team)

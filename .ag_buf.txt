@@ -1,0 +1,33 @@
+
+C:\Users\Nam\Downloads\t3vqyq>lune run scripts/build/build-all.luau --game ar2 
+Scanning for games...
+Building 1 games in parallel...
+
+[1/1] ar2
+----------------------------------------
+SUCCESS: ar2.luau (3136 KB)
+
+==========================================
+              BUILD SUMMARY
+==========================================
+Total games:       1
+Successful builds: 1
+Failed builds:     0
+
+C:\Users\Nam\Downloads\t3vqyq>lune run scripts/build/build-all.luau --game mvsd 
+Scanning for games...
+Building 1 games in parallel...
+The requested operation cannot be performed on a file with a user-mapped section open. (os error 1224)
+[Stack Begin]
+    Script '[C]'
+    Script '__mlua_async_poll', Line 29
+    Script 'C:\Users\Nam\Downloads\t3vqyq\scripts/build/build-all', Line 195
+    Script 'C:\Users\Nam\Downloads\t3vqyq\scripts/build/build-all', Line 303
+    Script 'C:\Users\Nam\Downloads\t3vqyq\scripts/build/build-all', Line 364
+[Stack End]
+
+
+C:\Users\Nam\Downloads\t3vqyq>lune run scripts/build/build-all.luau --game op1 
+Scanning for games...
+Building 1 games in parallel...
+--TIMEOUT--

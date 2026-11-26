@@ -90,6 +90,9 @@ local step = LPH_NO_VIRTUALIZE(function(state: any, fade: number): ()
 					if not peek(basePlayer.alive) then
 						continue
 					end
+					if (basePlayer :: any).culled and peek((basePlayer :: any).culled) then
+						continue
+					end
 					if filter and filter(basePlayer) then
 						continue
 					end
