@@ -42493,10 +42493,28 @@ do
 
             function ap.new()
                 local aw = ac.GetModule'SmokeClass'
-                local ax = (rawget(aw, 'Create'))
-                local ay = debug.getupvalue(ax, 4)
+                local ax = (rawget(aw, 'DoesRayIntersectActiveSmoke'))
+                local ay = (type(ax) == 'function' and {
+                    (debug.getupvalue(ax, 1)),
+                } or {nil})[1]
 
-                ap._internalSmokeVoxels = (debug.getupvalue(ay, 2))
+                if type(ay) ~= 'table' then
+                    local az = (rawget(aw, 'Create'))
+
+                    for aA, aB in next, debug.getupvalues(az)do
+                        if type(aB) == 'function' then
+                            local aC = debug.getupvalue(aB, 2)
+
+                            if type(aC) == 'table' then
+                                ay = aC
+
+                                break
+                            end
+                        end
+                    end
+                end
+
+                ap._internalSmokeVoxels = (ay or {})
 
                 hookFireCreate()
                 hookSmokeCreate()

@@ -479,10 +479,21 @@ end
 function GrenadeController.new(): GrenadeController
 	local smokeClass = ModuleController.GetModule("SmokeClass")
 
-	local create = rawget(smokeClass, "Create") :: any
-
-	local internalCreate = debug.getupvalue(create, 4)
-	GrenadeController._internalSmokeVoxels = debug.getupvalue(internalCreate, 2) :: { [Part]: SmokeVoxelData }
+	local doesRayIntersect = rawget(smokeClass, "DoesRayIntersectActiveSmoke") :: any
+	local internalSmokeVoxels = if type(doesRayIntersect) == "function" then debug.getupvalue(doesRayIntersect, 1) else nil
+	if type(internalSmokeVoxels) ~= "table" then
+		local create = rawget(smokeClass, "Create") :: any
+		for _, value in next, debug.getupvalues(create) do
+			if type(value) == "function" then
+				local candidate = debug.getupvalue(value, 2)
+				if type(candidate) == "table" then
+					internalSmokeVoxels = candidate
+					break
+				end
+			end
+		end
+	end
+	GrenadeController._internalSmokeVoxels = (internalSmokeVoxels or {}) :: { [Part]: SmokeVoxelData }
 	hookFireCreate()
 	hookSmokeCreate()
 	hookProjectileRemotes()
