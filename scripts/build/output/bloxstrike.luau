@@ -70654,7 +70654,7 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'UserInputService'))), a.e(), a.J(), a.c()
+            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'ReplicatedStorage'))), (cloneref(game.GetService(game, 'UserInputService'))), a.J(), a.c()
 
             a.cy()
 
@@ -70663,6 +70663,24 @@ do
             af.__index = af
 
             setmetatable(af, {__index = ac})
+
+            local function resolveMovementModules()
+                local ag, ah = aa.FindFirstChild(aa, 'Classes'), aa.FindFirstChild(aa, 'MovementV2')
+                local ai, aj = ag and ag.FindFirstChild(ag, 'Character'), ah and ah.FindFirstChild(ah, 'Buttons')
+
+                if not ai or not aj then
+                    return nil, nil
+                end
+
+                local ak, al = pcall(require, ai)
+                local am, an = pcall(require, aj)
+
+                if not ak or not am then
+                    return nil, nil
+                end
+
+                return al, an
+            end
 
             function af.new(ag)
                 local ah = (ac.new())
@@ -70687,7 +70705,10 @@ do
 
                 ah._chance = 100
                 ah._wasGrounded = false
+                ah._onGround = false
                 ah._pendingDecision = nil
+                ah._sampleFn = nil
+                ah._presentFn = nil
 
                 ah.Track(ah, ag.Get(ag, 'autoBhop'):OnChange(function(ak)
                     ah._setEnabled(ah, ak)
@@ -70699,48 +70720,80 @@ do
                 return ah
             end
             function af._setEnabled(ag, ah)
-                local ai = ab.GetModule'Movement'
-                local aj = (rawget(ai, 'MoveFunction'))
-
                 if ah then
-                    local ak
+                    local ai, aj = resolveMovementModules()
 
-                    ak = ad.add(aj, LPH_NO_VIRTUALIZE(function(al, am, an, ...)
-                        local ao = ak(al, am, an, ...)
+                    if not ai or not aj then
+                        return
+                    end
 
-                        if not aa.IsKeyDown(aa, Enum.KeyCode.Space) then
+                    local ak, al = rawget(ai, 'SampleInput'), rawget(ai, 'Present')
+
+                    if type(ak) ~= 'function' or type(al) ~= 'function' then
+                        return
+                    end
+
+                    ag._sampleFn = ak
+                    ag._presentFn = al
+
+                    local am
+
+                    am = ad.add(al, LPH_NO_VIRTUALIZE(function(an, ao, ...)
+                        if type(ao) == 'table' then
+                            ag._onGround = ao.OnGround == true
+                        end
+
+                        return am(an, ao, ...)
+                    end))
+
+                    local an
+
+                    an = ad.add(ak, LPH_NO_VIRTUALIZE(function(ao, ...)
+                        local ap = an(ao, ...)
+
+                        if type(ap) ~= 'table' then
+                            return ap
+                        end
+                        if not ab.IsKeyDown(ab, Enum.KeyCode.Space) then
                             ag._pendingDecision = nil
                             ag._wasGrounded = false
 
-                            return ao
+                            return ap
                         end
-
-                        local ap = al.CheckGroundContact(al)
-
-                        if ap then
+                        if ag._onGround then
                             if not ag._wasGrounded then
                                 ag._pendingDecision = math.random(1, 100) <= ag._chance
                             end
-                            if ag._pendingDecision then
-                                rawset(al, 'IsJumpRequested', true)
-                                al.Jump(al)
-                            end
+
+                            ap.Buttons = aj.with(ap.Buttons, aj.Jump, ag._pendingDecision == true)
                         else
                             ag._pendingDecision = nil
+                            ap.Buttons = aj.with(ap.Buttons, aj.Jump, false)
                         end
 
-                        ag._wasGrounded = ap
+                        ag._wasGrounded = ag._onGround
 
-                        return ao
+                        return ap
                     end))
                 else
-                    ad.restore(aj)
+                    if ag._sampleFn then
+                        ad.restore(ag._sampleFn)
+
+                        ag._sampleFn = nil
+                    end
+                    if ag._presentFn then
+                        ad.restore(ag._presentFn)
+
+                        ag._presentFn = nil
+                    end
 
                     ag._pendingDecision = nil
                     ag._wasGrounded = false
+                    ag._onGround = false
                 end
             end
             function af.Destroy(ag)
+                ag._setEnabled(ag, false)
                 ac.Destroy(ag)
             end
 
