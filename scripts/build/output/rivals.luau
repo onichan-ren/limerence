@@ -48157,11 +48157,8 @@ do
     do
         local function __modImpl()
             return LPH_JIT_MAX(function()
-                local aa, ab, ac, ad, ae = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.g(), a.t(), a.l()
-
-                a.n()
-
-                local ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az = a.cV(), a.c6(), a.cZ(), ac.atom, ac.peek, aa.LocalPlayer, 0.08, 1, utf8.char(0), utf8.char(2), utf8.char(3), 3, 8, utf8.char(0), utf8.char(1), utf8.char(2), utf8.char(3), utf8.char(4), utf8.char(5), utf8.char(1)
+                local aa, ab, ac, ad, ae, af, ag, ah, ai = (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.g(), a.t(), a.l(), a.n(), a.cV(), a.c6(), a.cZ()
+                local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au, av, aw, ax, ay, az = ac.atom, ac.peek, aa.LocalPlayer, 0.08, 1, utf8.char(0), utf8.char(2), utf8.char(3), 3, 8, utf8.char(0), utf8.char(1), utf8.char(2), utf8.char(3), utf8.char(4), utf8.char(5), utf8.char(1)
                 local aA, aB = {
                     item = aj(nil),
                     name = aj(nil),
@@ -48768,47 +48765,42 @@ do
                         return
                     end
 
-                    local aK
-
-                    aK = hookmetamethod(game, '__namecall', newcclosure(function(
-                        aL,
+                    af.addInstance(aJ)
+                    af.overrideMethod(aJ, 'FireServer', LPH_NO_VIRTUALIZE(function(
                         ...
                     )
-                        if aL == aJ and getnamecallmethod() == 'FireServer' then
-                            local aM, aN, aO, aP = (select(1, ...)), (select(2, 
-...)), aG(), aH()
-                            local aQ = aO == nil or aM == aO
+                        local aK, aL, aM, aN = (select(1, ...)), (select(2, ...)), aG(), aH()
+                        local aO = aM == nil or aK == aM
 
-                            if aQ and (aA._selfFiring or not checkcaller()) then
-                                local aR = aA._shotManipulators
+                        if aO and (aA._selfFiring or not checkcaller()) then
+                            local aP = aA._shotManipulators
 
-                                aB(aR, aN)
-                            end
-
-                            local aR = aP ~= nil and aM == aP
-
-                            if aQ or aR then
-                                task.defer(function(aS, aT)
-                                    if aP ~= nil and aS == aP then
-                                        aA.reloading(true)
-
-                                        return
-                                    end
-                                    if aO == nil or aS == aO then
-                                        aA.reloading(false)
-
-                                        local aU = aI(aT)
-
-                                        aA.shotFired:Fire(aU)
-                                    end
-                                end, aM, aN)
-                            end
+                            aB(aP, aL)
                         end
 
-                        return aK(aL, ...)
+                        local aP = aN ~= nil and aK == aN
+
+                        if aO or aP then
+                            task.defer(function(aQ, aR)
+                                if aN ~= nil and aQ == aN then
+                                    aA.reloading(true)
+
+                                    return
+                                end
+                                if aM == nil or aQ == aM then
+                                    aA.reloading(false)
+
+                                    local aS = aI(aR)
+
+                                    aA.shotFired:Fire(aS)
+                                end
+                            end, aK, aL)
+                        end
+
+                        return ...
                     end))
+
                     aA._useItemRemote = aJ
-                    aA._origNamecall = aK
                 end
                 local function installCrosshairVisualHook()
                     local aJ = ag.GetModule'Crosshair'
@@ -49408,14 +49400,11 @@ do
 
                         aA._gunShootEffectHook = nil
                     end
-                    if aA._origNamecall then
-                        hookmetamethod(game, '__namecall', aA._origNamecall)
+                    if aA._useItemRemote then
+                        af.restoreInstance(aA._useItemRemote)
 
-                        aA._origNamecall = nil
+                        aA._useItemRemote = nil
                     end
-
-                    aA._useItemRemote = nil
-
                     if aA._itemJanitor then
                         aA._itemJanitor:Destroy()
 

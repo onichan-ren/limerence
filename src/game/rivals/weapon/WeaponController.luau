@@ -566,42 +566,39 @@ return LPH_JIT_MAX(function()
 			return
 		end
 
-		local origNamecall: any = nil
-		origNamecall = hookmetamethod(
-			game,
-			"__namecall",
-			newcclosure(function(self: any, ...: any): ...any
-				if self == useItem and getnamecallmethod() == "FireServer" then
-					local action = (select(1, ...))
-					local payload = (select(2, ...))
-					local shootEnum = getShootEnum()
-					local reloadEnum = getReloadEnum()
-					local isShoot = shootEnum == nil or action == shootEnum
-					if isShoot and (WeaponController._selfFiring or not checkcaller()) then
-						local manipulators = WeaponController._shotManipulators
-						runShotManipulators(manipulators, payload)
-					end
-					local isReload = reloadEnum ~= nil and action == reloadEnum
-					if isShoot or isReload then
-						task.defer(function(deferredAction: any, deferredPayload: any)
-							if reloadEnum ~= nil and deferredAction == reloadEnum then
-								WeaponController.reloading(true)
-								return
-							end
-							if shootEnum == nil or deferredAction == shootEnum then
-								WeaponController.reloading(false)
-								local hits = processUseItemPayload(deferredPayload)
-								WeaponController.shotFired:Fire(hits)
-							end
-						end, action, payload)
-					end
+		hook.addInstance(useItem)
+		hook.overrideMethod(
+			useItem,
+			"FireServer",
+			LPH_NO_VIRTUALIZE(function(...)
+				local action = (select(1, ...))
+				local payload = (select(2, ...))
+				local shootEnum = getShootEnum()
+				local reloadEnum = getReloadEnum()
+				local isShoot = shootEnum == nil or action == shootEnum
+				if isShoot and (WeaponController._selfFiring or not checkcaller()) then
+					local manipulators = WeaponController._shotManipulators
+					runShotManipulators(manipulators, payload)
 				end
-				return origNamecall(self, ...)
+				local isReload = reloadEnum ~= nil and action == reloadEnum
+				if isShoot or isReload then
+					task.defer(function(deferredAction: any, deferredPayload: any)
+						if reloadEnum ~= nil and deferredAction == reloadEnum then
+							WeaponController.reloading(true)
+							return
+						end
+						if shootEnum == nil or deferredAction == shootEnum then
+							WeaponController.reloading(false)
+							local hits = processUseItemPayload(deferredPayload)
+							WeaponController.shotFired:Fire(hits)
+						end
+					end, action, payload)
+				end
+				return ...
 			end)
 		)
 
 		WeaponController._useItemRemote = useItem
-		WeaponController._origNamecall = origNamecall
 	end
 
 	local function installCrosshairVisualHook(): ()
@@ -1119,11 +1116,10 @@ return LPH_JIT_MAX(function()
 			rawset(h[1], h[2], h[3])
 			WeaponController._gunShootEffectHook = nil
 		end
-		if WeaponController._origNamecall then
-			hookmetamethod(game, "__namecall", WeaponController._origNamecall)
-			WeaponController._origNamecall = nil
+		if WeaponController._useItemRemote then
+			hook.restoreInstance(WeaponController._useItemRemote)
+			WeaponController._useItemRemote = nil
 		end
-		WeaponController._useItemRemote = nil
 		if WeaponController._itemJanitor then
 			WeaponController._itemJanitor:Destroy()
 			WeaponController._itemJanitor = nil
