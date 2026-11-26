@@ -22,7 +22,7 @@ function ReverseTime.new(link: gameUi.Linker): ReverseTime
 
 	link:Toggle("reverseTime", "Reverse Time", false):SetTip({
 		title = "Reverse Time",
-		body = "Reverses outgoing network timestamps by 1/60s every 1/60s.",
+		body = "Reverses repupdate time by 1/60s every 1/60s.",
 	})
 
 	self:Track(link:Get("reverseTime"):OnChange(function(enabled: boolean)
@@ -45,21 +45,28 @@ function ReverseTime._setEnabled(self: ReverseTime, enabled: boolean): ()
 		janitor:Add(
 			RunService.Heartbeat:Connect(LPH_NO_VIRTUALIZE(function(dt: number): ()
 				self._acc += dt
-				if self._acc < STEP then
-					return
-				end
 				while self._acc >= STEP do
 					self._acc -= STEP
 					self._offset -= STEP
 				end
-				NetworkController.SetCurrentAddition(self._offset)
 			end)),
 			"Disconnect"
 		)
+
+		local unhook = NetworkController.HookOutbound(
+			"repupdate",
+			LPH_NO_VIRTUALIZE(function(position: any, angles: any, angles2: any, time: any): (boolean, { any }?)
+				if type(time) == "number" and self._offset ~= 0 then
+					return false, { position, angles, angles2, time + self._offset }
+				end
+				return true
+			end)
+		)
+		janitor:Add(unhook, true)
+
 		janitor:Add(function(): ()
 			self._offset = 0
 			self._acc = 0
-			NetworkController.SetCurrentAddition(0)
 		end, true)
 	else
 		local janitor = self._activeJanitor

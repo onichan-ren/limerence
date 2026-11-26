@@ -86559,7 +86559,7 @@ do
 
                 ah.Toggle(ah, 'reverseTime', 'Reverse Time', false):SetTip{
                     title = 'Reverse Time',
-                    body = 'Reverses outgoing network timestamps by 1/60s every 1/60s.',
+                    body = 'Reverses repupdate time by 1/60s every 1/60s.',
                 }
                 ai.Track(ai, ah.Get(ah, 'reverseTime'):OnChange(function(aj)
                     ai._setEnabled(ai, aj)
@@ -86584,22 +86584,34 @@ do
                     )
                         ah._acc += ak
 
-                        if ah._acc < af then
-                            return
-                        end
-
                         while ah._acc >= af do
                             ah._acc -= af
                             ah._offset -= af
                         end
-
-                        ac.SetCurrentAddition(ah._offset)
                     end)), 'Disconnect')
+
+                    local ak = ac.HookOutbound('repupdate', LPH_NO_VIRTUALIZE(function(
+                        ak,
+                        al,
+                        am,
+                        an
+                    )
+                        if type(an) == 'number' and ah._offset ~= 0 then
+                            return false, {
+                                ak,
+                                al,
+                                am,
+                                an + ah._offset,
+                            }
+                        end
+
+                        return true
+                    end))
+
+                    aj.Add(aj, ak, true)
                     aj.Add(aj, function()
                         ah._offset = 0
                         ah._acc = 0
-
-                        ac.SetCurrentAddition(0)
                     end, true)
                 else
                     local aj = ah._activeJanitor
