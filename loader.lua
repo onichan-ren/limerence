@@ -15,10 +15,10 @@ local BASE_URL = "https://raw.githubusercontent.com/onichan-ren/limerence/main/s
 
 local VALID_TARGETS = {
 	ar2 = true,
-	bedwars = true,
+	--bedwars = false,
 	bloxstrike = true,
-	dahood = true,
-	mvsd = true,
+	--dahood = false,
+	--mvsd = false,
 	op1 = true,
 	overkill = true,
 	pf = true,
@@ -27,18 +27,19 @@ local VALID_TARGETS = {
 }
 
 local DEBUG_TARGETS = {
-	ar2 = true,
-	bloxstrike = true,
-	mvsd = true,
-	op1 = true,
-	overkill = true,
-	pf = true,
-	rivals = true,
-	universal = true,
+	--ar2 = true,
+	--bloxstrike = true,
+	--mvsd = true,
+	--op1 = true,
+	--overkill = true,
+	--pf = true,
+	--rivals = true,
+	--universal = true,
 }
 
 local ACTOR_TARGETS = {
 	pf = true,
+	op1 = true
 }
 
 local PLACE_TARGETS = {
@@ -49,7 +50,7 @@ local PLACE_TARGETS = {
 	[114234929420007] = "bloxstrike",
 	[2788229376] = "dahood",
 	[12355337193] = "mvsd",
-	[17392399335] = "op1",
+	[72920620366355] = "op1",
 	[124842176624983] = "overkill",
 	[292439477] = "pf",
 	[17625359962] = "rivals",
@@ -59,6 +60,7 @@ local GAME_TARGETS = {
 	[2619619496] = "bedwars",
 	[113491250] = "pf",
 	[6035872082] = "rivals",
+	[72920620366355] = "op1"
 }
 
 local function getGlobal(key)
