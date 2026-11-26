@@ -160,7 +160,7 @@ do
     do
         local function __modImpl()
             return {
-                version = '2',
+                version = '3',
                 url = 
 "https://raw.githubusercontent.com/onichan-ren/limerence/main/scripts/build/output/packages.luau",
             }
@@ -185,7 +185,7 @@ do
             local d, e, f, g = string.format('%s/packages-v%s.luau', tostring(c), tostring(b.version)), '@limerence_pkgs', {}, nil
 
             local function fetchSource()
-                local h = game.HttpGet(game, b.url)
+                local h = game.HttpGet(game, b.url .. '?t=' .. tostring(os.time()))
 
                 if not h or #h == 0 then
                     error('pkgBootstrap: response body is empty)')
@@ -917,13 +917,20 @@ do
             end
 
             d.addInstance = function(h)
-                if f[h] then
+                if not h or f[h] then
+                    return
+                end
+
+                local i = (getrawmetatable(h))
+
+                if not i then
+                    c.warn(c, 'missing metatable for instance:', h)
+
                     return
                 end
 
                 c.debug(c, 'hooking instance:', h)
 
-                local i = (getrawmetatable(h))
                 local j, k, l, m, n, o, p = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}
                 local q = {
                     originalProperties = n,
@@ -44941,7 +44948,7 @@ do
             local aa = {
                 ['apocalypse rising 2'] = {},
                 bedwars = {},
-                bloxstrike = {[114234929420007] = 9894},
+                bloxstrike = {[114234929420007] = 9965},
                 ['da hood'] = {},
                 ['murderers vs sheriffs duels'] = {},
                 ['operation one'] = {},
@@ -53228,6 +53235,7 @@ do
             local ag, ah = ad.peek, {
                 _janitor = nil,
                 _players = (ad.atom{}),
+                _byProxy = {},
                 _class = nil,
                 playerAdded = (af.new()),
                 playerRemoving = (af.new()),
@@ -53259,6 +53267,43 @@ do
             function ah.SetPlayerClass(ai)
                 ah._class = ai
             end
+            function ah.AddEntity(ai, aj)
+                if ag(ah._players)[ai] then
+                    return
+                end
+                if type(aj.GetPlayer) == 'function' then
+                    local ak = aj.GetPlayer(aj)
+
+                    if ak ~= nil then
+                        ah._byProxy[ak] = aj
+                    end
+                end
+
+                ah._players(ae.Dictionary.set(ag(ah._players), ai, aj))
+                ah.playerAdded:Fire(aj)
+            end
+            function ah.RemoveEntity(ai)
+                local aj = ag(ah._players)
+                local ak = aj[ai]
+
+                if not ak then
+                    return
+                end
+                if type(ak.GetPlayer) == 'function' then
+                    local al = ak.GetPlayer(ak)
+
+                    if al ~= nil then
+                        ah._byProxy[al] = nil
+                    end
+                end
+
+                ah._players(ae.Dictionary.removeKey(aj, ai))
+                ah.playerRemoving:Fire(ak)
+
+                if type(ak.Destroy) == 'function' then
+                    ak.Destroy(ak)
+                end
+            end
             function ah.new()
                 local ai = ac.new()
 
@@ -53281,13 +53326,14 @@ do
                 return ag(ah._players)
             end
             function ah.Get(ai)
-                return ag(ah._players)[ai]
+                return ag(ah._players)[ai] or ah._byProxy[ai]
             end
             function ah.Destroy()
                 for ai, aj in next, ag(ah._players)do
                     aj.Destroy(aj)
                 end
 
+                table.clear(ah._byProxy)
                 ah._players{}
 
                 local ai = ah._janitor
@@ -60108,9 +60154,9 @@ do
                         end
 
                         local H, I, J = a2[E] == true, a3[E] == true, a1[E]
-                        local K, L, M = (J and J.alpha or 0), aB(F.alive), false
+                        local K, L, M = (J and J.alpha or 0), aB(F.alive), (F).culled ~= nil and aB((F).culled) == true
 
-                        if a5 and (a6 or not (F).isBot) then
+                        if not M and a5 and (a6 or not (F).isBot) then
                             M = a5(F) == true
                         end
                         if K <= aN and not H and not I then
@@ -64517,7 +64563,7 @@ do
                     end
 
                     local function processTarget(bk)
-                        if not av(bk.alive) then
+                        if not av(bk.alive) or (bk.culled and av(bk.culled)) then
                             return
                         end
 
