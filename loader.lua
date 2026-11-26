@@ -86,7 +86,7 @@ local target = resolveTarget()
 local useDebug = getGlobal("LIMERENCE_DEBUG") == true and DEBUG_TARGETS[target]
 local fileName = target .. (if useDebug then ".debug.luau" else ".luau")
 
-local source = fetch(BASE_URL .. fileName)
+local source = fetch(BASE_URL .. fileName .. "?t=" .. tostring(os.time()))
 
 if ACTOR_TARGETS[target] and type(getactors) == "function" and type(run_on_actor) == "function" then
 	local alreadyInActor = type(isactor) == "function" and isactor()
