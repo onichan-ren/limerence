@@ -121,6 +121,7 @@ hook.addInstance = function(target: Instance)
 
 	local overriddenProperties = {}
 	local overriddenMethods = {}
+	local replacedMethods = {}
 	local originalProperties = {}
 	local blockedProperties = {}
 	local spoofedProperties = {}
@@ -129,6 +130,7 @@ hook.addInstance = function(target: Instance)
 		blockedProperties = blockedProperties,
 		overriddenProperties = overriddenProperties,
 		overriddenMethods = overriddenMethods,
+		replacedMethods = replacedMethods,
 		spoofedProperties = spoofedProperties,
 		originalMetamethod = originalMetamethod,
 		originalIndex = originalIndex,
@@ -137,6 +139,13 @@ hook.addInstance = function(target: Instance)
 
 	local newMetamethod = {
 		__index = newcclosure(LPH_NO_VIRTUALIZE(function(self, key)
+			local replaced = replacedMethods[key]
+			if replaced then
+				local originalMethod = originalIndex(self, key)
+				return newcclosure(LPH_NO_VIRTUALIZE(function(s, ...)
+					return replaced(originalMethod, s, ...)
+				end))
+			end
 			if not checkcaller() then
 				local spoofed = spoofedProperties[key]
 				if spoofed ~= nil then
@@ -185,10 +194,18 @@ hook.addInstance = function(target: Instance)
 			return originalNewindex(self, key, value)
 		end)),
 		__namecall = newcclosure(LPH_NO_VIRTUALIZE(function(self, ...)
+			local method = getnamecallmethod()
+			local replaced = replacedMethods[method]
+			if replaced then
+				local original = function(s, ...)
+					setnamecallmethod(method)
+					return originalNamecall(s, ...)
+				end
+				return replaced(original, self, ...)
+			end
 			if next(overriddenMethods) == nil then
 				return originalNamecall(self, ...)
 			end
-			local method = getnamecallmethod()
 			local callback = overriddenMethods[method]
 			if callback then
 				setthreadidentity(8)
@@ -241,6 +258,21 @@ function hook.overrideMethod(target: Instance, method: string, callback: (...any
 	instanceHook.overriddenMethods[method] = callback
 end
 
+function hook.replaceMethod(
+	target: Instance,
+	method: string,
+	callback: (original: (...any) -> ...any, self: any, ...any) -> ...any
+): ()
+	local instanceHook = instanceHooks[target]
+	if not instanceHook then
+		return
+	end
+
+	logger:debug("replace method:", method, "on instance:", target)
+
+	instanceHook.replacedMethods[method] = callback
+end
+
 function hook.restoreMethod(target: Instance, method: string): ()
 	local instanceHook = instanceHooks[target]
 	if not instanceHook then
@@ -250,6 +282,7 @@ function hook.restoreMethod(target: Instance, method: string): ()
 	logger:debug("restoring method:", method, "on instance:", target)
 
 	instanceHook.overriddenMethods[method] = nil
+	instanceHook.replacedMethods[method] = nil
 end
 
 function hook.unblockProperty(target: any, property: string): ()

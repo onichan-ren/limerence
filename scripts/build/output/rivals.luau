@@ -931,125 +931,146 @@ do
 
                 c.debug(c, 'hooking instance:', h)
 
-                local j, k, l, m, n, o, p, q = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}, {}
-                local r = {
-                    originalProperties = o,
-                    blockedProperties = p,
+                local j, k, l, m, n, o, p, q, r = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}, {}, {}
+                local s = {
+                    originalProperties = p,
+                    blockedProperties = q,
                     overriddenProperties = m,
                     overriddenMethods = n,
-                    spoofedProperties = q,
+                    replacedMethods = o,
+                    spoofedProperties = r,
                     originalMetamethod = i,
                     originalIndex = l,
                 }
 
-                f[h] = r
+                f[h] = s
 
-                local s = {
-                    __index = newcclosure(LPH_NO_VIRTUALIZE(function(s, t)
+                local t = {
+                    __index = newcclosure(LPH_NO_VIRTUALIZE(function(t, u)
+                        local v = o[u]
+
+                        if v then
+                            local w = l(t, u)
+
+                            return newcclosure(LPH_NO_VIRTUALIZE(function(x, ...)
+                                return v(w, x, ...)
+                            end))
+                        end
                         if not checkcaller() then
-                            local u = q[t]
+                            local w = r[u]
 
-                            if u ~= nil then
-                                return u
+                            if w ~= nil then
+                                return w
                             end
-                            if p[t] or m[t] then
-                                return o[t]
+                            if q[u] or m[u] then
+                                return p[u]
                             end
 
-                            local v = n[t]
+                            local x = n[u]
 
-                            if v then
-                                local w = l(s, t)
+                            if x then
+                                local y = l(t, u)
 
                                 return newcclosure(LPH_NO_VIRTUALIZE(function(
-                                    x,
+                                    z,
                                     ...
                                 )
                                     setthreadidentity(8)
 
-                                    local y = table.pack(v(...))
+                                    local A = table.pack(x(...))
 
                                     setthreadidentity(2)
 
-                                    if y.n == 0 then
+                                    if A.n == 0 then
                                         return
                                     end
 
-                                    return w(x, table.unpack(y, 1, y.n))
+                                    return y(z, table.unpack(A, 1, A.n))
                                 end))
                             end
                         end
 
-                        return l(s, t)
+                        return l(t, u)
                     end)),
                     __newindex = newcclosure(LPH_NO_VIRTUALIZE(function(
-                        s,
                         t,
-                        u
+                        u,
+                        v
                     )
                         if not checkcaller() then
-                            if p[t] then
-                                o[t] = u
+                            if q[u] then
+                                p[u] = v
 
                                 return
                             end
 
-                            local v = m[t]
+                            local w = m[u]
 
-                            if v then
-                                o[t] = u
+                            if w then
+                                p[u] = v
 
                                 setthreadidentity(8)
 
-                                local w = v(u, (getcallingscript()))
+                                local x = w(v, (getcallingscript()))
 
                                 setthreadidentity(2)
 
-                                if w == -1 then
+                                if x == -1 then
                                     return
                                 end
 
-                                return k(s, t, w)
+                                return k(t, u, x)
                             end
                         end
 
-                        return k(s, t, u)
+                        return k(t, u, v)
                     end)),
-                    __namecall = newcclosure(LPH_NO_VIRTUALIZE(function(s, ...)
+                    __namecall = newcclosure(LPH_NO_VIRTUALIZE(function(t, ...)
+                        local u = getnamecallmethod()
+                        local v = o[u]
+
+                        if v then
+                            local w = function(w, ...)
+                                setnamecallmethod(u)
+
+                                return j(w, ...)
+                            end
+
+                            return v(w, t, ...)
+                        end
                         if next(n) == nil then
-                            return j(s, ...)
+                            return j(t, ...)
                         end
 
-                        local t = getnamecallmethod()
-                        local u = n[t]
+                        local w = n[u]
 
-                        if u then
+                        if w then
                             setthreadidentity(8)
 
-                            local v = table.pack(u(...))
+                            local x = table.pack(w(...))
 
                             setthreadidentity(2)
 
-                            if v.n == 0 then
+                            if x.n == 0 then
                                 return
                             end
 
-                            setnamecallmethod(t)
+                            setnamecallmethod(u)
 
-                            return j(s, table.unpack(v, 1, v.n))
+                            return j(t, table.unpack(x, 1, x.n))
                         end
 
-                        return j(s, ...)
+                        return j(t, ...)
                     end)),
                 }
 
-                for t, u in next, i do
-                    if not s[t] then
-                        s[t] = u
+                for u, v in next, i do
+                    if not t[u] then
+                        t[u] = v
                     end
                 end
 
-                setrawmetatable(h, s)
+                setrawmetatable(h, t)
             end
 
             function d.blockProperty(h, i)
@@ -1082,6 +1103,17 @@ do
 
                 k.overriddenMethods[i] = j
             end
+            function d.replaceMethod(h, i, j)
+                local k = f[h]
+
+                if not k then
+                    return
+                end
+
+                c.debug(c, 'replace method:', i, 'on instance:', h)
+
+                k.replacedMethods[i] = j
+            end
             function d.restoreMethod(h, i)
                 local j = f[h]
 
@@ -1092,6 +1124,7 @@ do
                 c.debug(c, 'restoring method:', i, 'on instance:', h)
 
                 j.overriddenMethods[i] = nil
+                j.replacedMethods[i] = nil
             end
             function d.unblockProperty(h, i)
                 local j = f[h]
@@ -66404,35 +66437,35 @@ do
 
             aU.manipLevel = a4
 
-            local bc, bd, be = nil, nil, RaycastParams.new()
+            local bc, bd = nil, RaycastParams.new()
 
-            be.FilterType = Enum.RaycastFilterType.Include
-            be.IgnoreWater = true
-            be.RespectCanCollide = false
+            bd.FilterType = Enum.RaycastFilterType.Include
+            bd.IgnoreWater = true
+            bd.RespectCanCollide = false
 
-            local bf = {}
-            local bg, bh = function()
-                for bg = 2, 4 do
-                    local bh = debug.info(bg, 's')
+            local be = {}
+            local bf, bg = function()
+                for bf = 2, 7 do
+                    local bg = debug.info(bf, 's')
 
-                    if not bh then
+                    if not bg then
                         break
                     end
 
-                    local bi = bf[bh]
+                    local bh = be[bg]
 
-                    if bi == nil then
-                        bi = bh.find(bh, 'Item') ~= nil
-                        bf[bh] = bi
+                    if bh == nil then
+                        bh = bg.find(bg, 'Item') ~= nil
+                        be[bg] = bh
                     end
-                    if bi then
+                    if bh then
                         return true
                     end
                 end
 
                 return false
-            end, function(bh)
-                return Ray.new(bh, (aW.position - bh).Unit)
+            end, function(bg)
+                return Ray.new(bg, (aW.position - bg).Unit)
             end
 
             local function install()
@@ -66440,461 +66473,444 @@ do
                     return
                 end
 
-                local bi = aa.CurrentCamera
+                local bh = aa.CurrentCamera
 
-                if not bi then
+                if not bh then
                     return
                 end
 
-                local bj, bk, bl, bm = bi.ViewportPointToRay, bi.ScreenPointToRay, LPH_NO_VIRTUALIZE(function(
-                    bl,
-                    ...
-                )
-                    if aV and aW and (ae._selfFiring or not checkcaller()) and bg() then
+                local bi = LPH_NO_VIRTUALIZE(function(bi, bj, ...)
+                    if aV and aW and (ae._selfFiring or not checkcaller()) and bf() then
                         if aX >= 100 or math.random(1, 100) <= aX then
-                            local bm = (bc)(bl, ...)
+                            local bk = bi(bj, ...)
 
-                            return bh(bm.Origin)
+                            return bg(bk.Origin)
                         end
                     end
 
-                    return (bc)(bl, ...)
-                end), LPH_NO_VIRTUALIZE(function(bm, ...)
-                    if aV and aW and (ae._selfFiring or not checkcaller()) and bg() then
-                        if aX >= 100 or math.random(1, 100) <= aX then
-                            local bn = (bd)(bm, ...)
-
-                            return bh(bn.Origin)
-                        end
-                    end
-
-                    return (bd)(bm, ...)
+                    return bi(bj, ...)
                 end)
 
-                bc = ad.oth(bj, bl)
-                bd = ad.oth(bk, bm)
+                ad.addInstance(bh)
+                ad.replaceMethod(bh, 'ViewportPointToRay', bi)
+                ad.replaceMethod(bh, 'ScreenPointToRay', bi)
+
+                bc = bh
                 aY = true
             end
             local function uninstall()
                 if not aY then
                     return
                 end
+                if bc then
+                    ad.restoreMethod(bc, 'ViewportPointToRay')
+                    ad.restoreMethod(bc, 'ScreenPointToRay')
 
-                local bi = aa.CurrentCamera
-
-                if bi then
-                    if bc then
-                        ad.restoreOth(bi.ViewportPointToRay)
-                    end
-                    if bd then
-                        ad.restoreOth(bi.ScreenPointToRay)
-                    end
+                    bc = nil
                 end
 
-                bc = nil
-                bd = nil
                 aY = false
             end
 
-            local bi, bj = LPH_NO_VIRTUALIZE(function(bi)
+            local bh, bi = LPH_NO_VIRTUALIZE(function(bh)
+                if type(bh) ~= 'table' then
+                    return nil
+                end
+
+                local bi, bj, bk = bh[aJ], bh[aK], bh[aL]
+
+                if type(bi) ~= 'number' or type(bj) ~= 'number' or type(bk) ~= 'number' then
+                    return nil
+                end
+
+                local bl, bm, bn, bo = CFrame.new(bi, bj, bk), bh[aM], bh[aN], bh[aO]
+
+                if type(bm) == 'number' and type(bn) == 'number' and type(bo) == 'number' then
+                    bl = bl * CFrame.fromOrientation(bm, bn, bo)
+                end
+
+                return bl
+            end), LPH_NO_VIRTUALIZE(function(bi, bj)
                 if type(bi) ~= 'table' then
-                    return nil
-                end
-
-                local bj, bk, bl = bi[aJ], bi[aK], bi[aL]
-
-                if type(bj) ~= 'number' or type(bk) ~= 'number' or type(bl) ~= 'number' then
-                    return nil
-                end
-
-                local bm, bn, bo, bp = CFrame.new(bj, bk, bl), bi[aM], bi[aN], bi[aO]
-
-                if type(bn) == 'number' and type(bo) == 'number' and type(bp) == 'number' then
-                    bm = bm * CFrame.fromOrientation(bn, bo, bp)
-                end
-
-                return bm
-            end), LPH_NO_VIRTUALIZE(function(bj, bk)
-                if type(bj) ~= 'table' then
                     return
                 end
 
-                local bl, bm, bn = bk.ToOrientation(bk)
+                local bk, bl, bm = bj.ToOrientation(bj)
 
-                bj[aJ] = bk.X
-                bj[aK] = bk.Y
-                bj[aL] = bk.Z
-                bj[aM] = bl
-                bj[aN] = bm
-                bj[aO] = bn
+                bi[aJ] = bj.X
+                bi[aK] = bj.Y
+                bi[aL] = bj.Z
+                bi[aM] = bk
+                bi[aN] = bl
+                bi[aO] = bm
             end)
 
             local function cameraCFrame()
-                local bk = aa.CurrentCamera
+                local bj = aa.CurrentCamera
 
-                return bk and bk.CFrame
+                return bj and bj.CFrame
             end
-            local function toCameraWorld(bk)
-                if bk == Vector3.zero then
+            local function toCameraWorld(bj)
+                if bj == Vector3.zero then
                     return Vector3.zero
                 end
 
-                local bl = cameraCFrame()
+                local bk = cameraCFrame()
 
-                if not bl then
+                if not bk then
                     return Vector3.zero
                 end
 
-                return bl.RightVector * bk.X + bl.UpVector * bk.Y + bl.LookVector * bk.Z
+                return bk.RightVector * bj.X + bk.UpVector * bj.Y + bk.LookVector * bj.Z
             end
             local function offsetWorld()
                 return toCameraWorld(a_)
             end
-            local function clearTo(bk, bl)
-                local bm = bl - bk
-                local bn = bm.Magnitude
+            local function clearTo(bj, bk)
+                local bl = bk - bj
+                local bm = bl.Magnitude
 
-                if bn < 1e-3 then
+                if bm < 1e-3 then
                     return true, nil
                 end
 
-                local bo = aa.Raycast(aa, bk, bm, be)
+                local bn = aa.Raycast(aa, bj, bl, bd)
 
-                if not bo then
+                if not bn then
                     return true, nil
                 end
-                if (bo.Position - bk).Magnitude >= bn - aj then
+                if (bn.Position - bj).Magnitude >= bm - aj then
                     return true, nil
                 end
 
-                return false, bo.Instance
+                return false, bn.Instance
             end
 
-            local bk, bl, bm = LPH_NO_VIRTUALIZE(function(bk, bl)
-                local bm = bl - bk
-                local bn = bm.Magnitude
+            local bj, bk, bl = LPH_NO_VIRTUALIZE(function(bj, bk)
+                local bl = bk - bj
+                local bm = bl.Magnitude
 
-                if bn <= aj + 1e-3 then
+                if bm <= aj + 1e-3 then
                     return false
                 end
 
-                local bo = bk + bm * ((bn - aj) / bn)
+                local bn = bj + bl * ((bm - aj) / bm)
 
-                return aw(bk, bo) ~= nil
-            end), LPH_NO_VIRTUALIZE(function(bl, bm, bn)
-                local bo = bl
+                return aw(bj, bn) ~= nil
+            end), LPH_NO_VIRTUALIZE(function(bk, bl, bm)
+                local bn = bk
 
-                for bp = 1, al do
+                for bo = 1, al do
                     if aE <= 1 then
                         return nil
                     end
 
-                    local bq = am - (bo - bl).Magnitude
+                    local bp = am - (bn - bk).Magnitude
 
-                    if bq <= 1e-3 then
+                    if bp <= 1e-3 then
                         return nil
                     end
 
                     aE -= 1
 
-                    local br = aa.Raycast(aa, bo, bm * bq, be)
+                    local bq = aa.Raycast(aa, bn, bl * bp, bd)
 
-                    if not br then
+                    if not bq then
                         return nil
                     end
 
-                    bo = br.Position + bm * ak
+                    bn = bq.Position + bl * ak
 
-                    if (bo - bl).Magnitude > am then
+                    if (bn - bk).Magnitude > am then
                         return nil
                     end
 
                     aE -= 1
 
-                    if clearTo(bo, bn) then
-                        return bo
+                    if clearTo(bn, bm) then
+                        return bn
                     end
                 end
 
                 return nil
-            end), LPH_NO_VIRTUALIZE(function(bm)
-                local bn = 1 - math.clamp(bm / am, 0, 1) * 0.85
+            end), LPH_NO_VIRTUALIZE(function(bl)
+                local bm = 1 - math.clamp(bl / am, 0, 1) * 0.85
 
-                if bn < 0.12 then
-                    bn = 0.12
+                if bm < 0.12 then
+                    bm = 0.12
                 end
 
-                return bn
+                return bm
             end)
-            local bn = LPH_NO_VIRTUALIZE(function(bn, bo)
-                local bp = af.get()
+            local bm = LPH_NO_VIRTUALIZE(function(bm, bn)
+                local bo = af.get()
 
-                if bp ~= aI then
-                    aI = bp
-                    be.FilterDescendantsInstances = bp
+                if bo ~= aI then
+                    aI = bo
+                    bd.FilterDescendantsInstances = bo
                 end
 
                 ag.reset()
 
-                local bq, br = clearTo(bn, bo)
+                local bp, bq = clearTo(bm, bn)
 
-                if bq then
+                if bp then
                     aC = -1
                     aF = nil
 
-                    return bn, 1
+                    return bm, 1
                 end
-                if br then
-                    ax(br)
+                if bq then
+                    ax(bq)
                 end
-                if aF and aG and os.clock() - aH < av and (bn - aF).Magnitude < au and (bo - aG).Magnitude < au then
+                if aF and aG and os.clock() - aH < av and (bm - aF).Magnitude < au and (bn - aG).Magnitude < au then
                     return nil, 0
                 end
 
-                local bs, bt = cameraCFrame(), bo - bn
-                local bu, bv = bt.Magnitude, ar
+                local br, bs = cameraCFrame(), bn - bm
+                local bt, bu = bs.Magnitude, ar
 
-                table.clear(bv)
+                table.clear(bu)
 
-                if bu > 1e-3 then
-                    bv[#bv + 1] = bt / bu
+                if bt > 1e-3 then
+                    bu[#bu + 1] = bs / bt
                 end
-                if bs then
-                    bv[#bv + 1] = bs.LookVector
-                    bv[#bv + 1] = -bs.LookVector
-                    bv[#bv + 1] = bs.RightVector
-                    bv[#bv + 1] = -bs.RightVector
-                    bv[#bv + 1] = bs.UpVector
-                end
-
-                for bw = 1, #aq do
-                    bv[#bv + 1] = aq[bw]
+                if br then
+                    bu[#bu + 1] = br.LookVector
+                    bu[#bu + 1] = -br.LookVector
+                    bu[#bu + 1] = br.RightVector
+                    bu[#bu + 1] = -br.RightVector
+                    bu[#bu + 1] = br.UpVector
                 end
 
-                local bw = #bv
+                for bv = 1, #aq do
+                    bu[#bu + 1] = aq[bv]
+                end
+
+                local bv = #bu
 
                 aE = as - 1
 
-                if aC >= 1 and aC <= bw then
-                    local bx = bn + bv[aC] * aD
+                if aC >= 1 and aC <= bv then
+                    local bw = bm + bu[aC] * aD
 
-                    if not bk(bx, bo) then
+                    if not bj(bw, bn) then
                         aE -= 1
 
-                        local by, bz = clearTo(bx, bo)
+                        local bx, by = clearTo(bw, bn)
 
-                        if by then
+                        if bx then
                             aF = nil
 
-                            return bx, bm(aD)
+                            return bw, bl(aD)
                         end
-                        if bz then
-                            ax(bz)
+                        if by then
+                            ax(by)
                         end
                     end
                 end
 
-                local bx = bo
+                local bw = bn
 
-                if bu > aj + 1e-3 then
-                    bx = bn + bt * ((bu - aj) / bu)
+                if bt > aj + 1e-3 then
+                    bw = bm + bs * ((bt - aj) / bt)
                 end
 
-                local by
+                local bx
 
-                if br and br.IsA(br, 'BasePart') and bu > 1e-3 then
-                    local bz, bB = bt / bu, bn - (br).Position
-                    local bC = bB - bz * bB.Dot(bB, bz)
-                    local bE = bC.Magnitude
+                if bq and bq.IsA(bq, 'BasePart') and bt > 1e-3 then
+                    local by, bz = bs / bt, bm - (bq).Position
+                    local bB = bz - by * bz.Dot(bz, by)
+                    local bC = bB.Magnitude
 
-                    if bE > 1e-3 then
-                        by = bC / bE
+                    if bC > 1e-3 then
+                        bx = bB / bC
                     end
                 end
 
-                local bz, bB = aB, ag.count() > 0
+                local by, bz = aB, ag.count() > 0
 
-                for bC = 1, bw do
-                    if bB then
-                        local bE = ay(bn, bv[bC], bx, 0, am, an)
+                for bB = 1, bv do
+                    if bz then
+                        local bC = ay(bm, bu[bB], bw, 0, am, an)
 
-                        if bE and bE <= 1e-3 then
-                            bE = an
+                        if bC and bC <= 1e-3 then
+                            bC = an
                         end
 
-                        bz[bC] = bE or math.huge
+                        by[bB] = bC or math.huge
                     else
-                        bz[bC] = an
+                        by[bB] = an
                     end
                 end
 
-                local bC = aA
+                local bB = aA
 
-                for bE = 1, bw do
-                    bC[bE] = by and bv[bE]:Dot(by) or 0
+                for bC = 1, bv do
+                    bB[bC] = bx and bu[bC]:Dot(bx) or 0
                 end
 
-                local bE = az
+                local bC = az
 
-                for bF = 1, bw do
-                    bE[bF] = bF
+                for bE = 1, bv do
+                    bC[bE] = bE
                 end
-                for bF = 2, bw do
-                    local bG = bE[bF]
-                    local bH, bI, bJ = bz[bG], bC[bG], bF - 1
+                for bE = 2, bv do
+                    local bF = bC[bE]
+                    local bG, bH, bI = by[bF], bB[bF], bE - 1
 
-                    while bJ >= 1 do
-                        local bK = bE[bJ]
-                        local c = bz[bK]
+                    while bI >= 1 do
+                        local bJ = bC[bI]
+                        local bK = by[bJ]
 
-                        if c > bH or (c == bH and bC[bK] < bI) then
-                            bE[bJ + 1] = bK
+                        if bK > bG or (bK == bG and bB[bJ] < bH) then
+                            bC[bI + 1] = bJ
 
-                            bJ -= 1
+                            bI -= 1
                         else
                             break
                         end
                     end
 
-                    bE[bJ + 1] = bG
+                    bC[bI + 1] = bF
                 end
-                for bF = 1, bw do
+                for bE = 1, bv do
                     if aE <= 0 then
                         break
                     end
 
-                    local bG = bE[bF]
-                    local bH = bz[bG]
+                    local bF = bC[bE]
+                    local bG = by[bF]
 
-                    if bH > am then
+                    if bG > am then
                         break
                     end
 
-                    local bI, bJ = bv[bG], 0
+                    local bH, bI = bu[bF], 0
 
-                    while bH <= am and bJ < at and aE > 0 do
-                        local bK = bn + bI * bH
+                    while bG <= am and bI < at and aE > 0 do
+                        local bJ = bm + bH * bG
 
-                        if bk(bK, bo) then
-                            local c = ay(bn, bI, bx, bH, am, an)
+                        if bj(bJ, bn) then
+                            local bK = ay(bm, bH, bw, bG, am, an)
 
-                            if not c or c > am then
+                            if not bK or bK > am then
                                 break
                             end
-                            if c > bH + 1e-3 then
-                                bH = c
+                            if bK > bG + 1e-3 then
+                                bG = bK
                             else
-                                bH += an
+                                bG += an
                             end
                         else
                             aE -= 1
-                            bJ += 1
+                            bI += 1
 
-                            local c, d = clearTo(bK, bo)
+                            local bK, c = clearTo(bJ, bn)
 
-                            if c then
-                                aC = bG
-                                aD = bH
+                            if bK then
+                                aC = bF
+                                aD = bG
                                 aF = nil
 
-                                return bK, bm(bH)
+                                return bJ, bl(bG)
                             end
-                            if d then
-                                ax(d)
+                            if c then
+                                ax(c)
                             end
 
-                            local e = ay(bn, bI, bx, bH, am, an)
+                            local d = ay(bm, bH, bw, bG, am, an)
 
-                            if e and e > bH + 1e-3 then
-                                bH = e
+                            if d and d > bG + 1e-3 then
+                                bG = d
                             else
-                                bH += an
+                                bG += an
                             end
                         end
                     end
                 end
-                for bF = 1, bw do
+                for bE = 1, bv do
                     if aE <= 1 then
                         break
                     end
 
-                    local bG = bl(bn, bv[bE[bF] ], bo)
+                    local bF = bk(bm, bu[bC[bE] ], bn)
 
-                    if bG then
+                    if bF then
                         aC = -1
                         aF = nil
 
-                        return bG, bm((bG - bn).Magnitude)
+                        return bF, bl((bF - bm).Magnitude)
                     end
                 end
 
                 aC = -1
-                aF = bn
-                aG = bo
+                aF = bm
+                aG = bn
                 aH = os.clock()
 
                 return nil, 0
             end)
-            local bo = LPH_NO_VIRTUALIZE(function(bo)
+            local bn = LPH_NO_VIRTUALIZE(function(bn)
+                if type(bn) ~= 'table' then
+                    return
+                end
+
+                local bo = bn[aP]
+
                 if type(bo) ~= 'table' then
                     return
                 end
 
-                local bp = bo[aP]
+                local bp = bh(bo[aQ])
 
-                if type(bp) ~= 'table' then
+                if not bp then
                     return
                 end
 
-                local bq = bi(bp[aQ])
+                local bq, br = aW and aW.part, aW and aW.position
+                local bs, bt = bq ~= nil and (bq).Parent ~= nil and br ~= nil, nil
 
-                if not bq then
-                    return
-                end
-
-                local br, bs = aW and aW.part, aW and aW.position
-                local bt, bu = br ~= nil and (br).Parent ~= nil and bs ~= nil, nil
-
-                if bt then
-                    bu = bs
+                if bs then
+                    bt = br
                 else
-                    local bv, bw = bp[aS], bi(bp[aT])
+                    local bu, bv = bo[aS], bh(bo[aT])
 
-                    if typeof(bv) == 'Instance' and bv.IsA(bv, 'BasePart') and bw then
-                        bu = ((bv).CFrame * bw).Position
+                    if typeof(bu) == 'Instance' and bu.IsA(bu, 'BasePart') and bv then
+                        bt = ((bu).CFrame * bv).Position
                     else
-                        bu = bq.Position + bq.LookVector * ai
+                        bt = bp.Position + bp.LookVector * ai
                     end
                 end
 
-                local bv = bq.Position + offsetWorld()
-                local bw = bn(bv, bu)
-                local bx = bw or bv
+                local bu = bp.Position + offsetWorld()
+                local bv = bm(bu, bt)
+                local bw = bv or bu
 
-                if (bx - bu).Magnitude < 1e-3 then
+                if (bw - bt).Magnitude < 1e-3 then
                     return
                 end
-                if bt then
-                    bp[aS] = br
+                if bs then
+                    bo[aS] = bq
 
-                    if type(bp[aT]) ~= 'table' then
-                        bp[aT] = {}
+                    if type(bo[aT]) ~= 'table' then
+                        bo[aT] = {}
                     end
 
-                    bj(bp[aT], (br).CFrame:ToObjectSpace(CFrame.new(bu)))
+                    bi(bo[aT], (bq).CFrame:ToObjectSpace(CFrame.new(bt)))
                 end
 
-                a1 = bx
+                a1 = bw
                 a2 = os.clock()
 
-                local by = CFrame.lookAt(bx, bu)
+                local bx = CFrame.lookAt(bw, bt)
 
-                bj(bp[aQ], by)
-                bj(bp[aR], by)
+                bi(bo[aQ], bx)
+                bi(bo[aR], bx)
             end)
-            local bp = LPH_NO_VIRTUALIZE(function(bp)
+            local bo = LPH_NO_VIRTUALIZE(function(bo)
                 if aZ then
-                    bo(bp)
+                    bn(bo)
                 end
             end)
 
@@ -66903,7 +66919,7 @@ do
                     return
                 end
 
-                ae.AddShotManipulator(bp)
+                ae.AddShotManipulator(bo)
 
                 a0 = true
             end
@@ -66912,19 +66928,19 @@ do
                     return
                 end
 
-                ae.RemoveShotManipulator(bp)
+                ae.RemoveShotManipulator(bo)
 
                 a0 = false
             end
 
-            function aU.setActive(bq)
-                if aV == bq then
+            function aU.setActive(bp)
+                if aV == bp then
                     return
                 end
 
-                aV = bq
+                aV = bp
 
-                if bq then
+                if bp then
                     install()
                 else
                     aW = nil
@@ -66934,32 +66950,32 @@ do
                     end
                 end
             end
-            function aU.setTarget(bq)
-                aW = bq
+            function aU.setTarget(bp)
+                aW = bp
             end
-            function aU.setChance(bq)
-                aX = math.clamp(bq, 0, 100)
+            function aU.setChance(bp)
+                aX = math.clamp(bp, 0, 100)
             end
-            function aU.setManipulationActive(bq)
-                if aZ == bq then
+            function aU.setManipulationActive(bp)
+                if aZ == bp then
                     return
                 end
 
-                aZ = bq
+                aZ = bp
 
-                if bq then
+                if bp then
                     installPacketHook()
                 else
                     uninstallPacketHook()
                 end
             end
-            function aU.solveShotOrigin(bq, br)
-                local bs = bn(bq, br)
+            function aU.solveShotOrigin(bp, bq)
+                local br = bm(bp, bq)
 
-                return bs
+                return br
             end
-            function aU.setOriginOffset(bq)
-                a_ = bq
+            function aU.setOriginOffset(bp)
+                a_ = bp
             end
             function aU.getSpoofedOrigin()
                 if a1 and os.clock() - a2 <= a3 then
@@ -66969,7 +66985,7 @@ do
                 return nil
             end
 
-            local bq = LPH_NO_VIRTUALIZE(function()
+            local bp = LPH_NO_VIRTUALIZE(function()
                 if not (aZ and aW and aW.position) then
                     if ah(a4) ~= nil then
                         a4(nil)
@@ -66978,23 +66994,23 @@ do
                     return
                 end
 
-                local bq = os.clock()
+                local bp = os.clock()
 
-                if bq - a7 < a8 then
+                if bp - a7 < a8 then
                     return
                 end
 
-                a7 = bq
+                a7 = bp
 
-                local br = aa.CurrentCamera
+                local bq = aa.CurrentCamera
 
-                if not br then
+                if not bq then
                     return
                 end
 
-                local bs, bt = br.CFrame.Position + offsetWorld(), aW.position
+                local br, bs = bq.CFrame.Position + offsetWorld(), aW.position
 
-                if a9 and b and ba and (bs - a9).Magnitude < bb and (bt - b).Magnitude < bb then
+                if a9 and b and ba and (br - a9).Magnitude < bb and (bs - b).Magnitude < bb then
                     if ah(a4) ~= ba then
                         a4(ba)
                     end
@@ -67002,29 +67018,29 @@ do
                     return
                 end
 
-                local bu, bv = bn(bs, bt)
+                local bt, bu = bm(br, bs)
 
-                a9 = bs
-                b = bt
-                ba = bv
+                a9 = br
+                b = bs
+                ba = bu
 
-                if ah(a4) ~= bv then
-                    a4(bv)
+                if ah(a4) ~= bu then
+                    a4(bu)
                 end
             end)
 
-            function aU.setManipBarActive(br)
-                br = br == true
+            function aU.setManipBarActive(bq)
+                bq = bq == true
 
-                if a5 == br then
+                if a5 == bq then
                     return
                 end
 
-                a5 = br
+                a5 = bq
 
-                if br then
+                if bq then
                     if not a6 then
-                        a6 = ab.Heartbeat:Connect(bq)
+                        a6 = ab.Heartbeat:Connect(bp)
                     end
                 else
                     if a6 then

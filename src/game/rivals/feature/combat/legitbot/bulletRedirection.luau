@@ -91,8 +91,7 @@ local BAR_RESOLVE_EPS = 0.5
 
 bulletRedirection.manipLevel = _manipLevelAtom
 
-local _originalViewportPointToRay: ((...any) -> any)? = nil
-local _originalScreenPointToRay: ((...any) -> any)? = nil
+local _hookedCamera: Camera? = nil
 
 local raycastParams = RaycastParams.new()
 raycastParams.FilterType = Enum.RaycastFilterType.Include
@@ -102,7 +101,7 @@ raycastParams.RespectCanCollide = false
 local _sourceItemCache: { [string]: boolean } = {}
 
 local isCameraDataCaller = function(): boolean
-	for level = 2, 4 do
+	for level = 2, 7 do
 		local source = debug.info(level, "s")
 		if not source then
 			break
@@ -133,31 +132,20 @@ local function install(): ()
 		return
 	end
 
-	local viewportPointToRay = camera.ViewportPointToRay
-	local screenPointToRay = camera.ScreenPointToRay
-
-	local viewportReplacement = LPH_NO_VIRTUALIZE(function(self: any, ...: any): Ray
+	local rayReplacement = LPH_NO_VIRTUALIZE(function(original: (...any) -> ...any, self: any, ...: any): Ray
 		if _active and _target and (WeaponController._selfFiring or not checkcaller()) and isCameraDataCaller() then
 			if _chance >= 100 or math.random(1, 100) <= _chance then
-				local real: Ray = (_originalViewportPointToRay :: any)(self, ...)
+				local real: Ray = original(self, ...)
 				return makeSpoofedRay(real.Origin)
 			end
 		end
-		return (_originalViewportPointToRay :: any)(self, ...)
+		return original(self, ...)
 	end)
 
-	local screenReplacement = LPH_NO_VIRTUALIZE(function(self: any, ...: any): Ray
-		if _active and _target and (WeaponController._selfFiring or not checkcaller()) and isCameraDataCaller() then
-			if _chance >= 100 or math.random(1, 100) <= _chance then
-				local real: Ray = (_originalScreenPointToRay :: any)(self, ...)
-				return makeSpoofedRay(real.Origin)
-			end
-		end
-		return (_originalScreenPointToRay :: any)(self, ...)
-	end)
-
-	_originalViewportPointToRay = hook.oth(viewportPointToRay, viewportReplacement)
-	_originalScreenPointToRay = hook.oth(screenPointToRay, screenReplacement)
+	hook.addInstance(camera)
+	hook.replaceMethod(camera, "ViewportPointToRay", rayReplacement)
+	hook.replaceMethod(camera, "ScreenPointToRay", rayReplacement)
+	_hookedCamera = camera
 	_installed = true
 end
 
@@ -166,18 +154,12 @@ local function uninstall(): ()
 		return
 	end
 
-	local camera = Workspace.CurrentCamera
-	if camera then
-		if _originalViewportPointToRay then
-			hook.restoreOth(camera.ViewportPointToRay)
-		end
-		if _originalScreenPointToRay then
-			hook.restoreOth(camera.ScreenPointToRay)
-		end
+	if _hookedCamera then
+		hook.restoreMethod(_hookedCamera, "ViewportPointToRay")
+		hook.restoreMethod(_hookedCamera, "ScreenPointToRay")
+		_hookedCamera = nil
 	end
 
-	_originalViewportPointToRay = nil
-	_originalScreenPointToRay = nil
 	_installed = false
 end
 
