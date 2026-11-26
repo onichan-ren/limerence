@@ -120,6 +120,7 @@ hook.addInstance = function(target: Instance)
 	local originalIndex = originalMetamethod.__index
 
 	local overriddenProperties = {}
+	local overriddenMethods = {}
 	local originalProperties = {}
 	local blockedProperties = {}
 	local spoofedProperties = {}
@@ -127,6 +128,7 @@ hook.addInstance = function(target: Instance)
 		originalProperties = originalProperties,
 		blockedProperties = blockedProperties,
 		overriddenProperties = overriddenProperties,
+		overriddenMethods = overriddenMethods,
 		spoofedProperties = spoofedProperties,
 		originalMetamethod = originalMetamethod,
 		originalIndex = originalIndex,
@@ -142,6 +144,19 @@ hook.addInstance = function(target: Instance)
 				end
 				if blockedProperties[key] or overriddenProperties[key] then
 					return originalProperties[key]
+				end
+				local methodCallback = overriddenMethods[key]
+				if methodCallback then
+					local originalMethod = originalIndex(self, key)
+					return newcclosure(LPH_NO_VIRTUALIZE(function(s, ...)
+						setthreadidentity(8)
+						local results = table.pack(methodCallback(...))
+						setthreadidentity(2)
+						if results.n == 0 then
+							return
+						end
+						return originalMethod(s, table.unpack(results, 1, results.n))
+					end))
 				end
 			end
 			return originalIndex(self, key)
@@ -170,11 +185,11 @@ hook.addInstance = function(target: Instance)
 			return originalNewindex(self, key, value)
 		end)),
 		__namecall = newcclosure(LPH_NO_VIRTUALIZE(function(self, ...)
-			if next(overriddenProperties) == nil then
+			if next(overriddenMethods) == nil then
 				return originalNamecall(self, ...)
 			end
 			local method = getnamecallmethod()
-			local callback = overriddenProperties[method]
+			local callback = overriddenMethods[method]
 			if callback then
 				setthreadidentity(8)
 				local results = table.pack(callback(...))
@@ -223,7 +238,7 @@ function hook.overrideMethod(target: Instance, method: string, callback: (...any
 
 	logger:debug("override method:", method, "on instance:", target)
 
-	instanceHook.overriddenProperties[method] = callback
+	instanceHook.overriddenMethods[method] = callback
 end
 
 function hook.restoreMethod(target: Instance, method: string): ()
@@ -234,7 +249,7 @@ function hook.restoreMethod(target: Instance, method: string): ()
 
 	logger:debug("restoring method:", method, "on instance:", target)
 
-	instanceHook.overriddenProperties[method] = nil
+	instanceHook.overriddenMethods[method] = nil
 end
 
 function hook.unblockProperty(target: any, property: string): ()

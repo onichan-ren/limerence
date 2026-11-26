@@ -931,101 +931,125 @@ do
 
                 c.debug(c, 'hooking instance:', h)
 
-                local j, k, l, m, n, o, p = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}
-                local q = {
-                    originalProperties = n,
-                    blockedProperties = o,
+                local j, k, l, m, n, o, p, q = i.__namecall, i.__newindex, i.__index, {}, {}, {}, {}, {}
+                local r = {
+                    originalProperties = o,
+                    blockedProperties = p,
                     overriddenProperties = m,
-                    spoofedProperties = p,
+                    overriddenMethods = n,
+                    spoofedProperties = q,
                     originalMetamethod = i,
                     originalIndex = l,
                 }
 
-                f[h] = q
+                f[h] = r
 
-                local r = {
-                    __index = newcclosure(LPH_NO_VIRTUALIZE(function(r, s)
+                local s = {
+                    __index = newcclosure(LPH_NO_VIRTUALIZE(function(s, t)
                         if not checkcaller() then
-                            local t = p[s]
+                            local u = q[t]
 
-                            if t ~= nil then
-                                return t
+                            if u ~= nil then
+                                return u
                             end
-                            if o[s] or m[s] then
-                                return n[s]
+                            if p[t] or m[t] then
+                                return o[t]
+                            end
+
+                            local v = n[t]
+
+                            if v then
+                                local w = l(s, t)
+
+                                return newcclosure(LPH_NO_VIRTUALIZE(function(
+                                    x,
+                                    ...
+                                )
+                                    setthreadidentity(8)
+
+                                    local y = table.pack(v(...))
+
+                                    setthreadidentity(2)
+
+                                    if y.n == 0 then
+                                        return
+                                    end
+
+                                    return w(x, table.unpack(y, 1, y.n))
+                                end))
                             end
                         end
 
-                        return l(r, s)
+                        return l(s, t)
                     end)),
                     __newindex = newcclosure(LPH_NO_VIRTUALIZE(function(
-                        r,
                         s,
-                        t
+                        t,
+                        u
                     )
                         if not checkcaller() then
-                            if o[s] then
-                                n[s] = t
+                            if p[t] then
+                                o[t] = u
 
                                 return
                             end
 
-                            local u = m[s]
+                            local v = m[t]
 
-                            if u then
-                                n[s] = t
+                            if v then
+                                o[t] = u
 
                                 setthreadidentity(8)
 
-                                local v = u(t, (getcallingscript()))
+                                local w = v(u, (getcallingscript()))
 
                                 setthreadidentity(2)
 
-                                if v == -1 then
+                                if w == -1 then
                                     return
                                 end
 
-                                return k(r, s, v)
+                                return k(s, t, w)
                             end
                         end
 
-                        return k(r, s, t)
+                        return k(s, t, u)
                     end)),
-                    __namecall = newcclosure(LPH_NO_VIRTUALIZE(function(r, ...)
-                        if next(m) == nil then
-                            return j(r, ...)
+                    __namecall = newcclosure(LPH_NO_VIRTUALIZE(function(s, ...)
+                        if next(n) == nil then
+                            return j(s, ...)
                         end
 
-                        local s = getnamecallmethod()
-                        local t = m[s]
+                        local t = getnamecallmethod()
+                        local u = n[t]
 
-                        if t then
+                        if u then
                             setthreadidentity(8)
 
-                            local u = table.pack(t(...))
+                            local v = table.pack(u(...))
 
                             setthreadidentity(2)
 
-                            if u.n == 0 then
+                            if v.n == 0 then
                                 return
                             end
 
-                            setnamecallmethod(s)
+                            setnamecallmethod(t)
 
-                            return j(r, table.unpack(u, 1, u.n))
+                            return j(s, table.unpack(v, 1, v.n))
                         end
 
-                        return j(r, ...)
+                        return j(s, ...)
                     end)),
                 }
 
-                for s, t in next, i do
-                    if not r[s] then
-                        r[s] = t
+                for t, u in next, i do
+                    if not s[t] then
+                        s[t] = u
                     end
                 end
 
-                setrawmetatable(h, r)
+                setrawmetatable(h, s)
             end
 
             function d.blockProperty(h, i)
@@ -1056,7 +1080,7 @@ do
 
                 c.debug(c, 'override method:', i, 'on instance:', h)
 
-                k.overriddenProperties[i] = j
+                k.overriddenMethods[i] = j
             end
             function d.restoreMethod(h, i)
                 local j = f[h]
@@ -1067,7 +1091,7 @@ do
 
                 c.debug(c, 'restoring method:', i, 'on instance:', h)
 
-                j.overriddenProperties[i] = nil
+                j.overriddenMethods[i] = nil
             end
             function d.unblockProperty(h, i)
                 local j = f[h]
