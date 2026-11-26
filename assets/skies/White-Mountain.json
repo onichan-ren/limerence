@@ -1,0 +1,18 @@
+{
+  "name": "White Mountain",
+  "preview": "rbxassetid://130579057",
+  "faces": {
+    "Up": "rbxassetid://130579066",
+    "Dn": "rbxassetid://8709576",
+    "Lf": "rbxassetid://130579011",
+    "Rt": "rbxassetid://130579033",
+    "Ft": "rbxassetid://130579057",
+    "Bk": "rbxassetid://130579046"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "rbxasset://sky/sun.jpg",
+  "moonTextureId": "rbxasset://sky/moon.jpg",
+  "celestialBodiesShown": false
+}

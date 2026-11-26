@@ -1,0 +1,29 @@
+{
+    "generator": "retain_lines",
+    "rules": [
+        "remove_comments",
+        "remove_method_call",
+        "remove_nil_declaration",
+        "remove_empty_do",
+        "filter_after_early_return",
+        "compute_expression",
+        "remove_interpolated_string"
+    ],
+    "bundle": {
+        "modules_identifier": "_modules",
+        "require_mode": {
+            "name": "path",
+            "sources": {
+                "src": "./src",
+                "pkg": "./Packages",
+                "game": "./src/game",
+                "share": "./src/share",
+                "tool": "./tools",
+                "loader": "./src/loader",
+                "feature": "./src/feature",
+                "ui": "./src/feature/ui"
+            },
+            "use_luau_configuration": true
+        }
+    }
+}

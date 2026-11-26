@@ -1,0 +1,19 @@
+{
+  "name": "Jungle",
+  "preview": "rbxassetid://525548536",
+  "faces": {
+    "Up": "rbxassetid://525546479",
+    "Dn": "rbxassetid://525544628",
+    "Lf": "rbxassetid://525550171",
+    "Rt": "rbxassetid://525545319",
+    "Ft": "rbxassetid://525548536",
+    "Bk": "rbxassetid://525546178"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "rbxasset://sky/sun.jpg",
+  "moonTextureId": "rbxasset://sky/moon.jpg",
+  "celestialBodiesShown": false
+}
+  

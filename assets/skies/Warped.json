@@ -1,0 +1,18 @@
+{
+  "name": "Warped",
+  "preview": "rbxassetid://111140261279514",
+  "faces": {
+    "Up": "rbxassetid://106943891426658",
+    "Dn": "rbxassetid://90316588164951",
+    "Lf": "rbxassetid://134415626730291",
+    "Rt": "rbxassetid://123382387483520",
+    "Ft": "rbxassetid://111140261279514",
+    "Bk": "rbxassetid://87883875483102"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "rbxasset://sky/sun.jpg",
+  "moonTextureId": "rbxasset://sky/moon.jpg",
+  "celestialBodiesShown": false
+}

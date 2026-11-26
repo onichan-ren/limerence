@@ -1,0 +1,18 @@
+{
+  "name": "Gray",
+  "preview": "rbxassetid://841810586",
+  "faces": {
+    "Up": "rbxassetid://841810586",
+    "Dn": "rbxassetid://841810586",
+    "Lf": "rbxassetid://841810586",
+    "Rt": "rbxassetid://841810586",
+    "Ft": "rbxassetid://841810586",
+    "Bk": "rbxassetid://841810586"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "rbxasset://sky/sun.jpg",
+  "moonTextureId": "rbxasset://sky/moon.jpg",
+  "celestialBodiesShown": false
+}

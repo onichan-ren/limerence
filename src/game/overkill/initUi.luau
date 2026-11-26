@@ -1,0 +1,215 @@
+local gameUi = require("@game/gameUi")
+local loader = require("@loader/loader")
+local PlayerController = require("@feature/player/PlayerController")
+local OverkillPlayer = require("@game/overkill/player/OverkillPlayer")
+local AimIndicator = require("@game/universal/feature/combat/legitbot/AimIndicator")
+local Legitbot = require("@game/overkill/feature/legitbot/Legitbot")
+local BacktrackController = require("@game/overkill/feature/legitbot/BacktrackController")
+local bulletRedirection = require("@game/overkill/feature/legitbot/bulletRedirection")
+local AutoDeflect = require("@game/overkill/feature/legitbot/AutoDeflect")
+local Ragebot = require("@game/overkill/feature/ragebot/Ragebot")
+local AutoPeek = require("@game/overkill/feature/ragebot/AutoPeek")
+local AntiAim = require("@game/overkill/feature/antiaim/AntiAim")
+local LagPeek = require("@game/overkill/feature/ragebot/LagPeek")
+local TickManipulation = require("@game/overkill/feature/ragebot/TickManipulation")
+local MeleeAura = require("@game/overkill/feature/misc/MeleeAura")
+local AlwaysBackstab = require("@game/overkill/feature/misc/AlwaysBackstab")
+local Esp = require("@game/overkill/feature/visual/esp/Esp")
+local botSource = require("@game/overkill/feature/training/botSource")
+local InventoryController = require("@game/overkill/feature/inventory/InventoryController")
+local DamageNumber3d = require("@game/overkill/feature/visual/damagenumber3d/DamageNumber3d")
+local DeathParticles = require("@game/overkill/feature/visual/deathparticles/DeathParticles")
+local Hitskeletons = require("@game/overkill/feature/visual/hitskeletons/Hitskeletons")
+local Hitmarker3d = require("@game/overkill/feature/visual/hitmarker/Hitmarker3d")
+local HitOverlay = require("@game/overkill/feature/visual/hitoverlay/HitOverlay")
+local Hitmarker = require("@game/overkill/feature/visual/hitmarker/Hitmarker")
+local Hitchams = require("@game/overkill/feature/visual/hitchams/Hitchams")
+local Hitsound = require("@game/overkill/feature/visual/hitsound/Hitsound")
+local HitEffect = require("@game/overkill/feature/visual/hiteffect/HitEffect")
+local HitLog = require("@game/overkill/feature/visual/hurtlog/HitLog")
+local Removals = require("@game/overkill/feature/visual/removals/Removals")
+local Tracer = require("@game/overkill/feature/visual/tracer/Tracer")
+local ProjectileEsp = require("@game/overkill/feature/visual/grenade/ProjectileEsp")
+local ProjectileWarning = require("@game/overkill/feature/visual/grenade/ProjectileWarning")
+local RemoveScope = require("@game/overkill/feature/visual/removescope/RemoveScope")
+local GameInterface = require("@game/overkill/feature/visual/interface/GameInterface")
+local ThirdPerson = require("@game/overkill/feature/visual/thirdperson/ThirdPerson")
+local OverrideFov = require("@game/overkill/feature/visual/fov/OverrideFov")
+local CustomCrosshair = require("@game/universal/feature/visual/crosshair/CustomCrosshair")
+local overkillMuzzleOrigin = require("@game/overkill/feature/visual/crosshair/overkillMuzzleOrigin")
+local Hud = require("@game/universal/feature/visual/hud/Hud")
+local MusicHud = require("@game/universal/feature/visual/musichud/MusicHud")
+local AspectRatio = require("@game/universal/feature/visual/camera/AspectRatio")
+local ViewmodelChanger = require("@game/overkill/feature/visual/self/ViewmodelChanger")
+local ViewmodelChams = require("@game/overkill/feature/visual/self/ViewmodelChams")
+local CharacterChams = require("@game/overkill/feature/visual/self/CharacterChams")
+local SelfEsp = require("@game/overkill/feature/visual/self/SelfEsp")
+local Footsteps = require("@game/overkill/feature/visual/self/Footsteps")
+local CustomCharacterOverlay = require("@game/universal/feature/misc/CustomCharacterOverlay")
+local customCharacterOpts = require("@game/overkill/feature/visual/self/customCharacterOpts")
+local MenuAvatar = require("@game/overkill/feature/visual/self/MenuAvatar")
+local WorldAmbience = require("@game/universal/feature/visual/world/WorldAmbience")
+local worldMapSource = require("@game/overkill/feature/visual/world/worldMapSource")
+local ParticleColors = require("@game/overkill/feature/visual/particles/ParticleColors")
+local TrajectoryColor = require("@game/overkill/feature/visual/trajectory/TrajectoryColor")
+local gameRegistry = require("@game/gameRegistry")
+local AccountSpoofer = require("@game/universal/feature/misc/AccountSpoofer")
+local StatsSpoofer = require("@game/overkill/feature/misc/StatsSpoofer")
+local PlayerSpoofer = require("@game/universal/feature/misc/PlayerSpoofer")
+local AlwaysSprint = require("@game/overkill/feature/misc/AlwaysSprint")
+local FakeLag = require("@game/overkill/feature/misc/FakeLag")
+local AutoGrenadeJump = require("@game/overkill/feature/misc/AutoGrenadeJump")
+local SlideHop = require("@game/overkill/feature/misc/SlideHop")
+local StrafeAssist = require("@game/overkill/feature/misc/StrafeAssist")
+local AutoQueue = require("@game/overkill/feature/misc/AutoQueue")
+local AutoVoteMap = require("@game/overkill/feature/misc/AutoVoteMap")
+local AutoLoadout = require("@game/overkill/feature/misc/AutoLoadout")
+local StaffDetector = require("@game/overkill/feature/misc/StaffDetector")
+local SpectatorList = require("@game/overkill/feature/misc/SpectatorList")
+
+return function(): ()
+	setthreadidentity(8)
+
+	PlayerController.SetPlayerClass(OverkillPlayer)
+	PlayerController.new()
+	loader.addDestroyer(PlayerController.Destroy)
+
+	botSource.Start()
+	loader.addDestroyer(botSource.Destroy)
+
+	overkillMuzzleOrigin.Setup()
+	loader.addDestroyer(overkillMuzzleOrigin.Destroy)
+
+	local assistance = gameUi.Group("ASSISTANCE")
+
+	local ragebot = gameUi.Tab(assistance, "Ragebot", "aim")
+	local ragebotLink = gameUi.Section(ragebot, "AIMBOT", 1, "ragebot")
+	local ragebotTargetingLink = gameUi.Section(ragebot, "TARGETING", 1, "ragebotTargeting")
+	local ragebotPerformanceLink = gameUi.Section(ragebot, "PERFORMANCE", 1, "ragebotPerformance")
+	local antiAimLink = gameUi.Section(ragebot, "ANTI AIM", 2, "antiaim")
+	local utilityLink = gameUi.Section(ragebot, "UTILITY", 2, "utilityr")
+	local ragebotVisualsLink = gameUi.Section(ragebot, "VISUALS", 2, "ragebotVisuals")
+	gameUi.Mount(Ragebot, ragebotLink, {
+		targetingLink = ragebotTargetingLink,
+		performanceLink = ragebotPerformanceLink,
+		visualsLink = ragebotVisualsLink,
+	})
+	gameUi.Mount(AntiAim, antiAimLink)
+	--gameUi.Mount(TickManipulation, utilityLink)
+	gameUi.Mount(AutoPeek, utilityLink)
+	gameUi.Mount(LagPeek, utilityLink)
+
+	local meleeLink = gameUi.Section(ragebot, "MELEE", 2, "meleer")
+	gameUi.Mount(AlwaysBackstab, meleeLink)
+	gameUi.Mount(MeleeAura, meleeLink)
+
+	local automationLink = gameUi.Section(ragebot, "AUTOMATION", 1, "automation")
+	gameUi.Mount(AutoQueue, automationLink)
+	gameUi.Mount(AutoVoteMap, automationLink)
+	gameUi.Mount(AutoLoadout, automationLink)
+
+	local legitbot = gameUi.Tab(assistance, "Legitbot", "rifle")
+	local legitbotLink = gameUi.ScopedSection(legitbot, "MAIN", 1, "legitbot")
+	local targettingLink = gameUi.ScopedSection(legitbot, "TARGETTING", 1, "targetting")
+	local aimLink = gameUi.ScopedSection(legitbot, "AIM", 1, "aim")
+	local bulletRedirectionLink = gameUi.ScopedSection(legitbot, "BULLET REDIRECTION", 1, "bulletRedirection")
+	local triggerLink = gameUi.ScopedSection(legitbot, "TRIGGER", 2, "trigger")
+	local utilityLink2 = gameUi.ScopedSection(legitbot, "UTILITY", 2, "utility")
+	local legitbotVisualsLink = gameUi.ScopedSection(legitbot, "VISUALS", 2, "visuals")
+
+	legitbot:UseScope(true)
+	gameUi.Mount(AimIndicator, legitbotVisualsLink)
+	gameUi.Mount(AutoDeflect, utilityLink2)
+	gameUi.Mount(BacktrackController, utilityLink2, {
+		setRedirectionActive = bulletRedirection.setBacktrackActive,
+	})
+
+	gameUi.Mount(Legitbot, legitbotLink, {
+		targettingLink = targettingLink,
+		aimLink = aimLink,
+		triggerLink = triggerLink,
+		visualsLink = legitbotVisualsLink,
+		bulletRedirectionLink = bulletRedirectionLink,
+	})
+
+	local visuals = gameUi.Group("VISUALS")
+	local visualsTab = gameUi.Tab(visuals, "Visuals", "terrain")
+
+	local players = gameUi.Subtab(visualsTab, "Players", "person")
+	local espLink = gameUi.Section(players, "PLAYER ESP", 1, "esp")
+	gameUi.Mount(Esp, espLink, { previewLink = espLink })
+
+	local effectsLink = gameUi.Section(players, "HIT FEEDBACK", 2, "effects")
+	gameUi.Mount(DamageNumber3d, effectsLink)
+	gameUi.Mount(DeathParticles, effectsLink)
+	gameUi.Mount(Hitmarker3d, effectsLink)
+	gameUi.Mount(Hitskeletons, effectsLink)
+	gameUi.Mount(HitOverlay, effectsLink)
+	gameUi.Mount(Hitmarker, effectsLink)
+	gameUi.Mount(Hitchams, effectsLink)
+	gameUi.Mount(Hitsound, effectsLink)
+	gameUi.Mount(HitEffect, effectsLink)
+	gameUi.Mount(HitLog, effectsLink)
+
+	local selfLink = gameUi.Section(players, "SELF", 2, "self")
+	gameUi.Mount(ViewmodelChams, selfLink)
+	gameUi.Mount(MenuAvatar, selfLink)
+	gameUi.Mount(CustomCharacterOverlay, selfLink, customCharacterOpts)
+	gameUi.Mount(CharacterChams, selfLink)
+	gameUi.Mount(Footsteps, selfLink)
+	gameUi.Mount(SelfEsp, selfLink)
+
+	local world = gameUi.Subtab(visualsTab, "World", "globe")
+
+	local ambienceLink = gameUi.Section(world, "AMBIENCE", 1, "modulations")
+	gameRegistry.mapSource = worldMapSource
+	gameUi.Mount(WorldAmbience, ambienceLink, {
+		mapSource = worldMapSource,
+	})
+	gameUi.Mount(ParticleColors, ambienceLink:WithPrefix("effects"))
+
+	local worldEffectsLink = gameUi.Section(world, "EFFECTS", 1, "effects")
+	gameUi.Mount(TrajectoryColor, worldEffectsLink)
+	gameUi.Mount(Tracer, worldEffectsLink)
+
+	local projectilesLink = gameUi.Section(world, "PROJECTILES", 1, "projectiles")
+	gameUi.Mount(ProjectileWarning, projectilesLink)
+	gameUi.Mount(ProjectileEsp, projectilesLink)
+
+	local cameraLink = gameUi.Section(world, "CAMERA", 2, "camera")
+	gameUi.Mount(ViewmodelChanger, cameraLink)
+	gameUi.Mount(ThirdPerson, cameraLink)
+	gameUi.Mount(OverrideFov, cameraLink)
+	gameUi.Mount(AspectRatio, cameraLink)
+
+	local crosshairLink = gameUi.Section(world, "CROSSHAIR", 2, "crosshair")
+	gameUi.Mount(RemoveScope, crosshairLink)
+	gameUi.Mount(CustomCrosshair, crosshairLink)
+
+	local hudLink = gameUi.Section(world, "HUD", 2, "hud")
+	gameUi.Mount(MusicHud, gameUi.SettingsHudSection("hud"))
+	gameUi.Mount(GameInterface, hudLink)
+	gameUi.Mount(Removals, hudLink)
+	gameUi.Mount(Hud, hudLink)
+
+	local other = gameUi.Group("OTHER")
+	local inventory = gameUi.Tab(other, "Inventory", "karambit")
+	InventoryController.Attach(inventory)
+
+	local misc = gameUi.Tab(other, "Misc", "bolt")
+	local spoofingLink = gameUi.Section(misc, "SPOOFING", 1, "spoofing")
+	gameUi.Mount(AccountSpoofer, spoofingLink)
+	gameUi.Mount(PlayerSpoofer, spoofingLink)
+	gameUi.Mount(StatsSpoofer, spoofingLink)
+
+	local movementLink = gameUi.Section(misc, "MOVEMENT", 2, "movement")
+	gameUi.Mount(AutoGrenadeJump, movementLink)
+	gameUi.Mount(AlwaysSprint, movementLink)
+	gameUi.Mount(StrafeAssist, movementLink)
+	gameUi.Mount(SlideHop, movementLink)
+	gameUi.Mount(FakeLag, movementLink)
+
+	local utilityLink3 = gameUi.Section(misc, "UTILITY", 2, "utility")
+	gameUi.Mount(SpectatorList, utilityLink3)
+	gameUi.Mount(StaffDetector, utilityLink3)
+end

@@ -1,0 +1,18 @@
+{
+  "name": "Fantasy",
+  "preview": "rbxassetid://479712776",
+  "faces": {
+    "Up": "rbxassetid://479713195",
+    "Dn": "rbxassetid://479712702",
+    "Lf": "rbxassetid://479712892",
+    "Rt": "rbxassetid://479713047",
+    "Ft": "rbxassetid://479712776",
+    "Bk": "rbxassetid://479712644"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "rbxasset://sky/sun.jpg",
+  "moonTextureId": "rbxasset://sky/moon.jpg",
+  "celestialBodiesShown": false
+}

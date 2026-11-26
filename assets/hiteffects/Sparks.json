@@ -1,0 +1,30 @@
+{
+    "name": "Sparks",
+    "preview": "rbxassetid://7587238412",
+    "particles": [
+      {
+        "texture": "rbxassetid://7587238412",
+        "transparency": [[0, 0], [0.5, 0], [1, 1]],
+        "size": [[0, 0.5], [1, 0.5]],
+        "squash": [[0, 0], [1, 0]],
+        "lifetime": [1, 1],
+        "speed": [15, 15],
+        "rotSpeed": [0, 0],
+        "rotation": [0, 0],
+        "spreadAngle": [360, 270],
+        "acceleration": [0, -50, 0],
+        "brightness": 1,
+        "lightEmission": 1,
+        "lightInfluence": 0,
+        "drag": 0,
+        "zOffset": 0,
+        "timeScale": 1,
+        "velocityInheritance": 0,
+        "lockedToPart": false,
+        "shape": "Box",
+        "orientation": "VelocityParallel",
+        "emissionDirection": "Top",
+        "emitCount": 20
+      }
+    ]
+  }

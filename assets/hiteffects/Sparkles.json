@@ -1,0 +1,30 @@
+{
+  "name": "Sparkles",
+  "preview": "rbxassetid://298984512",
+  "particles": [
+    {
+      "texture": "rbxassetid://298984512",
+      "transparency": [[0, 0], [0.0586035, 0.1], [0.1, 0.5], [0.15, 0], [0.25, 0], [0.3, 0.9], [0.35, 0], [0.45, 0], [0.5, 0.9], [0.55, 0], [0.65, 0], [0.7, 0.9], [0.75, 0], [0.85, 0], [0.9, 0.75], [0.95, 0.5], [1, 1]],
+      "size": [[0, 0.125], [0.0573566, 0.6875], [1, 0]],
+      "squash": [[0, 0], [1, 0]],
+      "lifetime": [2, 2],
+      "speed": [0.75, 1.1],
+      "rotSpeed": [0, 0],
+      "rotation": [0, 0],
+      "spreadAngle": [180, 180],
+      "acceleration": [0, 0, 0],
+      "brightness": 1,
+      "lightEmission": 1,
+      "lightInfluence": 0,
+      "drag": 0,
+      "zOffset": 1,
+      "timeScale": 1,
+      "velocityInheritance": 0,
+      "lockedToPart": true,
+      "shape": "Box",
+      "orientation": "FacingCamera",
+      "emissionDirection": "Top",
+      "emitCount": 9
+    }
+  ]
+}

@@ -1,0 +1,16 @@
+{
+    "name": "Trail",
+    "preview": "beam3.png",
+    "texture": "beam3.png",
+    "width0": 0.2,
+    "width1": 0.1,
+    "curveSize0": 0,
+    "curveSize1": 0.05,
+    "textureMode": "Stretch",
+    "textureLength": 0.1,
+    "textureSpeed": 0.4,
+    "lightInfluence": 0,
+    "lightEmission": 1,
+    "faceCamera": true,
+    "zOffset": 1
+}

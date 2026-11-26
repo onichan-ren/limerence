@@ -1,0 +1,34 @@
+{
+    "name": "Snow",
+    "preview": "rbxassetid://14919880888",
+    "particles": [
+      {
+        "texture": "rbxassetid://14919880888",
+        "transparency": [[0, 1], [0.0638021, 0.555723], [0.164062, 0.456325], [0.503906, 0.337349], [0.826754, 0.64375], [1, 1]],
+        "size": [[0, 0], [0.261845, 1.1875], [0.724439, 4], [1, 5.25]],
+        "lifetime": [0.5, 1],
+        "speed": [0.02, 0.02],
+        "rotSpeed": [0, 0],
+        "rotation": [-180, 180],
+        "spreadAngle": [0, 0],
+        "acceleration": [0, 0, 0],
+        "brightness": 5,
+        "lightEmission": 1,
+        "lightInfluence": 0,
+        "drag": 0,
+        "zOffset": -1,
+        "timeScale": 1,
+        "velocityInheritance": 0,
+        "lockedToPart": false,
+        "shape": "Box",
+        "orientation": "FacingCamera",
+        "emissionDirection": "Top",
+        "flipbookLayout": "Grid4x4",
+        "flipbookMode": "OneShot",
+        "flipbookFramerate": [1, 1],
+        "flipbookStartRandom": false,
+        "flipbookBlendFrames": true,
+        "emitCount": 2
+      }
+    ]
+  }

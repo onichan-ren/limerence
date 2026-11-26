@@ -1,0 +1,18 @@
+{
+  "name": "Sunset",
+  "preview": "rbxassetid://9778101192",
+  "faces": {
+    "Up": "rbxassetid://9778106496",
+    "Dn": "rbxassetid://9778110864",
+    "Lf": "rbxassetid://9778103329",
+    "Rt": "rbxassetid://9778104889",
+    "Ft": "rbxassetid://9778101192",
+    "Bk": "rbxassetid://9778108979"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "rbxasset://sky/sun.jpg",
+  "moonTextureId": "rbxasset://sky/moon.jpg",
+  "celestialBodiesShown": false
+}

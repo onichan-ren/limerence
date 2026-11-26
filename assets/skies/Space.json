@@ -1,0 +1,18 @@
+{
+  "name": "Space",
+  "preview": "rbxassetid://11336720418",
+  "faces": {
+    "Up": "rbxassetid://11336723758",
+    "Dn": "rbxassetid://11336722286",
+    "Lf": "rbxassetid://11336725016",
+    "Rt": "rbxassetid://11336726887",
+    "Ft": "rbxassetid://11336720418",
+    "Bk": "rbxassetid://11336725935"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "",
+  "moonTextureId": "",
+  "celestialBodiesShown": true
+}

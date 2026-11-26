@@ -1,0 +1,18 @@
+{
+  "name": "Rainy",
+  "preview": "rbxassetid://246480105",
+  "faces": {
+    "Up": "rbxassetid://246480504",
+    "Dn": "rbxassetid://246480523",
+    "Lf": "rbxassetid://246480549",
+    "Rt": "rbxassetid://246480565",
+    "Ft": "rbxassetid://246480105",
+    "Bk": "rbxassetid://246480323"
+  },
+  "starCount": 3000,
+  "sunAngularSize": 21,
+  "moonAngularSize": 11,
+  "sunTextureId": "rbxasset://sky/sun.jpg",
+  "moonTextureId": "rbxasset://sky/moon.jpg",
+  "celestialBodiesShown": false
+}

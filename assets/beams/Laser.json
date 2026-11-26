@@ -1,0 +1,15 @@
+{
+    "name": "Laser",
+    "preview": "beam2.png",
+    "texture": "beam2.png",
+    "width0": 0.25,
+    "width1": 0.55,
+    "curveSize0": 0,
+    "curveSize1": 0,
+    "lightInfluence": 5,
+    "lightEmission": 5,
+    "faceCamera": true,
+    "textureSpeed": 2,
+    "textureLength": 12,
+    "textureMode": "Wrap"
+  }

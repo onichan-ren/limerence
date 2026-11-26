@@ -1,0 +1,36 @@
+{
+    "generator": { "name": "dense", "column_span": 9999999999999999 },
+    "rules": [
+        "remove_function_call_parens",
+        "remove_comments",
+        "remove_types",
+        "remove_method_call",
+        "remove_nil_declaration",
+        "remove_debug_profiling",
+        "remove_empty_do",
+        "filter_after_early_return",
+        "compute_expression",
+        "rename_variables",
+        {
+            "rule": "remove_interpolated_string",
+            "strategy": "string"
+        }
+    ],
+    "bundle": {
+        "modules_identifier": "WaskdPNZDRKzzZidZ37",
+        "require_mode": {
+            "name": "path",
+            "sources": {
+                "src": "./src",
+                "pkg": "./Packages",
+                "game": "./src/game",
+                "share": "./src/share",
+                "tool": "./tools",
+                "loader": "./src/loader",
+                "feature": "./src/feature",
+                "ui": "./src/feature/ui"
+            },
+            "use_luau_configuration": true
+        }
+    }
+}

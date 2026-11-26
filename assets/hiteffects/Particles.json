@@ -1,0 +1,30 @@
+{
+  "name": "Particles",
+  "preview": "rbxassetid://11446793122",
+  "particles": [
+    {
+      "texture": "rbxassetid://11446793122",
+      "transparency": [[0, 1], [0.0997506, 0.38125], [1, 1]],
+      "size": [[0, 0.3], [1, 0.1]],
+      "squash": [[0, 0], [0.75, 0], [1, 0]],
+      "lifetime": [1, 1],
+      "speed": [20, 20],
+      "rotSpeed": [-60, 60],
+      "rotation": [-180, 180],
+      "spreadAngle": [360, 360],
+      "acceleration": [0, 20, 0],
+      "brightness": 5,
+      "lightEmission": 1,
+      "lightInfluence": 0,
+      "drag": 10,
+      "zOffset": 0,
+      "timeScale": 1,
+      "velocityInheritance": 0,
+      "lockedToPart": true,
+      "shape": "Box",
+      "orientation": "VelocityParallel",
+      "emissionDirection": "Top",
+      "emitCount": 30
+    }
+  ]
+}
