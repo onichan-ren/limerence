@@ -40185,6 +40185,20 @@ do
                 _refs = {},
             }
 
+            local function findUpvalueByName(ae, af)
+                for ag, ah in next, debug.getupvalues(ae)do
+                    if type(ah) == 'function' then
+                        local ai = debug.getinfo(ah)
+
+                        if ai and ai.name == af then
+                            return ah
+                        end
+                    end
+                end
+
+                return nil
+            end
+
             function ad.bind(ae)
                 if ad._ready then
                     return
@@ -40195,17 +40209,37 @@ do
 
                 local af = ad._refs
 
-                af.CameraController = debug.getupvalue(ae, 6)
-                af.resolveFireAnimationNames = debug.getupvalue(ae, 8)
-                af.startRechargeTimer = debug.getupvalue(ae, 9)
-                af.applyActiveRecoilProfile = debug.getupvalue(ae, 12)
-                af.Camera = debug.getupvalue(ae, 16)
-                af.CreateTracer = debug.getupvalue(ae, 17)
-                af.CreateImpact = debug.getupvalue(ae, 19)
-                af.BreakGlass = debug.getupvalue(ae, 21)
-                af.CreateMarker = debug.getupvalue(ae, 22)
-                af.kickCamera = debug.getupvalue(ae, 23)
+                for ag, ah in next, debug.getupvalues(ae)do
+                    if type(ah) == 'table' then
+                        if rawget(ah, 'updateCameraFOV') then
+                            af.CameraController = ah
+                        elseif rawget(ah, 'broadcastRouter') then
+                            af.Router = ah
+                        end
+                    end
+                end
+
+                af.CameraController = af.CameraController or debug.getupvalue(ae, 9)
+                af.Router = af.Router or debug.getupvalue(ae, 10)
+                af.resolveFireAnimationNames = findUpvalueByName(ae, 'resolveFireAnimationNames') or debug.getupvalue(ae, 12)
+                af.startRechargeTimer = findUpvalueByName(ae, 'startRechargeTimer') or debug.getupvalue(ae, 13)
+                af.applyActiveRecoilProfile = findUpvalueByName(ae, 'applyActiveRecoilProfile') or debug.getupvalue(ae, 15)
+                af.Camera = debug.getupvalue(ae, 19)
+                af.CreateTracer = debug.getupvalue(ae, 20)
+                af.CreateImpact = findUpvalueByName(ae, 'CreateImpact') or debug.getupvalue(ae, 22)
+                af.BreakGlass = findUpvalueByName(ae, 'BreakGlass') or debug.getupvalue(ae, 26)
+                af.CreateMarker = findUpvalueByName(ae, 'CreateMarker') or debug.getupvalue(ae, 27)
+                af.kickCamera = findUpvalueByName(ae, 'GetWeaponCameraKick') or debug.getupvalue(ae, 28)
                 ad._ready = true
+            end
+            function ad.getViewTick()
+                local ae = ad._refs.Router
+
+                if ae and type(ae.broadcastRouter) == 'function' then
+                    return ae.broadcastRouter'GetRemoteViewTick'
+                end
+
+                return nil
             end
 
             local function resolveFireRate(ae, af)
@@ -40505,8 +40539,23 @@ do
                     ar += 1
                 end))
 
-                local au = debug.getupvalue(at, 19)
+                local au
 
+                for av, aw in next, debug.getupvalues(at)do
+                    if type(aw) == 'function' then
+                        local ax = debug.getinfo(aw)
+
+                        if ax and ax.name == 'CreateImpact' then
+                            au = aw
+
+                            break
+                        end
+                    end
+                end
+
+                if not au then
+                    au = debug.getupvalue(at, 22)
+                end
                 if not au or type(au) ~= 'function' then
                     error'failed to find impact function'
                 end
@@ -41010,134 +41059,178 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Players'))), a.i(), a.e()
-            local ae, af, ag, ah, ai, aj, ak, al, am, an = ab.LocalPlayer, workspace.CurrentCamera, {}, {}, false, ac.atom(false), nil, nil, nil, Vector3.zero
-            local ao, ap, aq = {
-                yaw = 0,
-                verticalLook = 0,
-                thirdPerson = aj,
-            }, LPH_NO_VIRTUALIZE(function()
-                local ap = {}
+            local aa, ab, ac, ad, ae = (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'ReplicatedStorage'))), a.i(), a.e()
+            local af, ag, ah, ai, aj = ab.LocalPlayer, workspace.CurrentCamera, nil, nil, nil
 
-                for aq, ar in next, ag do
-                    ap[#ap + 1] = ar
+            local function getCharacterPose()
+                if ah then
+                    return ah
                 end
 
-                table.sort(ap, function(aq, ar)
-                    return aq.priority > ar.priority
+                local ak = ac.FindFirstChild(ac, 'Components')
+                local al = ak and ak.FindFirstChild(ak, 'Common')
+                local am = al and al.FindFirstChild(al, 'CharacterPose')
+
+                if not am then
+                    return nil
+                end
+
+                local an, ao = pcall(require, am)
+
+                if an and type(ao) == 'table' then
+                    ah = ao
+
+                    return ao
+                end
+
+                return nil
+            end
+
+            local ak, al, am, an, ao, ap, aq, ar = {}, {}, false, ad.atom(false), nil, nil, nil, Vector3.zero
+            local as, at, au = {
+                yaw = 0,
+                verticalLook = 0,
+                thirdPerson = an,
+            }, LPH_NO_VIRTUALIZE(function()
+                local at = {}
+
+                for au, av in next, ak do
+                    at[#at + 1] = av
+                end
+
+                table.sort(at, function(au, av)
+                    return au.priority > av.priority
                 end)
 
-                ah = ap
+                al = at
             end), {
                 VerticalLook = 0,
                 HorizontalAngle = 0,
             }
-            local ar = LPH_NO_VIRTUALIZE(function()
-                local ar = af.CFrame
-                local as, at = ar.ToEulerAnglesYXZ(ar)
+            local av = LPH_NO_VIRTUALIZE(function()
+                local av = ag.CFrame
+                local aw, ax = av.ToEulerAnglesYXZ(av)
 
-                for au = 1, #ah do
-                    local av = ah[au].fn()
+                for ay = 1, #al do
+                    local az = al[ay].fn()
 
-                    if av then
-                        local aw = av.HorizontalAngle
+                    if az then
+                        local aA = az.HorizontalAngle
 
-                        if aw == nil or aw ~= aw then
-                            av.HorizontalAngle = at
+                        if aA == nil or aA ~= aA then
+                            az.HorizontalAngle = ax
                         end
 
-                        return av
+                        return az
                     end
                 end
 
-                aq.VerticalLook = ar.LookVector.Y
-                aq.HorizontalAngle = at
+                au.VerticalLook = av.LookVector.Y
+                au.HorizontalAngle = ax
 
-                return aq
+                return au
             end)
-            local as = LPH_NO_VIRTUALIZE(function()
-                local as = al
+            local aw = LPH_NO_VIRTUALIZE(function()
+                local aw = av()
+                local ax, ay = aw.HorizontalAngle, math.clamp(aw.VerticalLook, -1, 1)
 
-                if not as then
-                    as = ad.GetModule'CharacterKinematics'
+                as.yaw = ax
+                as.verticalLook = ay
 
-                    if not as then
-                        return
+                local az = ap
+
+                if not az then
+                    az = ae.GetModule'CharacterKinematics'
+
+                    if az then
+                        ap = az
                     end
-
-                    al = as
+                end
+                if az then
+                    az.setTargetRotation(af, ax)
+                    az.setVerticalLook(af, ay)
                 end
 
-                local at = ar()
-                local au, av = at.HorizontalAngle, at.VerticalLook
+                local aA, aB = af.Character, getCharacterPose()
 
-                ao.yaw = au
-                ao.verticalLook = av
+                if aA and aB then
+                    if ai ~= aA then
+                        ai = aA
+                        aj = aB.getJoints(aA)
+                    end
+                    if aj then
+                        aB.applyVerticalLook(aj, ay, 0.0001)
+                    end
 
-                as.setTargetRotation(ae, au)
-                as.setVerticalLook(ae, av)
+                    local aC = (aA.FindFirstChild(aA, 'HumanoidRootPart'))
+
+                    if aC then
+                        aC.CFrame = aB.composeRootCFrame(aC.Position, ax)
+                    end
+                end
+
                 setthreadidentity(8)
             end)
 
-            function ao.RegisterSource(at, au, av)
-                ag[at] = {
-                    name = at,
-                    priority = au,
-                    fn = av,
+            function as.RegisterSource(ax, ay, az)
+                ak[ax] = {
+                    name = ax,
+                    priority = ay,
+                    fn = az,
                 }
 
-                ap()
+                at()
 
                 return function()
-                    if ag[at] then
-                        ag[at] = nil
+                    if ak[ax] then
+                        ak[ax] = nil
 
-                        ap()
+                        at()
                     end
                 end
             end
-            function ao.SetThirdPerson(at)
-                if ai == at then
+            function as.SetThirdPerson(ax)
+                if am == ax then
                     return
                 end
 
-                ai = at
+                am = ax
 
-                aj(at)
+                an(ax)
 
-                if at then
-                    if not ak then
-                        ak = aa.PreRender:Connect(as)
+                if ax then
+                    if not ao then
+                        ao = aa.PreRender:Connect(aw)
                     end
                 else
-                    if ak then
-                        ak.Disconnect(ak)
+                    if ao then
+                        ao.Disconnect(ao)
 
-                        ak = nil
+                        ao = nil
                     end
                 end
             end
-            function ao.IsThirdPerson()
-                return ai
+            function as.IsThirdPerson()
+                return am
             end
-            function ao.SetRealCameraCFrame(at)
-                am = at
+            function as.SetRealCameraCFrame(ax)
+                aq = ax
             end
-            function ao.SetViewOffset(at)
-                an = at or Vector3.zero
+            function as.SetViewOffset(ax)
+                ar = ax or Vector3.zero
             end
-            function ao.GetViewOffset()
-                return an
+            function as.GetViewOffset()
+                return ar
             end
-            function ao.GetRealCameraPosition()
-                if ai and am then
-                    return (am).Position - an
+            function as.GetRealCameraPosition()
+                if am and aq then
+                    return (aq).Position - ar
                 end
 
-                return af.CFrame.Position - an
+                return ag.CFrame.Position - ar
             end
 
-            return ao
+            return as
         end
 
         function a.cD()
@@ -78211,7 +78304,13 @@ do
                         ShootingHand = bm.ShootingHand or 'Right',
                         Identifier = bm.Identifier,
                         Seq = bm.ShotSeq,
-                        Bullets = {f},
+                        Bullets = {
+                            {
+                                Direction = f.Direction,
+                                Origin = f.Origin,
+                            },
+                        },
+                        ViewTick = ap.getViewTick(),
                     })
                     setthreadidentity(8)
 
@@ -87972,10 +88071,10 @@ do
                         if ai >= 100 or math.random(1, 100) <= ai then
                             local ao, ap = an.Origin, ab.GetWeapon()
                             local aq = (ap and ac.getFiredSpreadDegrees(ap) or 0)
-                            local ar = ac.applyBulletSpread((ag.position - ao).Unit, aq) * an.Distance
+                            local ar = ac.applyBulletSpread((ag.position - ao).Unit, aq)
 
                             an.Direction = ar
-                            an.Hits = getNewHits(ao, ar, an)
+                            an.Hits = getNewHits(ao, ar * an.Distance, an)
                         end
                     end
 
@@ -88038,15 +88137,21 @@ do
             local ac, ad, ae, af, ag, ah, ai, aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.F(), a.l(), a.c3(), a.C(), a.cB(), a.cK(), a.c7(), a.fL(), a.fi(), a.fg(), a.fM(), a.I(), a.eG(), a.fl(), a.fN(), a.e_(), aa.peek, aa.subscribe, 0.65
 
             local function isLocalInAir()
-                local av = ae.GetHumanoid()
+                local av = ac.GetCharacterObject()
 
-                if not av then
+                if av and av.OnGround ~= nil then
+                    return av.OnGround == false
+                end
+
+                local aw = ae.GetHumanoid()
+
+                if not aw then
                     return false
                 end
 
-                local aw = av.GetState(av)
+                local ax = aw.GetState(aw)
 
-                return aw == Enum.HumanoidStateType.Jumping or aw == Enum.HumanoidStateType.Freefall
+                return ax == Enum.HumanoidStateType.Jumping or ax == Enum.HumanoidStateType.Freefall
             end
             local function getPenetrationOpts(av)
                 if not av or not av.Properties then
@@ -91524,115 +91629,117 @@ do
     end
     do
         local function __modImpl()
-            local aa, ab, ac, ad, ae, af, ag, ah = a.d(), a.F(), a.cD(), a.l(), a.H(), a.I(), a.cZ(), a.J()
+            a.d()
+
+            local ab, ac, ad, ae, af, ag, ah = a.F(), a.cD(), a.l(), a.H(), a.I(), a.cZ(), a.J()
 
             a.cy()
 
-            local aj, ak, al, am, an, ao, ap, aq, ar, as = a.ag(), a.L(), a.f_(), a.f0(), a.h(), a.i(), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace')))
-            local at, au, av = ar.LocalPlayer, workspace.CurrentCamera, nil
-            local aw, ax, ay, az, aA, aC, aD, aE, aF, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU = LPH_NO_VIRTUALIZE(function(
+            local aj, ak, al, am, an, ao, ap, aq, ar, as, at, au = a.ag(), a.L(), a.f_(), a.f0(), a.c(), a.h(), a.i(), (cloneref(game.GetService(game, 'ReplicatedStorage'))), (cloneref(game.GetService(game, 'RunService'))), (cloneref(game.GetService(game, 'UserInputService'))), (cloneref(game.GetService(game, 'Players'))), (cloneref(game.GetService(game, 'Workspace')))
+            local av, aw, ax = at.LocalPlayer, workspace.CurrentCamera, nil
+            local ay, az, aA, aC, aE, aF, aG, aH, aI, aJ, aK, aL, aM, aN, aO, aP, aQ, aR, aS, aT, aU, aV, aW = LPH_NO_VIRTUALIZE(function(
             )
-                if av then
-                    return av
+                if ax then
+                    return ax
                 end
 
-                local aw = at.FindFirstChild(at, 'PlayerScripts')
-                local ax = aw and aw.FindFirstChild(aw, 'PlayerModule')
-                local ay = ax and ax.FindFirstChild(ax, 'CameraModule')
-                local az = ay and ay.FindFirstChild(ay, 'CameraInput')
+                local ay = av.FindFirstChild(av, 'PlayerScripts')
+                local az = ay and ay.FindFirstChild(ay, 'PlayerModule')
+                local aA = az and az.FindFirstChild(az, 'CameraModule')
+                local aC = aA and aA.FindFirstChild(aA, 'CameraInput')
 
-                if not az then
+                if not aC then
                     return nil
                 end
 
                 setthreadidentity(2)
 
-                local aA = require(az)
+                local aD = require(aC)
 
                 setthreadidentity(8)
 
-                if type(aA) ~= 'table' then
+                if type(aD) ~= 'table' then
                     return nil
                 end
 
-                av = aA
+                ax = aD
 
-                return aA
-            end), 100, 0.999, math.pi * 2, 0.05, 'AntiAimInstantRender', 20, 0.1, 1.3, 10, 3, 14, 0.05, 10, 0.15, Color3.fromRGB(145, 190, 215), 22, 70, 520, 30, 16, ao.peek, ao.subscribe, {}
+                return aD
+            end), 100, 0.999, math.pi * 2, 'AntiAimInstantRender', 20, 0.1, 1.3, 10, 3, 14, 0.05, 10, 0.15, Color3.fromRGB(145, 190, 215), 22, 70, 520, 30, 16, ap.peek, ap.subscribe, {}
 
-            aU.__index = aU
+            aW.__index = aW
 
-            setmetatable(aU, {__index = ah})
+            setmetatable(aW, {__index = ah})
 
-            local aV, aW, aX, aY, aZ, a_, a0 = LPH_NO_VIRTUALIZE(function(
-                aV,
-                aW
+            local aX, aY, aZ, a_, a0, a1, a2 = LPH_NO_VIRTUALIZE(function(
+                aX,
+                aY
             )
-                if aV == 'Back' then
-                    return aW + math.pi
-                elseif aV == 'Left' then
-                    return aW + math.pi / 2
-                elseif aV == 'Right' then
-                    return aW - math.pi / 2
-                elseif aV == 'Random' then
-                    return aW + (math.random() - 0.5) * az
+                if aX == 'Back' then
+                    return aY + math.pi
+                elseif aX == 'Left' then
+                    return aY + math.pi / 2
+                elseif aX == 'Right' then
+                    return aY - math.pi / 2
+                elseif aX == 'Random' then
+                    return aY + (math.random() - 0.5) * aC
                 end
 
-                return aW
-            end), LPH_NO_VIRTUALIZE(function(aW)
-                if aW == 'Up' then
-                    return ay
-                elseif aW == 'Down' then
-                    return -ay
-                elseif aW == 'Random' then
-                    return (math.random() * 2 - 1) * ay
-                elseif aW == 'View' then
-                    return au.CFrame.LookVector.Y * ay
+                return aY
+            end), LPH_NO_VIRTUALIZE(function(aY)
+                if aY == 'Up' then
+                    return aA
+                elseif aY == 'Down' then
+                    return -aA
+                elseif aY == 'Random' then
+                    return (math.random() * 2 - 1) * aA
+                elseif aY == 'View' then
+                    return aw.CFrame.LookVector.Y * aA
                 end
 
                 return 0
             end), Vector3.new(0, 1.5, 0), table.create(16), table.create(16), {}, RaycastParams.new()
 
-            a0.FilterType = Enum.RaycastFilterType.Exclude
-            a0.IgnoreWater = true
-            a0.RespectCanCollide = false
+            a2.FilterType = Enum.RaycastFilterType.Exclude
+            a2.IgnoreWater = true
+            a2.RespectCanCollide = false
 
-            local a1, a2 = table.create(2), a_
-            local a3, a4 = LPH_NO_VIRTUALIZE(function(a3, a4, a5)
-                local a6 = a4 - a3
+            local a3, a4 = table.create(2), a1
+            local a5, a6 = LPH_NO_VIRTUALIZE(function(a5, a6, a7)
+                local a8 = a6 - a5
 
-                if a6.Magnitude < 1e-3 then
+                if a8.Magnitude < 1e-3 then
                     return true
                 end
-                if a5 ~= a2 then
-                    a2 = a5
+                if a7 ~= a4 then
+                    a4 = a7
 
-                    table.clear(a1)
+                    table.clear(a3)
 
-                    local a7 = at.Character
+                    local a9 = av.Character
 
+                    if a9 then
+                        a3[#a3 + 1] = a9
+                    end
                     if a7 then
-                        a1[#a1 + 1] = a7
-                    end
-                    if a5 then
-                        a1[#a1 + 1] = a5
+                        a3[#a3 + 1] = a7
                     end
 
-                    a0.FilterDescendantsInstances = a1
+                    a2.FilterDescendantsInstances = a3
                 end
 
-                return as.Raycast(as, a3, a6, a0) == nil
-            end), LPH_NO_VIRTUALIZE(function(a4)
-                if not aS(a4.alive) then
+                return au.Raycast(au, a5, a8, a2) == nil
+            end), LPH_NO_VIRTUALIZE(function(a6)
+                if not aU(a6.alive) then
                     return false
                 end
-                if aS(a4.invincible) then
+                if aU(a6.invincible) then
                     return false
                 end
                 if not af.isDeathmatch() then
-                    local a5, a6 = ab.GetTeam(), aS(a4.team)
+                    local a7, a8 = ab.GetTeam(), aU(a6.team)
 
-                    if a5 and a5 ~= '' and a6 == a5 then
+                    if a7 and a7 ~= '' and a8 == a7 then
                         return false
                     end
                 end
@@ -91640,22 +91747,22 @@ do
                 return true
             end)
 
-            function aU.new(a5)
-                local a6 = (ah.new())
+            function aW.new(a7)
+                local a8 = (ah.new())
 
-                setmetatable(a6, aU)
+                setmetatable(a8, aW)
 
-                a6._activeJanitor = nil
-                a6._desiredYaw = 0
-                a6._desiredPitch = 0
-                a6._lastLookAngleSend = 0
+                a8._activeJanitor = nil
+                a8._desiredYaw = 0
+                a8._desiredPitch = 0
+                a8._lastLookAngleSend = 0
 
-                a5.Toggle(a5, 'antiAim', 'Anti Aim', false):SetTip{
+                a7.Toggle(a7, 'antiAim', 'Anti Aim', false):SetTip{
                     title = 'Anti Aim',
                     body = 
 "Makes your character face a different direction than you are actually looking.",
                 }
-                a5.Dropdown(a5, 'pitch', 'Pitch', {
+                a7.Dropdown(a7, 'pitch', 'Pitch', {
                     'Up',
                     'Down',
                     'View',
@@ -91664,7 +91771,7 @@ do
                     title = 'Pitch',
                     body = 'Up/down direction other players see you looking.',
                 }
-                a5.Dropdown(a5, 'yaw', 'Yaw', {
+                a7.Dropdown(a7, 'yaw', 'Yaw', {
                     'View',
                     'Back',
                     'Left',
@@ -91677,48 +91784,48 @@ do
 "Left/right direction other players see, relative to where you look. At Target turns your back toward the most dangerous enemy.",
                 }
 
-                local a7 = a5.OnKey(a5, 'antiAim')
+                local a9 = a7.OnKey(a7, 'antiAim')
 
-                a7.Submenu(a7, 'opts', 'Anti Aim')
+                a9.Submenu(a9, 'opts', 'Anti Aim')
 
-                local a8 = a7.OnKey(a7, 'opts')
+                local b = a9.OnKey(a9, 'opts')
 
-                a8.Toggle(a8, 'mouseOverride', 'Manual Mouse Override', false):SetTip{
+                b.Toggle(b, 'mouseOverride', 'Manual Mouse Override', false):SetTip{
                     title = 'Manual Mouse Override',
                     body = 
 "Hold your view still and steer your anti aim with the mouse: push a direction to face that way.",
                 }
 
-                local a9 = a8.OnKey(a8, 'mouseOverride')
+                local ba = b.OnKey(b, 'mouseOverride')
 
-                a9.Submenu(a9, 'indicator', 'Indicator')
+                ba.Submenu(ba, 'indicator', 'Indicator')
 
-                local b = a9.OnKey(a9, 'indicator')
+                local bb = ba.OnKey(ba, 'indicator')
 
-                b.Colorpicker(b, 'indicatorColor', 'Color', aM, 0):SetTip{
+                bb.Colorpicker(bb, 'indicatorColor', 'Color', aO, 0):SetTip{
                     title = 'Color',
                     body = 'Steering indicator dot color.',
                 }
-                b.Slider(b, 'indicatorSize', 'Size', aN, 8, 48, 1, nil, 'px'):SetTip{
+                bb.Slider(bb, 'indicatorSize', 'Size', aP, 8, 48, 1, nil, 'px'):SetTip{
                     title = 'Size',
                     body = 'Steering indicator dot size.',
                 }
-                b.Slider(b, 'indicatorDistance', 'Distance', aO, 20, 200, 1, nil, 'px'):SetTip{
+                bb.Slider(bb, 'indicatorDistance', 'Distance', aQ, 20, 200, 1, nil, 'px'):SetTip{
                     title = 'Distance',
                     body = 'How far from the center the dot sits.',
                 }
-                a8.Toggle(a8, 'roundEnd', 'Round End Anti Aim', false):SetTip{
+                b.Toggle(b, 'roundEnd', 'Round End Anti Aim', false):SetTip{
                     title = 'Round End Anti Aim',
                     body = 'Applies an anti aim while the round is over.',
                 }
 
-                local ba = a8.OnKey(a8, 'roundEnd')
+                local bc = b.OnKey(b, 'roundEnd')
 
-                ba.Submenu(ba, 'opts', 'Round End Anti Aim')
+                bc.Submenu(bc, 'opts', 'Round End Anti Aim')
 
-                local bb = ba.OnKey(ba, 'opts')
+                local bd = bc.OnKey(bc, 'opts')
 
-                bb.Dropdown(bb, 'type', 'Type', {
+                bd.Dropdown(bd, 'type', 'Type', {
                     'None',
                     'Spin',
                 }, 'Spin'):SetTip{
@@ -91726,364 +91833,364 @@ do
                     body = 
 "Spin rotates your character with level pitch. None keeps your normal facing.",
                 }
-                a8.Toggle(a8, 'avoidBackstab', 'Avoid Backstab', false):SetTip{
+                b.Toggle(b, 'avoidBackstab', 'Avoid Backstab', false):SetTip{
                     title = 'Avoid Backstab',
                     body = 
 "Turns to face nearby knife enemies so they can't stab your back.",
                 }
-                a8.Toggle(a8, 'freestanding', 'Freestanding', false):SetTip{
+                b.Toggle(b, 'freestanding', 'Freestanding', false):SetTip{
                     title = 'Freestanding',
                     body = 
 "Automatically faces the left or right side with the most cover from nearby enemies. Falls back to your Yaw setting when neither side is safer.",
                 }
-                a8.Toggle(a8, 'instant', 'Instant', false):SetTip{
+                b.Toggle(b, 'instant', 'Instant', false):SetTip{
                     title = 'Instant',
                     body = 'Turns your character instantly instead of smoothly.',
                 }
 
-                a6._pitch = a5.Get(a5, 'pitch'):Peek()
-                a6._yaw = a5.Get(a5, 'yaw'):Peek()
-                a6._mainEnabled = false
-                a6._roundEndEnabled = false
-                a6._roundEndType = bb.Get(bb, 'type'):Peek()
-                a6._instant = false
-                a6._avoidBackstab = false
-                a6._mouseOverride = false
-                a6._freestanding = false
-                a6._freestand = al.new(a3)
-                a6._threatPlayer = nil
-                a6._threatScanAt = 0
-                a6._steerX = 0
-                a6._steerY = 0
-                a6._steerYaw = 0
-                a6._steerMoved = false
-                a6._faceOffset = 0
-                a6._pendingDX = 0
-                a6._pendingDY = 0
-                a6._camInputDisabled = false
-                a6._indColorEl = b.Get(b, 'indicatorColor')
-                a6._indColor = a6._indColorEl:GetColor()
-                a6._indSize = b.Get(b, 'indicatorSize'):Peek()
-                a6._indRadius = b.Get(b, 'indicatorDistance'):Peek()
-                a6._indGui = nil
-                a6._indCircle = nil
-                a6._indDirX = 0
-                a6._indDirY = -1
-                a6._indX = 0
-                a6._indY = 0
-                a6._indVelX = 0
-                a6._indVelY = 0
-                a6._indAlpha = 0
-                a6._indClock = nil
-                a6._indPrimed = false
-                a6._allowWrite = false
-                a6._alignOrientation = nil
+                a8._pitch = a7.Get(a7, 'pitch'):Peek()
+                a8._yaw = a7.Get(a7, 'yaw'):Peek()
+                a8._mainEnabled = false
+                a8._roundEndEnabled = false
+                a8._roundEndType = bd.Get(bd, 'type'):Peek()
+                a8._instant = false
+                a8._avoidBackstab = false
+                a8._mouseOverride = false
+                a8._freestanding = false
+                a8._freestand = al.new(a5)
+                a8._threatPlayer = nil
+                a8._threatScanAt = 0
+                a8._steerX = 0
+                a8._steerY = 0
+                a8._steerYaw = 0
+                a8._steerMoved = false
+                a8._faceOffset = 0
+                a8._pendingDX = 0
+                a8._pendingDY = 0
+                a8._camInputDisabled = false
+                a8._indColorEl = bb.Get(bb, 'indicatorColor')
+                a8._indColor = a8._indColorEl:GetColor()
+                a8._indSize = bb.Get(bb, 'indicatorSize'):Peek()
+                a8._indRadius = bb.Get(bb, 'indicatorDistance'):Peek()
+                a8._indGui = nil
+                a8._indCircle = nil
+                a8._indDirX = 0
+                a8._indDirY = -1
+                a8._indX = 0
+                a8._indY = 0
+                a8._indVelX = 0
+                a8._indVelY = 0
+                a8._indAlpha = 0
+                a8._indClock = nil
+                a8._indPrimed = false
+                a8._allowWrite = false
+                a8._alignOrientation = nil
 
-                a6.Track(a6, a5.Get(a5, 'antiAim'):OnChange(function(bc)
-                    a6._mainEnabled = bc
+                a8.Track(a8, a7.Get(a7, 'antiAim'):OnChange(function(be)
+                    a8._mainEnabled = be
 
-                    am.SetEnabled(bc)
-                    a6.refreshActive(a6)
+                    am.SetEnabled(be)
+                    a8.refreshActive(a8)
                 end))
-                a6.Track(a6, am.signals.onOverrideChanged:Connect(function()
-                    a6.refreshActive(a6)
+                a8.Track(a8, am.signals.onOverrideChanged:Connect(function()
+                    a8.refreshActive(a8)
                 end))
-                a6.Track(a6, a5.Watch(a5, 'antiAim.opts.roundEnd', function(bc)
-                    a6._roundEndEnabled = bc
+                a8.Track(a8, a7.Watch(a7, 'antiAim.opts.roundEnd', function(be)
+                    a8._roundEndEnabled = be
 
-                    a6.refreshActive(a6)
+                    a8.refreshActive(a8)
                 end))
-                a6.Track(a6, bb.Get(bb, 'type'):OnChange(function(bc)
-                    a6._roundEndType = bc
+                a8.Track(a8, bd.Get(bd, 'type'):OnChange(function(be)
+                    a8._roundEndType = be
 
-                    a6.refreshActive(a6)
+                    a8.refreshActive(a8)
                 end))
-                a6.Track(a6, aT(af.gameState, function()
-                    a6.refreshActive(a6)
+                a8.Track(a8, aV(af.gameState, function()
+                    a8.refreshActive(a8)
                 end))
-                a6.Track(a6, a5.Get(a5, 'pitch'):OnChange(function(bc)
-                    a6._pitch = bc
+                a8.Track(a8, a7.Get(a7, 'pitch'):OnChange(function(be)
+                    a8._pitch = be
                 end))
-                a6.Track(a6, a5.Get(a5, 'yaw'):OnChange(function(bc)
-                    a6._yaw = bc
+                a8.Track(a8, a7.Get(a7, 'yaw'):OnChange(function(be)
+                    a8._yaw = be
                 end))
-                a6.Track(a6, a5.Watch(a5, 'antiAim.opts.instant', function(bc)
-                    a6._instant = bc
+                a8.Track(a8, a7.Watch(a7, 'antiAim.opts.instant', function(be)
+                    a8._instant = be
                 end))
-                a6.Track(a6, a5.Watch(a5, 'antiAim.opts.avoidBackstab', function(
-                    bc
+                a8.Track(a8, a7.Watch(a7, 'antiAim.opts.avoidBackstab', function(
+                    be
                 )
-                    a6._avoidBackstab = bc
+                    a8._avoidBackstab = be
                 end))
-                a6.Track(a6, a5.Watch(a5, 'antiAim.opts.freestanding', function(
-                    bc
+                a8.Track(a8, a7.Watch(a7, 'antiAim.opts.freestanding', function(
+                    be
                 )
-                    a6._freestanding = bc
+                    a8._freestanding = be
 
-                    if not bc then
-                        a6._freestand:Reset()
+                    if not be then
+                        a8._freestand:Reset()
                     end
                 end))
-                a6.Track(a6, a5.Watch(a5, 'antiAim.opts.mouseOverride', function(
-                    bc
+                a8.Track(a8, a7.Watch(a7, 'antiAim.opts.mouseOverride', function(
+                    be
                 )
-                    a6._mouseOverride = bc
-                    a6._steerX = 0
-                    a6._steerY = 0
-                    a6._steerYaw = 0
-                    a6._steerMoved = false
-                    a6._pendingDX = 0
-                    a6._pendingDY = 0
+                    a8._mouseOverride = be
+                    a8._steerX = 0
+                    a8._steerY = 0
+                    a8._steerYaw = 0
+                    a8._steerMoved = false
+                    a8._pendingDX = 0
+                    a8._pendingDY = 0
 
-                    if bc then
-                        a6._indPrimed = false
-                        a6._indClock = nil
-                        a6._indDirX = 0
-                        a6._indDirY = -1
+                    if be then
+                        a8._indPrimed = false
+                        a8._indClock = nil
+                        a8._indDirX = 0
+                        a8._indDirY = -1
                     end
                 end))
-                a6.Track(a6, a6._indColorEl:OnColorChange(function()
-                    a6._indColor = a6._indColorEl:GetColor()
+                a8.Track(a8, a8._indColorEl:OnColorChange(function()
+                    a8._indColor = a8._indColorEl:GetColor()
 
-                    if a6._indCircle then
-                        a6._indCircle.ImageColor3 = a6._indColor
+                    if a8._indCircle then
+                        a8._indCircle.ImageColor3 = a8._indColor
                     end
                 end))
-                a6.Track(a6, b.Get(b, 'indicatorSize'):OnChange(function(bc)
-                    a6._indSize = bc
+                a8.Track(a8, bb.Get(bb, 'indicatorSize'):OnChange(function(be)
+                    a8._indSize = be
 
-                    if a6._indCircle then
-                        a6._indCircle.Size = UDim2.fromOffset(bc, bc)
+                    if a8._indCircle then
+                        a8._indCircle.Size = UDim2.fromOffset(be, be)
                     end
                 end))
-                a6.Track(a6, b.Get(b, 'indicatorDistance'):OnChange(function(
-                    bc
+                a8.Track(a8, bb.Get(bb, 'indicatorDistance'):OnChange(function(
+                    be
                 )
-                    a6._indRadius = bc
+                    a8._indRadius = be
                 end))
-                a6.Track(a6, ac.RegisterSource('antiAim', ax, function()
-                    if not a6._activeJanitor then
+                a8.Track(a8, ac.RegisterSource('antiAim', az, function()
+                    if not a8._activeJanitor then
                         return nil
                     end
 
                     return {
-                        VerticalLook = a6._desiredPitch,
-                        HorizontalAngle = a6._desiredYaw,
+                        VerticalLook = a8._desiredPitch,
+                        HorizontalAngle = a8._desiredYaw,
                     }
                 end))
 
-                a6._instant = a5.Peek(a5, 'antiAim.opts.instant') == true
-                a6._avoidBackstab = a5.Peek(a5, 'antiAim.opts.avoidBackstab') == true
-                a6._freestanding = a5.Peek(a5, 'antiAim.opts.freestanding') == true
-                a6._mouseOverride = a5.Peek(a5, 'antiAim.opts.mouseOverride') == true
-                a6._mainEnabled = a5.Peek(a5, 'antiAim') == true
-                a6._roundEndEnabled = a5.Peek(a5, 'antiAim.opts.roundEnd') == true
+                a8._instant = a7.Peek(a7, 'antiAim.opts.instant') == true
+                a8._avoidBackstab = a7.Peek(a7, 'antiAim.opts.avoidBackstab') == true
+                a8._freestanding = a7.Peek(a7, 'antiAim.opts.freestanding') == true
+                a8._mouseOverride = a7.Peek(a7, 'antiAim.opts.mouseOverride') == true
+                a8._mainEnabled = a7.Peek(a7, 'antiAim') == true
+                a8._roundEndEnabled = a7.Peek(a7, 'antiAim.opts.roundEnd') == true
 
-                am.SetEnabled(a6._mainEnabled)
-                a6.refreshActive(a6)
+                am.SetEnabled(a8._mainEnabled)
+                a8.refreshActive(a8)
 
-                return a6
+                return a8
             end
 
-            aU.isRoundEndActive = LPH_NO_VIRTUALIZE(function(a5)
-                return a5._roundEndEnabled and a5._roundEndType == 'Spin' and af.isRoundOver()
+            aW.isRoundEndActive = LPH_NO_VIRTUALIZE(function(a7)
+                return a7._roundEndEnabled and a7._roundEndType == 'Spin' and af.isRoundOver()
             end)
 
-            function aU.refreshActive(a5)
-                if a5._mainEnabled or a5.isRoundEndActive(a5) or am.HasOverride() then
-                    a5.Enable(a5)
+            function aW.refreshActive(a7)
+                if a7._mainEnabled or a7.isRoundEndActive(a7) or am.HasOverride() then
+                    a7.Enable(a7)
                 else
-                    a5.Disable(a5)
+                    a7.Disable(a7)
                 end
             end
 
-            aU._scanThreat = LPH_NO_VIRTUALIZE(function(a5, a6)
-                local a7, a8, a9, b, ba = a6 + aX, nil, 0, a5._threatPlayer, 0
+            aW._scanThreat = LPH_NO_VIRTUALIZE(function(a7, a8)
+                local a9, b, ba, bb, bc = a8 + aZ, nil, 0, a7._threatPlayer, 0
 
-                a2 = a_
+                a4 = a1
 
-                for bb, bc in next, ae.GetAll()do
-                    if not a4(bc) then
+                for bd, be in next, ae.GetAll()do
+                    if not a6(be) then
                         continue
                     end
 
-                    local bd = (aS(bc.hrp))
+                    local bf = (aU(be.hrp))
 
-                    if not bd then
+                    if not bf then
                         continue
                     end
 
-                    local be = aS(bc.parts).Head
-                    local bf, bg = (be or bd), be and be.Position or (bd.Position + aX)
-                    local bh = a6 - bg
-                    local bi = bh.Magnitude
+                    local bg = aU(be.parts).Head
+                    local bh, bi = (bg or bf), bg and bg.Position or (bf.Position + aZ)
+                    local bj = a8 - bi
+                    local bk = bj.Magnitude
 
-                    if bi < 1e-3 then
+                    if bk < 1e-3 then
                         continue
                     end
 
-                    local bj, bk = bh / bi, bf.CFrame.LookVector
-                    local bl = bk.X * bj.X + bk.Y * bj.Y + bk.Z * bj.Z
-                    local bm = 0.25 + 0.75 * (bl > 0 and bl or 0)
-                    local bn = bm / math.max(bi, aG)
+                    local bl, bm = bj / bk, bh.CFrame.LookVector
+                    local bn = bm.X * bl.X + bm.Y * bl.Y + bm.Z * bl.Z
+                    local bo = 0.25 + 0.75 * (bn > 0 and bn or 0)
+                    local bp = bo / math.max(bk, aI)
 
-                    if a3(bg, a7, bd.Parent) then
-                        bn *= aH
+                    if a5(bi, a9, bf.Parent) then
+                        bp *= aJ
                     end
-                    if bc == b then
-                        ba = bn
+                    if be == bb then
+                        bc = bp
                     end
-                    if bn > a9 then
-                        a9 = bn
-                        a8 = bc
+                    if bp > ba then
+                        ba = bp
+                        b = be
                     end
                 end
 
-                if a8 == nil then
-                    a5._threatPlayer = nil
+                if b == nil then
+                    a7._threatPlayer = nil
 
                     return
                 end
-                if b ~= nil and ba > 0 and a8 ~= b and a9 < ba * aF then
+                if bb ~= nil and bc > 0 and b ~= bb and ba < bc * aH then
                     return
                 end
 
-                a5._threatPlayer = a8
+                a7._threatPlayer = b
             end)
-            aU.resolveAtTargetYaw = LPH_NO_VIRTUALIZE(function(a5)
-                local a6 = aS(ad.parts).HumanoidRootPart
+            aW.resolveAtTargetYaw = LPH_NO_VIRTUALIZE(function(a7)
+                local a8 = aU(ad.parts).HumanoidRootPart
 
-                if not a6 then
-                    a5._threatPlayer = nil
+                if not a8 then
+                    a7._threatPlayer = nil
 
                     return nil
                 end
 
-                local a7, a8 = a6.Position, os.clock()
+                local a9, b = a8.Position, os.clock()
 
-                if a8 - a5._threatScanAt >= aE then
-                    a5._threatScanAt = a8
+                if b - a7._threatScanAt >= aG then
+                    a7._threatScanAt = b
 
-                    a5._scanThreat(a5, a7)
+                    a7._scanThreat(a7, a9)
                 end
 
-                local a9 = a5._threatPlayer
+                local ba = a7._threatPlayer
 
-                if not a9 then
+                if not ba then
                     return nil
                 end
 
-                local b = (aS(a9.hrp))
+                local bb = (aU(ba.hrp))
 
-                if not b then
+                if not bb then
                     return nil
                 end
 
-                local ba = b.Position
+                local bc = bb.Position
 
-                return math.atan2(ba.X - a7.X, ba.Z - a7.Z)
+                return math.atan2(bc.X - a9.X, bc.Z - a9.Z)
             end)
-            aU.resolveFreestandSide = LPH_NO_VIRTUALIZE(function(a5, a6)
-                local a7, a8 = a5._freestand, aS(ad.parts)
-                local a9, b, ba = a8.Head, a8.HumanoidRootPart, nil
+            aW.resolveFreestandSide = LPH_NO_VIRTUALIZE(function(a7, a8)
+                local a9, b = a7._freestand, aU(ad.parts)
+                local ba, bb, bc = b.Head, b.HumanoidRootPart, nil
 
-                if a9 then
-                    ba = a9.Position
-                elseif b then
-                    ba = b.Position + aX
+                if ba then
+                    bc = ba.Position
+                elseif bb then
+                    bc = bb.Position + aZ
                 else
-                    a7.Reset(a7)
+                    a9.Reset(a9)
 
                     return nil
                 end
 
-                local bb = os.clock()
+                local bd = os.clock()
 
-                if a7.ShouldRecompute(a7, bb, ba) then
-                    local bc = 0
+                if a9.ShouldRecompute(a9, bd, bc) then
+                    local be = 0
 
-                    for bd, be in next, ae.GetAll()do
-                        if not a4(be) then
+                    for bf, bg in next, ae.GetAll()do
+                        if not a6(bg) then
                             continue
                         end
 
-                        local bf, bg, bh, bi = aS(be.parts).Head, (aS(be.hrp)), nil, nil
+                        local bh, bi, bj, bk = aU(bg.parts).Head, (aU(bg.hrp)), nil, nil
 
-                        if bf then
-                            bh = bf.Position
-                            bi = bf.Parent
-                        elseif bg then
-                            bh = bg.Position + aX
-                            bi = bg.Parent
+                        if bh then
+                            bj = bh.Position
+                            bk = bh.Parent
+                        elseif bi then
+                            bj = bi.Position + aZ
+                            bk = bi.Parent
                         else
                             continue
                         end
 
-                        bc += 1
+                        be += 1
 
-                        aY[bc] = bh
-                        aZ[bc] = bi
+                        a_[be] = bj
+                        a0[be] = bk
                     end
 
-                    a2 = a_
+                    a4 = a1
 
-                    local bd = CFrame.fromEulerAnglesYXZ(0, a6, 0).RightVector
+                    local bf = CFrame.fromEulerAnglesYXZ(0, a8, 0).RightVector
 
-                    a7.Compute(a7, bb, ba, bd, aY, aZ, bc)
+                    a9.Compute(a9, bd, bc, bf, a_, a0, be)
                 end
 
-                return a7.GetSide(a7)
+                return a9.GetSide(a9)
             end)
-            aU.resolveBackstabYaw = LPH_NO_VIRTUALIZE(function(a5)
-                if not a5._avoidBackstab then
+            aW.resolveBackstabYaw = LPH_NO_VIRTUALIZE(function(a7)
+                if not a7._avoidBackstab then
                     return nil
                 end
 
-                local a6 = aS(ad.parts).HumanoidRootPart
+                local a8 = aU(ad.parts).HumanoidRootPart
 
-                if not a6 then
+                if not a8 then
                     return nil
                 end
 
-                local a7, a8, a9, b = a6.Position, aD, math.huge, nil
+                local a9, b, ba, bb = a8.Position, aF, math.huge, nil
 
-                for ba, bb in next, ae.GetAll()do
-                    if not a4(bb) then
+                for bc, bd in next, ae.GetAll()do
+                    if not a6(bd) then
                         continue
                     end
 
-                    local bc = aS(bb.currentEquipped)
+                    local be = aU(bd.currentEquipped)
 
-                    if not bc or not ag.isMeleeName(bc.Name) then
+                    if not be or not ag.isMeleeName(be.Name) then
                         continue
                     end
 
-                    local bd = (aS(bb.hrp))
+                    local bf = (aU(bd.hrp))
 
-                    if not bd then
+                    if not bf then
                         continue
                     end
 
-                    local be = bd.Position - a7
-                    local bf = be.Magnitude
+                    local bg = bf.Position - a9
+                    local bh = bg.Magnitude
 
-                    if bf > a8 or bf >= a9 then
+                    if bh > b or bh >= ba then
                         continue
                     end
 
-                    a9 = bf
-                    b = math.atan2(-be.X, -be.Z)
+                    ba = bh
+                    bb = math.atan2(-bg.X, -bg.Z)
                 end
 
-                return b
+                return bb
             end)
 
-            function aU.setupIndicator(a5)
-                if a5._indGui then
+            function aW.setupIndicator(a7)
+                if a7._indGui then
                     return
                 end
 
-                local a6 = (ak.new('ScreenGui', {
+                local a8 = (ak.new('ScreenGui', {
                     IgnoreGuiInset = true,
                     ZIndexBehavior = Enum.ZIndexBehavior.Sibling,
                     ResetOnSpawn = false,
@@ -92092,454 +92199,479 @@ do
                     DisplayOrder = 6,
                 }, cloneref(gethui())))
 
-                a5._indGui = a6
-                a5._indCircle = (ak.new('ImageLabel', {
+                a7._indGui = a8
+                a7._indCircle = (ak.new('ImageLabel', {
                     Image = aj.Get('image', 'circle_shadow'),
-                    ImageColor3 = a5._indColor,
+                    ImageColor3 = a7._indColor,
                     ImageTransparency = 1,
                     AnchorPoint = Vector2.new(0.5, 0.5),
                     BackgroundTransparency = 1,
                     BorderSizePixel = 0,
-                    Size = UDim2.fromOffset(a5._indSize, a5._indSize),
+                    Size = UDim2.fromOffset(a7._indSize, a7._indSize),
                     ZIndex = 2,
                     Visible = false,
-                }, a6))
+                }, a8))
             end
-            function aU.teardownIndicator(a5)
-                if a5._indGui then
-                    a5._indGui:Destroy()
+            function aW.teardownIndicator(a7)
+                if a7._indGui then
+                    a7._indGui:Destroy()
 
-                    a5._indGui = nil
-                    a5._indCircle = nil
+                    a7._indGui = nil
+                    a7._indCircle = nil
                 end
             end
 
-            aU.updateCameraInput = LPH_NO_VIRTUALIZE(function(a5)
-                local a6 = a5._mainEnabled and a5._mouseOverride and ac.IsThirdPerson()
+            aW.updateCameraInput = LPH_NO_VIRTUALIZE(function(a7)
+                local a8 = a7._mainEnabled and a7._mouseOverride and ac.IsThirdPerson()
 
-                if a6 == a5._camInputDisabled then
+                if a8 == a7._camInputDisabled then
                     return
                 end
 
-                local a7 = aw()
+                local a9 = ay()
 
-                if not a7 then
+                if not a9 then
                     return
                 end
 
-                a7.setInputEnabled(not a6)
+                a9.setInputEnabled(not a8)
 
-                a5._camInputDisabled = a6
+                a7._camInputDisabled = a8
             end)
-            aU.updateIndicator = LPH_NO_VIRTUALIZE(function(a5)
+            aW.updateIndicator = LPH_NO_VIRTUALIZE(function(a7)
                 setthreadidentity(8)
 
-                local a6 = a5._mainEnabled and a5._mouseOverride and ac.IsThirdPerson()
+                local a8 = a7._mainEnabled and a7._mouseOverride and ac.IsThirdPerson()
 
-                if not a6 and a5._indAlpha <= 0.01 then
-                    a5.teardownIndicator(a5)
+                if not a8 and a7._indAlpha <= 0.01 then
+                    a7.teardownIndicator(a7)
 
-                    a5._indAlpha = 0
-                    a5._indPrimed = false
-                    a5._indClock = nil
-                    a5._indVelX = 0
-                    a5._indVelY = 0
+                    a7._indAlpha = 0
+                    a7._indPrimed = false
+                    a7._indClock = nil
+                    a7._indVelX = 0
+                    a7._indVelY = 0
 
                     return
                 end
-                if not a5._indGui then
-                    a5.setupIndicator(a5)
+                if not a7._indGui then
+                    a7.setupIndicator(a7)
                 end
 
-                local a7 = os.clock()
-                local a8 = a5._indClock and (a7 - a5._indClock) or 0
+                local a9 = os.clock()
+                local b = a7._indClock and (a9 - a7._indClock) or 0
 
-                a5._indClock = a7
+                a7._indClock = a9
 
-                if a8 > 0.1 then
-                    a8 = 0.1
+                if b > 0.1 then
+                    b = 0.1
                 end
 
-                local a9 = au.ViewportSize
-                local b, ba, bb, bc = a9.X * 0.5, a9.Y * 0.5, nil, nil
-
-                if a6 then
-                    if a5._steerMoved then
-                        local bd = (a5._steerX * a5._steerX + a5._steerY * a5._steerY) ^ 0.5
-
-                        if bd > aL then
-                            a5._indDirX = a5._steerX / bd
-                            a5._indDirY = a5._steerY / bd
-                        end
-                    else
-                        a5._indDirX = -math.sin(a5._faceOffset)
-                        a5._indDirY = math.cos(a5._faceOffset)
-                    end
-
-                    bb = b + a5._indDirX * a5._indRadius
-                    bc = ba - a5._indDirY * a5._indRadius
-                else
-                    bb, bc = b, ba
-                end
-                if not a5._indPrimed then
-                    a5._indX, a5._indY = bb, bc
-                    a5._indVelX, a5._indVelY = 0, 0
-                    a5._indPrimed = true
-                else
-                    local bd, be = (bb - a5._indX) * aP - a5._indVelX * aQ, (bc - a5._indY) * aP - a5._indVelY * aQ
-
-                    a5._indVelX += bd * a8
-                    a5._indVelY += be * a8
-                    a5._indX += a5._indVelX * a8
-                    a5._indY += a5._indVelY * a8
-                end
-
-                local bd, be = a6 and 1 or 0, a8 > 0 and (1 - math.exp(-aR * a8)) or 0
-
-                a5._indAlpha += (bd - a5._indAlpha) * be
-
-                local bf = a5._indCircle
-
-                bf.Visible = true
-                bf.Position = UDim2.fromOffset(a5._indX, a5._indY)
-                bf.ImageTransparency = 1 - a5._indAlpha
-            end)
-
-            function aU.recompute(a5)
-                local a6, a7 = au.CFrame:ToEulerAnglesYXZ()
-
-                if a5.isRoundEndActive(a5) then
-                    a5._pendingDX = 0
-                    a5._pendingDY = 0
-                    a5._desiredYaw = (os.clock() * aI) % az
-                    a5._desiredPitch = 0
-                elseif a5._mainEnabled then
-                    local a8, a9 = nil, a5._freestanding and a5.resolveFreestandSide(a5, a7) or nil
-
-                    if a9 == 'Left' then
-                        a8 = a7 + math.pi / 2
-                    elseif a9 == 'Right' then
-                        a8 = a7 - math.pi / 2
-                    elseif a5._yaw == 'At Target' then
-                        a8 = a5.resolveAtTargetYaw(a5) or (a7 + math.pi)
-                    else
-                        a8 = aV(a5._yaw, a7)
-                    end
-                    if a5._mouseOverride and ac.IsThirdPerson() then
-                        local b, ba = a5._pendingDX, a5._pendingDY
-
-                        a5._pendingDX = 0
-                        a5._pendingDY = 0
-
-                        local bb, bc = a5._steerX + b * aJ, a5._steerY - ba * aJ
-                        local bd = (bb * bb + bc * bc) ^ 0.5
-
-                        if bd > aK then
-                            local be = aK / bd
-
-                            bb *= be
-                            bc *= be
-
-                            bd = aK
-                        end
-
-                        a5._steerX = bb
-                        a5._steerY = bc
-
-                        if bd > aL then
-                            a5._steerYaw = math.atan2(-bb, bc)
-                            a5._steerMoved = true
-                        end
-                        if a5._steerMoved then
-                            a5._desiredYaw = a7 + a5._steerYaw
-                        else
-                            a5._desiredYaw = a8
-                        end
-                    else
-                        a5._desiredYaw = a8
-                    end
-
-                    a5._desiredPitch = aW(a5._pitch)
-
-                    local b = a5.resolveBackstabYaw(a5)
-
-                    if b then
-                        a5._desiredYaw = b
-                    end
-                else
-                    a5._pendingDX = 0
-                    a5._pendingDY = 0
-                    a5._desiredYaw = a7
-                    a5._desiredPitch = au.CFrame.LookVector.Y * ay
-                end
-
-                local a8 = am.GetYawOverride()
+                local ba = aw.ViewportSize
+                local bb, bc, bd, be = ba.X * 0.5, ba.Y * 0.5, nil, nil
 
                 if a8 then
-                    a5._desiredYaw = a8
+                    if a7._steerMoved then
+                        local bf = (a7._steerX * a7._steerX + a7._steerY * a7._steerY) ^ 0.5
+
+                        if bf > aN then
+                            a7._indDirX = a7._steerX / bf
+                            a7._indDirY = a7._steerY / bf
+                        end
+                    else
+                        a7._indDirX = -math.sin(a7._faceOffset)
+                        a7._indDirY = math.cos(a7._faceOffset)
+                    end
+
+                    bd = bb + a7._indDirX * a7._indRadius
+                    be = bc - a7._indDirY * a7._indRadius
+                else
+                    bd, be = bb, bc
+                end
+                if not a7._indPrimed then
+                    a7._indX, a7._indY = bd, be
+                    a7._indVelX, a7._indVelY = 0, 0
+                    a7._indPrimed = true
+                else
+                    local bf, bg = (bd - a7._indX) * aR - a7._indVelX * aS, (be - a7._indY) * aR - a7._indVelY * aS
+
+                    a7._indVelX += bf * b
+                    a7._indVelY += bg * b
+                    a7._indX += a7._indVelX * b
+                    a7._indY += a7._indVelY * b
                 end
 
-                local a9 = am.GetPitchOverride()
+                local bf, bg = a8 and 1 or 0, b > 0 and (1 - math.exp(-aT * b)) or 0
 
-                if a9 then
-                    a5._desiredPitch = a9
+                a7._indAlpha += (bf - a7._indAlpha) * bg
+
+                local bh = a7._indCircle
+
+                bh.Visible = true
+                bh.Position = UDim2.fromOffset(a7._indX, a7._indY)
+                bh.ImageTransparency = 1 - a7._indAlpha
+            end)
+
+            function aW.recompute(a7)
+                local a8, a9 = aw.CFrame:ToEulerAnglesYXZ()
+
+                if a7.isRoundEndActive(a7) then
+                    a7._pendingDX = 0
+                    a7._pendingDY = 0
+                    a7._desiredYaw = (os.clock() * aK) % aC
+                    a7._desiredPitch = 0
+                elseif a7._mainEnabled then
+                    local b, ba = nil, a7._freestanding and a7.resolveFreestandSide(a7, a9) or nil
+
+                    if ba == 'Left' then
+                        b = a9 + math.pi / 2
+                    elseif ba == 'Right' then
+                        b = a9 - math.pi / 2
+                    elseif a7._yaw == 'At Target' then
+                        b = a7.resolveAtTargetYaw(a7) or (a9 + math.pi)
+                    else
+                        b = aX(a7._yaw, a9)
+                    end
+                    if a7._mouseOverride and ac.IsThirdPerson() then
+                        local bb, bc = a7._pendingDX, a7._pendingDY
+
+                        a7._pendingDX = 0
+                        a7._pendingDY = 0
+
+                        local bd, be = a7._steerX + bb * aL, a7._steerY - bc * aL
+                        local bf = (bd * bd + be * be) ^ 0.5
+
+                        if bf > aM then
+                            local bg = aM / bf
+
+                            bd *= bg
+                            be *= bg
+
+                            bf = aM
+                        end
+
+                        a7._steerX = bd
+                        a7._steerY = be
+
+                        if bf > aN then
+                            a7._steerYaw = math.atan2(-bd, be)
+                            a7._steerMoved = true
+                        end
+                        if a7._steerMoved then
+                            a7._desiredYaw = a9 + a7._steerYaw
+                        else
+                            a7._desiredYaw = b
+                        end
+                    else
+                        a7._desiredYaw = b
+                    end
+
+                    a7._desiredPitch = aY(a7._pitch)
+
+                    local bb = a7.resolveBackstabYaw(a7)
+
+                    if bb then
+                        a7._desiredYaw = bb
+                    end
+                else
+                    a7._pendingDX = 0
+                    a7._pendingDY = 0
+                    a7._desiredYaw = a9
+                    a7._desiredPitch = aw.CFrame.LookVector.Y * aA
                 end
 
-                a5._faceOffset = a5._desiredYaw - a7
+                local b = am.GetYawOverride()
 
-                am.NotifyAngles(a5._desiredYaw, a5._desiredPitch)
+                if b then
+                    a7._desiredYaw = b
+                end
+
+                local ba = am.GetPitchOverride()
+
+                if ba then
+                    a7._desiredPitch = ba
+                end
+
+                a7._faceOffset = a7._desiredYaw - a9
+
+                am.NotifyAngles(a7._desiredYaw, a7._desiredPitch)
             end
-            function aU.bindAlignOrientation(a5, a6)
-                local a7 = (getrawmetatable(a6))
-                local a8 = a7.__newindex
-                local a9 = {
-                    __newindex = LPH_NO_VIRTUALIZE(function(a9, b, ba)
-                        if not checkcaller() and not a5._allowWrite then
-                            if b == 'CFrame' then
+            function aW.bindAlignOrientation(a7, a8)
+                local a9 = (getrawmetatable(a8))
+                local b = a9.__newindex
+                local ba = {
+                    __newindex = LPH_NO_VIRTUALIZE(function(ba, bb, bc)
+                        if not checkcaller() and not a7._allowWrite then
+                            if bb == 'CFrame' then
                                 return
-                            elseif b == 'Enabled' then
-                                local bb = (getfenv(2))
-                                local bc = bb.math
+                            elseif bb == 'Enabled' then
+                                local bd = (getfenv(2))
+                                local be = bd.math
 
-                                bb.math = setmetatable({
-                                    abs = function(bd)
-                                        return math.abs(bd) > 4 and 50001 or bc.abs(bd)
+                                bd.math = setmetatable({
+                                    abs = function(bf)
+                                        return math.abs(bf) > 4 and 50001 or be.abs(bf)
                                     end,
-                                }, {__index = bc})
+                                }, {__index = be})
 
                                 task.defer(function()
-                                    bb.math = bc
+                                    bd.math = be
                                 end)
 
-                                return a8(a9, b, true)
+                                return b(ba, bb, true)
                             end
                         end
 
-                        return a8(a9, b, ba)
+                        return b(ba, bb, bc)
                     end),
                 }
 
-                for b, ba in next, a7 do
-                    if not a9[b] then
-                        a9[b] = ba
+                for bb, bc in next, a9 do
+                    if not ba[bb] then
+                        ba[bb] = bc
                     end
                 end
 
-                setrawmetatable(a6, a9)
+                setrawmetatable(a8, ba)
 
-                a6.Enabled = true
+                a8.Enabled = true
 
                 return function()
-                    setrawmetatable(a6, a7)
+                    setrawmetatable(a8, a9)
                 end
             end
-            function aU.bindHumanoidRootPart(a5, a6, a7)
-                local a8 = an.new()
+            function aW.bindHumanoidRootPart(a7, a8, a9)
+                local b = ao.new()
 
-                a7.Add(a7, a8, 'Destroy')
+                a9.Add(a9, b, 'Destroy')
 
-                local function tryBind(a9)
-                    if a9.ClassName ~= 'AlignOrientation' then
+                local function tryBind(ba)
+                    if ba.ClassName ~= 'AlignOrientation' then
                         return
                     end
-                    if a8.Get(a8, 'AlignOrientation') then
+                    if b.Get(b, 'AlignOrientation') then
                         return
                     end
 
-                    local b = a5.bindAlignOrientation(a5, a9)
+                    local bb = a7.bindAlignOrientation(a7, ba)
 
-                    a5._alignOrientation = a9
+                    a7._alignOrientation = ba
 
-                    a8.Add(a8, ap.Stepped:Connect(LPH_NO_VIRTUALIZE(function()
-                        a5._allowWrite = true
-                        a9.CFrame = CFrame.Angles(0, a5._desiredYaw, 0)
-                        a5._allowWrite = false
+                    b.Add(b, ar.Stepped:Connect(LPH_NO_VIRTUALIZE(function()
+                        a7._allowWrite = true
+                        ba.CFrame = CFrame.Angles(0, a7._desiredYaw, 0)
+                        a7._allowWrite = false
                     end)), 'Disconnect')
-                    a8.Add(a8, function()
-                        if a5._alignOrientation == a9 then
-                            a5._alignOrientation = nil
+                    b.Add(b, function()
+                        if a7._alignOrientation == ba then
+                            a7._alignOrientation = nil
                         end
 
-                        b()
+                        bb()
                     end, true, 'AlignOrientation')
                 end
 
-                a8.Add(a8, a6.ChildAdded:Connect(tryBind), 'Disconnect')
+                b.Add(b, a8.ChildAdded:Connect(tryBind), 'Disconnect')
 
-                for a9, b in next, a6.GetChildren(a6)do
-                    tryBind(b)
+                for ba, bb in next, a8.GetChildren(a8)do
+                    tryBind(bb)
                 end
             end
-            function aU.Enable(a5)
-                if a5._activeJanitor then
+            function aW.Enable(a7)
+                if a7._activeJanitor then
                     return
                 end
 
-                local a6 = an.new()
+                local a8 = ao.new()
 
-                a5._activeJanitor = a6
+                a7._activeJanitor = a8
 
                 am.SetActive(true)
-                a5.recompute(a5)
+                a7.recompute(a7)
 
-                a5._lastLookAngleSend = 0
+                a7._lastLookAngleSend = 0
 
-                a6.Add(a6, ap.PreRender:Connect(LPH_NO_VIRTUALIZE(function()
-                    a5.recompute(a5)
-
-                    local a7 = tick()
-
-                    if a7 - a5._lastLookAngleSend < aA then
-                        return
-                    end
-
-                    a5._lastLookAngleSend = a7
-
-                    setthreadidentity(2)
-                    aa.SendPacket('Character', 'UpdateLookAngle', {
-                        HorizontalAngle = a5._desiredYaw,
-                        VerticalLook = a5._desiredPitch,
-                    })
-                    setthreadidentity(8)
+                a8.Add(a8, ar.PreRender:Connect(LPH_NO_VIRTUALIZE(function()
+                    a7.recompute(a7)
                 end)), 'Disconnect')
-                aa.HookPacket('Character', 'UpdateLookAngle', LPH_NO_VIRTUALIZE(function(
-                )
-                    return false, {
-                        HorizontalAngle = a5._desiredYaw,
-                        VerticalLook = a5._desiredPitch,
-                    }
-                end))
-                a6.Add(a6, function()
-                    aa.UnhookPacket('Character', 'UpdateLookAngle')
-                end, true)
-                ap.BindToRenderStep(ap, aC, Enum.RenderPriority.Last.Value, LPH_NO_VIRTUALIZE(function(
-                )
-                    if not a5._instant then
-                        return
+
+                local a9 = aq.FindFirstChild(aq, 'Classes')
+                local b = a9 and a9.FindFirstChild(a9, 'Character')
+
+                if b then
+                    local ba, bb = pcall(require, b)
+                    local bc = ba and type(bb) == 'table' and rawget(bb, 'SampleInput')
+
+                    if type(bc) == 'function' then
+                        local bd
+
+                        bd = an.add(bc, LPH_NO_VIRTUALIZE(function(be, ...)
+                            local bf = bd(be, ...)
+
+                            if type(bf) == 'table' then
+                                bf.LookYaw = a7._desiredYaw
+                                bf.VerticalLook = math.clamp(a7._desiredPitch, -1, 1)
+                            end
+
+                            return bf
+                        end))
+
+                        a8.Add(a8, function()
+                            an.restore(bc)
+                        end, true)
                     end
-
-                    local a7 = ab.GetCharacterObject()
-
-                    if not a7 then
-                        return
-                    end
-
-                    local a8 = a5._desiredYaw
-
-                    a7.TargetYRotation = a8
-                    a7.CurrentYRotation = a8
-
-                    local a9 = a5._alignOrientation
-
-                    if a9 then
-                        a5._allowWrite = true
-                        a9.CFrame = CFrame.Angles(0, a8, 0)
-                        a9.RigidityEnabled = true
-                        a9.Enabled = true
-                        a5._allowWrite = false
-                    end
-
-                    local b = aS(ad.parts).HumanoidRootPart
-
-                    if not b or not b.Parent then
-                        return
-                    end
-
-                    local ba, bb = b.CFrame:ToEulerAnglesYXZ()
-                    local bc = (a8 - bb) % az
-
-                    if bc > math.pi then
-                        bc = bc - az
-                    end
-                    if math.abs(bc) < 0.01 then
-                        return
-                    end
-
-                    b.CFrame = CFrame.new(b.Position) * CFrame.Angles(0, a8, 0)
-                end))
-                a6.Add(a6, function()
-                    ap.UnbindFromRenderStep(ap, aC)
-                end, true)
-                a6.Add(a6, aq.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(
-                    a7
-                )
-                    if a7.UserInputType ~= Enum.UserInputType.MouseMovement then
-                        return
-                    end
-                    if not a5._mainEnabled or not a5._mouseOverride or not ac.IsThirdPerson() then
-                        return
-                    end
-
-                    a5._pendingDX += a7.Delta.X
-                    a5._pendingDY += a7.Delta.Y
-                end)))
-                a6.Add(a6, ap.PreRender:Connect(LPH_NO_VIRTUALIZE(function()
-                    a5.updateCameraInput(a5)
-                    a5.updateIndicator(a5)
-                end)))
-                a6.Add(a6, function()
-                    if a5._camInputDisabled then
-                        local a7 = aw()
-
-                        if a7 then
-                            a7.setInputEnabled(true)
-                        end
-
-                        a5._camInputDisabled = false
-                    end
-
-                    a5.teardownIndicator(a5)
-                end, true)
-
-                local a7
-
-                local function applyForHumanoidRootPart(a8)
-                    if a7 then
-                        a7.Destroy(a7)
-
-                        a7 = nil
-                    end
-                    if not a8 then
-                        return
-                    end
-
-                    local a9 = an.new()
-
-                    a7 = a9
-
-                    a6.Add(a6, a9, 'Destroy')
-                    a5.bindHumanoidRootPart(a5, a8, a9)
                 end
 
-                a6.Add(a6, aT(ad.parts, function(a8)
-                    applyForHumanoidRootPart(a8.HumanoidRootPart)
+                local ba = aq.FindFirstChild(aq, 'Components')
+                local bb = ba and ba.FindFirstChild(ba, 'Common')
+                local bc, bd = bb and bb.FindFirstChild(bb, 'CharacterPose'), nil
+
+                if bc then
+                    local be, bf = pcall(require, bc)
+
+                    if be and type(bf) == 'table' then
+                        bd = bf
+                    end
+                end
+
+                local be, bf
+
+                ar.BindToRenderStep(ar, aE, Enum.RenderPriority.Last.Value, LPH_NO_VIRTUALIZE(function(
+                )
+                    local bg, bh, bi = a7._desiredYaw, math.clamp(a7._desiredPitch, 
+-1, 1), av.Character
+
+                    if bi and bd then
+                        if be ~= bi then
+                            be = bi
+                            bf = bd.getJoints(bi)
+                        end
+                        if bf then
+                            bd.applyVerticalLook(bf, bh, 0.0001)
+                        end
+                    end
+                    if not a7._instant then
+                        return
+                    end
+
+                    local bj = ab.GetCharacterObject()
+
+                    if bj then
+                        bj.TargetYRotation = bg
+                        bj.CurrentYRotation = bg
+                    end
+
+                    local bk = a7._alignOrientation
+
+                    if bk then
+                        a7._allowWrite = true
+                        bk.CFrame = CFrame.Angles(0, bg, 0)
+                        bk.RigidityEnabled = true
+                        bk.Enabled = true
+                        a7._allowWrite = false
+                    end
+
+                    local bl = aU(ad.parts).HumanoidRootPart
+
+                    if not bl or not bl.Parent then
+                        return
+                    end
+
+                    local bm, bn = bl.CFrame:ToEulerAnglesYXZ()
+                    local bo = (bg - bn) % aC
+
+                    if bo > math.pi then
+                        bo = bo - aC
+                    end
+                    if math.abs(bo) < 0.01 then
+                        return
+                    end
+
+                    bl.CFrame = CFrame.new(bl.Position) * CFrame.Angles(0, bg, 0)
+                end))
+                a8.Add(a8, function()
+                    ar.UnbindFromRenderStep(ar, aE)
+                end, true)
+                a8.Add(a8, as.InputChanged:Connect(LPH_NO_VIRTUALIZE(function(
+                    bg
+                )
+                    if bg.UserInputType ~= Enum.UserInputType.MouseMovement then
+                        return
+                    end
+                    if not a7._mainEnabled or not a7._mouseOverride or not ac.IsThirdPerson() then
+                        return
+                    end
+
+                    a7._pendingDX += bg.Delta.X
+                    a7._pendingDY += bg.Delta.Y
+                end)))
+                a8.Add(a8, ar.PreRender:Connect(LPH_NO_VIRTUALIZE(function()
+                    a7.updateCameraInput(a7)
+                    a7.updateIndicator(a7)
+                end)))
+                a8.Add(a8, function()
+                    if a7._camInputDisabled then
+                        local bg = ay()
+
+                        if bg then
+                            bg.setInputEnabled(true)
+                        end
+
+                        a7._camInputDisabled = false
+                    end
+
+                    a7.teardownIndicator(a7)
+                end, true)
+
+                local bg
+
+                local function applyForHumanoidRootPart(bh)
+                    if bg then
+                        bg.Destroy(bg)
+
+                        bg = nil
+                    end
+                    if not bh then
+                        return
+                    end
+
+                    local bi = ao.new()
+
+                    bg = bi
+
+                    a8.Add(a8, bi, 'Destroy')
+                    a7.bindHumanoidRootPart(a7, bh, bi)
+                end
+
+                a8.Add(a8, aV(ad.parts, function(bh)
+                    applyForHumanoidRootPart(bh.HumanoidRootPart)
                 end))
 
-                local a8 = aS(ad.parts)
+                local bh = aU(ad.parts)
 
-                applyForHumanoidRootPart(a8.HumanoidRootPart)
+                applyForHumanoidRootPart(bh.HumanoidRootPart)
             end
-            function aU.Disable(a5)
-                local a6 = a5._activeJanitor
+            function aW.Disable(a7)
+                local a8 = a7._activeJanitor
 
-                if not a6 then
+                if not a8 then
                     return
                 end
 
-                a5._activeJanitor = nil
+                a7._activeJanitor = nil
 
                 am.SetActive(false)
-                a6.Destroy(a6)
-                a5._freestand:Reset()
+                a8.Destroy(a8)
+                a7._freestand:Reset()
 
-                a5._threatPlayer = nil
+                a7._threatPlayer = nil
             end
-            function aU.Destroy(a5)
-                a5.Disable(a5)
-                ah.Destroy(a5)
+            function aW.Destroy(a7)
+                a7.Disable(a7)
+                ah.Destroy(a7)
             end
 
-            return aU
+            return aW
         end
 
         function a.f1()

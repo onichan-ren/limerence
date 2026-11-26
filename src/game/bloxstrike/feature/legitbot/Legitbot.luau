@@ -23,6 +23,10 @@ local sub = Charm.subscribe
 local RCS_CALIBRATION = 0.65
 
 local function isLocalInAir(): boolean
+	local charObj = ClientController.GetCharacterObject()
+	if charObj and charObj.OnGround ~= nil then
+		return charObj.OnGround == false
+	end
 	local humanoid = clientApi.GetHumanoid()
 	if not humanoid then
 		return false

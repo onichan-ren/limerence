@@ -1,11 +1,33 @@
 local RunService = cloneref(game:GetService("RunService")) :: RunService
 local Players = cloneref(game:GetService("Players")) :: Players
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage")) :: ReplicatedStorage
 
 local Charm = require("@pkg/Charm")
 local ModuleController = require("@game/bloxstrike/module/ModuleController")
 
 local LocalPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local _cachedPose: any = nil
+local _cachedJointsChar: Model? = nil
+local _cachedJoints: any = nil
+
+local function getCharacterPose(): any?
+	if _cachedPose then
+		return _cachedPose
+	end
+	local components = ReplicatedStorage:FindFirstChild("Components")
+	local common = components and components:FindFirstChild("Common")
+	local mod = common and common:FindFirstChild("CharacterPose")
+	if not mod then
+		return nil
+	end
+	local ok, res = pcall(require, mod :: ModuleScript)
+	if ok and type(res) == "table" then
+		_cachedPose = res
+		return res
+	end
+	return nil
+end
 
 export type LookAngles = {
 	VerticalLook: number,
@@ -65,24 +87,40 @@ local resolveAngles = LPH_NO_VIRTUALIZE(function(): LookAngles
 end)
 
 local tick = LPH_NO_VIRTUALIZE(function(): ()
-	local kinematics = _cachedKinematics
-
-	if not kinematics then
-		kinematics = ModuleController.GetModule("CharacterKinematics")
-		if not kinematics then
-			return
-		end
-		_cachedKinematics = kinematics
-	end
-
 	local angles = resolveAngles()
 	local yaw = angles.HorizontalAngle :: number
-	local verticalLook = angles.VerticalLook
+	local verticalLook = math.clamp(angles.VerticalLook, -1, 1)
 
 	LocalLookController.yaw = yaw
 	LocalLookController.verticalLook = verticalLook
-	kinematics.setTargetRotation(LocalPlayer, yaw)
-	kinematics.setVerticalLook(LocalPlayer, verticalLook)
+
+	local kinematics = _cachedKinematics
+	if not kinematics then
+		kinematics = ModuleController.GetModule("CharacterKinematics")
+		if kinematics then
+			_cachedKinematics = kinematics
+		end
+	end
+	if kinematics then
+		kinematics.setTargetRotation(LocalPlayer, yaw)
+		kinematics.setVerticalLook(LocalPlayer, verticalLook)
+	end
+
+	local character = LocalPlayer.Character
+	local pose = getCharacterPose()
+	if character and pose then
+		if _cachedJointsChar ~= character then
+			_cachedJointsChar = character
+			_cachedJoints = pose.getJoints(character)
+		end
+		if _cachedJoints then
+			pose.applyVerticalLook(_cachedJoints, verticalLook, 0.0001)
+		end
+		local hrp = character:FindFirstChild("HumanoidRootPart") :: BasePart?
+		if hrp then
+			hrp.CFrame = pose.composeRootCFrame(hrp.Position, yaw)
+		end
+	end
 	setthreadidentity(8)
 end)
 

@@ -91,9 +91,9 @@ local function ensureInsertHook(): ()
 					local newDirection = weaponSpreadState.applyBulletSpread(
 						(_target.position - origin).Unit,
 						spreadDegrees
-					) * t.Distance
+					)
 					t.Direction = newDirection
-					t.Hits = getNewHits(origin, newDirection, t)
+					t.Hits = getNewHits(origin, newDirection * t.Distance, t)
 				end
 			end
 

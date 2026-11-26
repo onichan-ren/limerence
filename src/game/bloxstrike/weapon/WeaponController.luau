@@ -57,7 +57,19 @@ WeaponController.new = LPH_JIT_MAX(function(): WeaponController
 		currentFrame += 1
 	end))
 
-	local impact = debug.getupvalue(shoot, 19)
+	local impact: any = nil
+	for _, value in next, debug.getupvalues(shoot) do
+		if type(value) == "function" then
+			local info = debug.getinfo(value)
+			if info and info.name == "CreateImpact" then
+				impact = value
+				break
+			end
+		end
+	end
+	if not impact then
+		impact = debug.getupvalue(shoot, 22)
+	end
 	if not impact or type(impact) ~= "function" then
 		error("failed to find impact function")
 	end

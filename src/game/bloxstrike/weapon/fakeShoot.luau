@@ -7,6 +7,7 @@ local fakeShoot = {
 	_ready = false,
 	_refs = {} :: {
 		CameraController: any?,
+		Router: any?,
 		resolveFireAnimationNames: any?,
 		startRechargeTimer: any?,
 		applyActiveRecoilProfile: any?,
@@ -19,6 +20,18 @@ local fakeShoot = {
 	},
 }
 
+local function findUpvalueByName(fn: any, targetName: string): any?
+	for _, value in next, debug.getupvalues(fn) do
+		if type(value) == "function" then
+			local info = debug.getinfo(value)
+			if info and info.name == targetName then
+				return value
+			end
+		end
+	end
+	return nil
+end
+
 function fakeShoot.bind(shootFn: any): ()
 	if fakeShoot._ready then
 		return
@@ -27,17 +40,35 @@ function fakeShoot.bind(shootFn: any): ()
 		return
 	end
 	local refs = fakeShoot._refs
-	refs.CameraController = debug.getupvalue(shootFn, 6)
-	refs.resolveFireAnimationNames = debug.getupvalue(shootFn, 8)
-	refs.startRechargeTimer = debug.getupvalue(shootFn, 9)
-	refs.applyActiveRecoilProfile = debug.getupvalue(shootFn, 12)
-	refs.Camera = debug.getupvalue(shootFn, 16)
-	refs.CreateTracer = debug.getupvalue(shootFn, 17)
-	refs.CreateImpact = debug.getupvalue(shootFn, 19)
-	refs.BreakGlass = debug.getupvalue(shootFn, 21)
-	refs.CreateMarker = debug.getupvalue(shootFn, 22)
-	refs.kickCamera = debug.getupvalue(shootFn, 23)
+	for _, value in next, debug.getupvalues(shootFn) do
+		if type(value) == "table" then
+			if rawget(value, "updateCameraFOV") then
+				refs.CameraController = value
+			elseif rawget(value, "broadcastRouter") then
+				refs.Router = value
+			end
+		end
+	end
+	refs.CameraController = refs.CameraController or debug.getupvalue(shootFn, 9)
+	refs.Router = refs.Router or debug.getupvalue(shootFn, 10)
+	refs.resolveFireAnimationNames = findUpvalueByName(shootFn, "resolveFireAnimationNames") or debug.getupvalue(shootFn, 12)
+	refs.startRechargeTimer = findUpvalueByName(shootFn, "startRechargeTimer") or debug.getupvalue(shootFn, 13)
+	refs.applyActiveRecoilProfile = findUpvalueByName(shootFn, "applyActiveRecoilProfile") or debug.getupvalue(shootFn, 15)
+	refs.Camera = debug.getupvalue(shootFn, 19)
+	refs.CreateTracer = debug.getupvalue(shootFn, 20)
+	refs.CreateImpact = findUpvalueByName(shootFn, "CreateImpact") or debug.getupvalue(shootFn, 22)
+	refs.BreakGlass = findUpvalueByName(shootFn, "BreakGlass") or debug.getupvalue(shootFn, 26)
+	refs.CreateMarker = findUpvalueByName(shootFn, "CreateMarker") or debug.getupvalue(shootFn, 27)
+	refs.kickCamera = findUpvalueByName(shootFn, "GetWeaponCameraKick") or debug.getupvalue(shootFn, 28)
 	fakeShoot._ready = true
+end
+
+function fakeShoot.getViewTick(): number?
+	local router = fakeShoot._refs.Router
+	if router and type(router.broadcastRouter) == "function" then
+		return router.broadcastRouter("GetRemoteViewTick")
+	end
+	return nil
 end
 
 local function resolveFireRate(props: any, fireMode: string): number

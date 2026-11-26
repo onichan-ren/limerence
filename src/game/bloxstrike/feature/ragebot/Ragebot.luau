@@ -1942,7 +1942,13 @@ return LPH_JIT_MAX(function()
 			ShootingHand = weapon.ShootingHand or "Right",
 			Identifier = weapon.Identifier,
 			Seq = weapon.ShotSeq,
-			Bullets = { bullet },
+			Bullets = {
+				{
+					Direction = bullet.Direction,
+					Origin = bullet.Origin,
+				},
+			},
+			ViewTick = fakeShoot.getViewTick(),
 		})
 		setthreadidentity(8)
 

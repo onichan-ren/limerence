@@ -11,9 +11,11 @@ local FileController = require("@src/feature/file/FileController")
 local instances = require("@share/instances")
 local freestand = require("@game/universal/feature/combat/antiaim/freestand")
 local antiAimApi = require("@game/bloxstrike/feature/ragebot/antiAimApi")
+local Hook = require("@share/hook")
 local Janitor = require("@pkg/Janitor")
 local Charm = require("@pkg/Charm")
 
+local ReplicatedStorage = cloneref(game:GetService("ReplicatedStorage")) :: ReplicatedStorage
 local RunService = cloneref(game:GetService("RunService")) :: RunService
 local UserInputService = cloneref(game:GetService("UserInputService")) :: UserInputService
 local Players = cloneref(game:GetService("Players")) :: Players
@@ -801,51 +803,74 @@ function AntiAim.Enable(self: AntiAim): ()
 	janitor:Add(
 		RunService.PreRender:Connect(LPH_NO_VIRTUALIZE(function(): ()
 			self:recompute()
-			local now = tick()
-			if now - self._lastLookAngleSend < LOOK_ANGLE_SEND_INTERVAL then
-				return
-			end
-			self._lastLookAngleSend = now
-			setthreadidentity(2)
-			NetworkController.SendPacket("Character", "UpdateLookAngle", {
-				HorizontalAngle = self._desiredYaw,
-				VerticalLook = self._desiredPitch,
-			})
-			setthreadidentity(8)
 		end)),
 		"Disconnect"
 	)
 
-	NetworkController.HookPacket(
-		"Character",
-		"UpdateLookAngle",
-		LPH_NO_VIRTUALIZE(function()
-			return false, {
-				HorizontalAngle = self._desiredYaw,
-				VerticalLook = self._desiredPitch,
-			}
-		end)
-	)
-	janitor:Add(function(): ()
-		NetworkController.UnhookPacket("Character", "UpdateLookAngle")
-	end, true)
+	local classesFolder = ReplicatedStorage:FindFirstChild("Classes")
+	local charModule = classesFolder and classesFolder:FindFirstChild("Character")
+	if charModule then
+		local ok, charClass = pcall(require, charModule :: ModuleScript)
+		local sampleFn = ok and type(charClass) == "table" and rawget(charClass, "SampleInput")
+		if type(sampleFn) == "function" then
+			local oldSample: any = nil
+			oldSample = Hook.add(
+				sampleFn,
+				LPH_NO_VIRTUALIZE(function(charSelf: any, ...)
+					local cmd = oldSample(charSelf, ...)
+					if type(cmd) == "table" then
+						cmd.LookYaw = self._desiredYaw
+						cmd.VerticalLook = math.clamp(self._desiredPitch, -1, 1)
+					end
+					return cmd
+				end)
+			)
+			janitor:Add(function(): ()
+				Hook.restore(sampleFn)
+			end, true)
+		end
+	end
+
+	local poseComponents = ReplicatedStorage:FindFirstChild("Components")
+	local poseCommon = poseComponents and poseComponents:FindFirstChild("Common")
+	local poseMod = poseCommon and poseCommon:FindFirstChild("CharacterPose")
+	local pose: any = nil
+	if poseMod then
+		local ok, res = pcall(require, poseMod :: ModuleScript)
+		if ok and type(res) == "table" then
+			pose = res
+		end
+	end
+	local cachedJointsChar: Model? = nil
+	local cachedJoints: any = nil
 
 	RunService:BindToRenderStep(
 		INSTANT_RENDER_NAME,
 		Enum.RenderPriority.Last.Value,
 		LPH_NO_VIRTUALIZE(function(): ()
+			local desiredYaw = self._desiredYaw
+			local desiredPitch = math.clamp(self._desiredPitch, -1, 1)
+
+			local model = LocalPlayer.Character
+			if model and pose then
+				if cachedJointsChar ~= model then
+					cachedJointsChar = model
+					cachedJoints = pose.getJoints(model)
+				end
+				if cachedJoints then
+					pose.applyVerticalLook(cachedJoints, desiredPitch, 0.0001)
+				end
+			end
+
 			if not self._instant then
 				return
 			end
 
 			local character = ClientController.GetCharacterObject()
-			if not character then
-				return
+			if character then
+				character.TargetYRotation = desiredYaw
+				character.CurrentYRotation = desiredYaw
 			end
-
-			local desiredYaw = self._desiredYaw
-			character.TargetYRotation = desiredYaw
-			character.CurrentYRotation = desiredYaw
 
 			local alignOrientation = self._alignOrientation
 			if alignOrientation then
